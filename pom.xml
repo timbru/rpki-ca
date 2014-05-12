@@ -1,0 +1,120 @@
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+	xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+	<modelVersion>4.0.0</modelVersion>
+	<groupId>nl.bruijnzeels.rpki</groupId>
+	<artifactId>rpki-ca</artifactId>
+	<version>0.1-SNAPSHOT</version>
+	<packaging>jar</packaging>
+	<name>RPKI Certificate Authority</name>
+
+	<properties>
+    	<rpki.commons.version>1.0.37</rpki.commons.version>
+        <jodatime.version>1.6.2</jodatime.version>
+	<slf4j.version>1.7.6</slf4j.version>
+	<log4j.version>1.2.17</log4j.version>
+        <scala.version>2.10.4</scala.version>
+        <scala.binary.version>2.10</scala.binary.version>
+        <main.class>nl.bruijnzeels.rpki.ca.Main</main.class>
+        </properties>
+
+    <repositories>
+        <repository>
+            <id>Typesafe</id>
+            <name>Typesafe Repository</name>
+            <url>http://repo.typesafe.com/typesafe/releases/</url>
+        </repository>
+    </repositories>
+
+    <!-- ====================================================================== -->
+    <!-- Dependencies -->
+    <!-- ====================================================================== -->
+
+    <dependencies>
+            <dependency>
+                <groupId>net.ripe.rpki</groupId>
+                <artifactId>rpki-commons</artifactId>
+                <version>${rpki.commons.version}</version>
+            </dependency>
+
+            <dependency>
+                <groupId>net.ripe.rpki</groupId>
+                <artifactId>rpki-commons</artifactId>
+                <version>${rpki.commons.version}</version>
+                <type>test-jar</type>
+                <scope>test</scope>
+            </dependency>
+            
+            <dependency>
+                <groupId>junit</groupId>
+                <artifactId>junit</artifactId>
+                <version>4.11</version>
+                <scope>test</scope>
+            </dependency>
+            
+            <dependency>
+            	<groupId>org.scala-lang</groupId>
+            	<artifactId>scala-library</artifactId>
+            	<version>${scala.version}</version>
+        	</dependency>
+        	
+        	<dependency>
+        		<groupId>org.scalatest</groupId>
+        		<artifactId>scalatest_2.10</artifactId>
+        		<version>2.1.5</version>
+       		</dependency>
+            
+    </dependencies>
+
+    <build>
+        <sourceDirectory>src/main/scala</sourceDirectory>
+        <testSourceDirectory>src/test/scala</testSourceDirectory>
+        <plugins>
+            <plugin>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.class</include>
+                        <include>**/*Spec.class</include>
+                    </includes>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>${main.class}</mainClass>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>net.alchim31.maven</groupId>
+                <artifactId>scala-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>compile</goal>
+                            <goal>testCompile</goal>
+                        </goals>
+                        <configuration>
+                            <checkMultipleScalaVersions>true</checkMultipleScalaVersions>
+                            <jvmArgs>
+                                <arg>-XX:+TieredCompilation</arg> <!-- Much faster Scala compilation -->
+                                <arg>-XX:CICompilerCount=1</arg> <!-- Number of HotSpot background compiler threads -->
+                            </jvmArgs>
+                            <recompileMode>incremental</recompileMode>
+                            <useZincServer>true</useZincServer>
+                            <args>
+                                <arg>-deprecation</arg>
+                                <arg>-unchecked</arg>
+                                <arg>-feature</arg>
+                                <arg>-Xlint</arg>
+                                <arg>-Xmax-classfile-name</arg>
+                                <arg>130</arg>
+                            </args>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+        </plugins>
+        
+    </build>
+</project>
