@@ -1,3 +1,7 @@
 package nl.bruijnzeels.tim.rpki.ca.common.cqrs
 
-trait Event
+import java.util.UUID
+
+trait Event {
+  def id: UUID
+}

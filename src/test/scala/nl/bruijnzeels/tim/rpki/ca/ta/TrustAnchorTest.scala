@@ -5,6 +5,7 @@ import org.scalatest.Matchers
 import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
 import net.ripe.ipresource.IpResourceSet
 import java.net.URI
+import java.util.UUID
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TrustAnchorTest extends FunSuite with Matchers {
@@ -21,14 +22,15 @@ class TrustAnchorTest extends FunSuite with Matchers {
 }
 
 object TrustAnchorTest {
-
+  
   val TrustAnchorName = "root"
+  val TrustAnchorId = UUID.fromString("fdff6f65-1d4d-4940-8193-7c71911a2ec5")
   val TrustAnchorResources: IpResourceSet = "10/8"
   val TrustAnchorCertificateUri: URI = "rsync://localhost/ta.cer"
   val TrustAnchorPublicationUri: URI = "rsync://localhost/ta/"
 
-  val created = TaCreated(TrustAnchorName)
-  val signerCreated = TaSigner.create(TrustAnchorName, TrustAnchorResources, TrustAnchorCertificateUri, TrustAnchorPublicationUri)
+  val created = TaCreated(TrustAnchorId, TrustAnchorName)
+  val signerCreated = TaSigner.create(TrustAnchorId, TrustAnchorName, TrustAnchorResources, TrustAnchorCertificateUri, TrustAnchorPublicationUri)
   
   val TrustAnchorKeyPair = signerCreated.signingCertificate.keyPair
   

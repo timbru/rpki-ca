@@ -6,8 +6,9 @@ trait TaCommandHandler[C <: TaCommand] {
 
 object CreateTaCommandHandler extends TaCommandHandler[CreateTa] {
   override def handle(command: CreateTa) = {
-    TrustAnchor.create(command.name)
+    TrustAnchor.create(command.id, command.name)
                .initialise(command.resources, command.taCertificateUri, command.publicationUri)
                .events
   }
 }
+

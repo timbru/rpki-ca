@@ -13,6 +13,7 @@ import java.math.BigInteger
 import java.net.URI
 import net.ripe.rpki.commons.crypto.x509cert.X509CertificateInformationAccessDescriptor
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
+import java.util.UUID
 
 case class SigningCertificate(keyPair: KeyPair, currentCertificate: X509ResourceCertificate, uri: URI)
 
@@ -28,11 +29,11 @@ object TaSigner {
   
   val TrustAnchorLifeTimeYears = 5
   
-  def create(name: String, resources: IpResourceSet, taCertificateUri: URI, publicationDir: URI): TaSignerCreated = {
+  def create(id: UUID, name: String, resources: IpResourceSet, taCertificateUri: URI, publicationDir: URI): TaSignerCreated = {
     val keyPair = KeyPairSupport.createRpkiKeyPair
     val certificate = createRootCertificate(name, keyPair, resources, publicationDir) 
 
-    TaSignerCreated(SigningCertificate(keyPair, certificate, taCertificateUri))
+    TaSignerCreated(id, SigningCertificate(keyPair, certificate, taCertificateUri))
   }
   
   def createRootCertificate(name: String, keyPair: KeyPair, resources: IpResourceSet, publicationDir: URI) = {
@@ -61,7 +62,7 @@ object TaSigner {
   
 }
 
-case class TrustAnchor(name: String = "", signer: Option[TaSigner] = None, events: List[TaEvent] = List()) {
+case class TrustAnchor(id: UUID, name: String = "", signer: Option[TaSigner] = None, events: List[TaEvent] = List()) {
 
   def applyEvent(event: TaEvent): TrustAnchor = event match {
     case created: TaCreated => copy(name = created.name, events = events :+ event)
@@ -69,23 +70,23 @@ case class TrustAnchor(name: String = "", signer: Option[TaSigner] = None, event
   }
 
   def initialise(resources: IpResourceSet, taCertificateUri: URI, publicationDir: URI) = {
-    applyEvent(TaSigner.create(name, resources, taCertificateUri, publicationDir))
+    applyEvent(TaSigner.create(id, name, resources, taCertificateUri, publicationDir))
   }
 }
 
 object TrustAnchor {
 
   def rebuild(events: List[TaEvent]): TrustAnchor = {
-    var ta = TrustAnchor()
+    var ta = TrustAnchor(events(0).id)
     for (e <- events) {
       ta = ta.applyEvent(e)
     }
     ta.copy(events = List())
   }
 
-  def create(name: String): TrustAnchor = {
-    val ta = TrustAnchor()
-    ta.applyEvent(TaCreated(name))
+  def create(id: UUID, name: String): TrustAnchor = {
+    val ta = TrustAnchor(id)
+    ta.applyEvent(TaCreated(id, name))
   }
 
 }
