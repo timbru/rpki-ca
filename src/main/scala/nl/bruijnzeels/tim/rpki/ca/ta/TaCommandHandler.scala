@@ -1,14 +1,13 @@
 package nl.bruijnzeels.tim.rpki.ca.ta
 
-sealed trait TaCommandHandler[C <: TaCommand] {
+trait TaCommandHandler[C <: TaCommand] {
   def handle(taCommand: C): List[TaEvent]
 }
 
 object CreateTaCommandHandler extends TaCommandHandler[CreateTa] {
   override def handle(command: CreateTa) = {
     TrustAnchor.create(command.name)
-               .updateResources(command.resources)
-               .createKey
+               .initialise(command.resources, command.taCertificateUri, command.publicationUri)
                .events
   }
 }

@@ -4,6 +4,7 @@ import org.scalatest.FunSuite
 import org.scalatest.Matchers
 import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
 import net.ripe.ipresource.IpResourceSet
+import java.net.URI
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TrustAnchorTest extends FunSuite with Matchers {
@@ -14,8 +15,6 @@ class TrustAnchorTest extends FunSuite with Matchers {
     val ta = givenInitialisedTa
 
     ta.name should equal(TrustAnchorName)
-    ta.keyPair should equal(Some(TrustAnchorKeyPair))
-    ta.resources should equal(TrustAnchorResources: IpResourceSet)
     ta.events should have size (0)
   }
 
@@ -23,13 +22,15 @@ class TrustAnchorTest extends FunSuite with Matchers {
 
 object TrustAnchorTest {
 
-  val TrustAnchorName = "Test TA"
-  val TrustAnchorResources = "10/8"
-  val TrustAnchorKeyPair = KeyPairSupport.createRpkiKeyPair
+  val TrustAnchorName = "root"
+  val TrustAnchorResources: IpResourceSet = "10/8"
+  val TrustAnchorCertificateUri: URI = "rsync://localhost/ta.cer"
+  val TrustAnchorPublicationUri: URI = "rsync://localhost/ta/"
 
   val created = TaCreated(TrustAnchorName)
-  val resourcesUpdated = TaResourcesUpdated(TrustAnchorResources)
-  val keyMade = TaKeyPairCreated(TrustAnchorKeyPair)
-
-  def givenInitialisedTa: TrustAnchor = TrustAnchor.rebuild(List(created, resourcesUpdated, keyMade))
+  val signerCreated = TaSigner.create(TrustAnchorName, TrustAnchorResources, TrustAnchorCertificateUri, TrustAnchorPublicationUri)
+  
+  val TrustAnchorKeyPair = signerCreated.signingCertificate.keyPair
+  
+  def givenInitialisedTa: TrustAnchor = TrustAnchor.rebuild(List(created, signerCreated))
 }
