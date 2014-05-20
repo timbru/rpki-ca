@@ -9,7 +9,7 @@ import java.util.UUID
 sealed trait TaEvent extends Event
 
 case class TaCreated(id: UUID, name: String) extends TaEvent
-case class TaSignerCreated(id: UUID, signingCertificate: SigningCertificate) extends TaEvent
+case class TaSignerCreated(id: UUID, signingMaterial: SigningMaterial) extends TaEvent
 
 sealed trait TaSignerEvent extends TaEvent
 

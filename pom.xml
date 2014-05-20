@@ -9,7 +9,7 @@
 
 	<properties>
     	<rpki.commons.version>1.0.37</rpki.commons.version>
-        <jodatime.version>1.6.2</jodatime.version>
+        <jodatime.version>2.3</jodatime.version>
 	<slf4j.version>1.7.6</slf4j.version>
 	<log4j.version>1.2.17</log4j.version>
         <scala.version>2.10.4</scala.version>
@@ -45,6 +45,23 @@
             </dependency>
             
             <dependency>
+                <groupId>net.ripe.rpki</groupId>
+                <artifactId>rpki-commons</artifactId>
+                <version>${rpki.commons.version}</version>
+            </dependency>
+<dependency>
+	<groupId>joda-time</groupId>
+	<artifactId>joda-time</artifactId>
+	<version>${jodatime.version}</version>
+</dependency>
+<dependency>
+	<groupId>org.joda</groupId>
+	<artifactId>joda-convert</artifactId>
+	<version>1.6</version>
+        <scope>compile</scope>
+</dependency>
+
+            <dependency>
                 <groupId>junit</groupId>
                 <artifactId>junit</artifactId>
                 <version>4.11</version>
@@ -55,13 +72,13 @@
             	<groupId>org.scala-lang</groupId>
             	<artifactId>scala-library</artifactId>
             	<version>${scala.version}</version>
-        	</dependency>
-        	
-        	<dependency>
-        		<groupId>org.scalatest</groupId>
-        		<artifactId>scalatest_2.10</artifactId>
-        		<version>2.1.5</version>
-       		</dependency>
+            </dependency>
+
+            <dependency>
+                <groupId>org.scalatest</groupId>
+                <artifactId>scalatest_2.10</artifactId>
+                <version>2.1.5</version>
+            </dependency>
             
     </dependencies>
 

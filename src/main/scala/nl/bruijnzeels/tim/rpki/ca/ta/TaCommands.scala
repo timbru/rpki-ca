@@ -9,4 +9,5 @@ sealed trait TaCommand extends Command {
   def id: UUID
 }
 
-case class CreateTa(id: UUID, name: String, resources: IpResourceSet, taCertificateUri: URI, publicationUri: URI) extends TaCommand
+case class TaCreate(id: UUID, name: String, resources: IpResourceSet, taCertificateUri: URI, publicationUri: URI) extends TaCommand
+case class TaPublish(id: UUID) extends TaCommand

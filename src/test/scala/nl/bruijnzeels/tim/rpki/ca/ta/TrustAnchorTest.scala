@@ -32,7 +32,7 @@ object TrustAnchorTest {
   val created = TaCreated(TrustAnchorId, TrustAnchorName)
   val signerCreated = TaSigner.create(TrustAnchorId, TrustAnchorName, TrustAnchorResources, TrustAnchorCertificateUri, TrustAnchorPublicationUri)
   
-  val TrustAnchorKeyPair = signerCreated.signingCertificate.keyPair
+  val TrustAnchorKeyPair = signerCreated.signingMaterial.keyPair
   
   def givenInitialisedTa: TrustAnchor = TrustAnchor.rebuild(List(created, signerCreated))
 }
