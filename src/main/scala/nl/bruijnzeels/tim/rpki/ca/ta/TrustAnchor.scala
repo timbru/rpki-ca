@@ -3,6 +3,8 @@ package nl.bruijnzeels.tim.rpki.ca.ta
 import java.net.URI
 import java.util.UUID
 
+import org.joda.time.Period
+
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
 import net.ripe.rpki.commons.crypto.crl.X509Crl
@@ -10,8 +12,6 @@ import net.ripe.rpki.commons.crypto.crl.X509Crl
 import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
 import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningMaterial
 import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningSupport
-
-import org.joda.time.Period
 
 case class TaSigner(signingMaterial: SigningMaterial, mft: Option[ManifestCms] = None, crl: Option[X509Crl] = None) {
   

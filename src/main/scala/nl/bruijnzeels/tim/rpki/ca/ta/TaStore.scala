@@ -1,7 +1,6 @@
 package nl.bruijnzeels.tim.rpki.ca.ta
 
 import java.util.UUID
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 
 object TaStore {
   

@@ -1,8 +1,10 @@
 package nl.bruijnzeels.tim.rpki.ca
 
-import net.ripe.ipresource.IpResourceSet
 import scala.language.implicitConversions
+
 import java.net.URI
+
+import net.ripe.ipresource.IpResourceSet
 
 package object ta {
   

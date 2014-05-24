@@ -1,8 +1,9 @@
 package nl.bruijnzeels.tim.rpki.ca
 package core
 
-import common.cqrs.Event
 import java.util.UUID
+
+import common.cqrs.Event
 
 sealed trait CaEvent extends Event
 

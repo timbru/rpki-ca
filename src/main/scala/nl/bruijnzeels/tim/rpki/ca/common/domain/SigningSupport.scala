@@ -1,12 +1,23 @@
 package nl.bruijnzeels.tim.rpki.ca.common.domain
 
-import javax.security.auth.x500.X500Principal
 import java.math.BigInteger
 import java.net.URI
 import java.security.KeyPair
 import java.security.PublicKey
+import java.util.EnumSet
+
+import javax.security.auth.x500.X500Principal
+
+import org.bouncycastle.asn1.x509.KeyUsage
+
+import org.joda.time.DateTime
+import org.joda.time.Period
+
 import net.ripe.ipresource.IpResourceSet
+import net.ripe.ipresource.IpResourceType
+import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
 import net.ripe.rpki.commons.crypto.ValidityPeriod
+import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCmsBuilder
 import net.ripe.rpki.commons.crypto.crl.X509Crl
 import net.ripe.rpki.commons.crypto.crl.X509CrlBuilder
@@ -14,13 +25,6 @@ import net.ripe.rpki.commons.crypto.x509cert.RpkiSignedObjectEeCertificateBuilde
 import net.ripe.rpki.commons.crypto.x509cert.X509CertificateInformationAccessDescriptor
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificateBuilder
-import org.bouncycastle.asn1.x509.KeyUsage
-import org.joda.time.DateTime
-import org.joda.time.Period
-import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
-import net.ripe.ipresource.IpResourceType
-import java.util.EnumSet
-import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
 
 case class SigningMaterial(keyPair: KeyPair, currentCertificate: X509ResourceCertificate, certificateUri: URI)
 case class GenericCertificateSignRequestInfo(pubKey: PublicKey, validityPeriod: ValidityPeriod, serial: BigInteger, resources: IpResourceSet)

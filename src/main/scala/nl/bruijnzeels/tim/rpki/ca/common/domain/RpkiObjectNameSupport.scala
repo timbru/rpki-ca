@@ -1,16 +1,19 @@
 package nl.bruijnzeels.tim.rpki.ca.common.domain
 
-import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
-import net.ripe.rpki.commons.crypto.crl.X509Crl
-import java.security.PublicKey
-import net.ripe.rpki.commons.crypto.util.KeyPairUtil
-import org.bouncycastle.util.encoders.HexEncoder
 import java.io.ByteArrayOutputStream
 import java.io.IOException
-import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
-import net.ripe.rpki.commons.crypto.cms.roa.RoaCms
-import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
+import java.security.PublicKey
+
 import javax.security.auth.x500.X500Principal
+
+import org.bouncycastle.util.encoders.HexEncoder
+
+import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
+import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
+import net.ripe.rpki.commons.crypto.cms.roa.RoaCms
+import net.ripe.rpki.commons.crypto.crl.X509Crl
+import net.ripe.rpki.commons.crypto.util.KeyPairUtil
+import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
 
 object RpkiObjectNameSupport {
 
@@ -29,11 +32,11 @@ object RpkiObjectNameSupport {
   private def hexEncodePubKey(publicKey: PublicKey): String = {
     hexEncodeKeyIdentifier(KeyPairUtil.getKeyIdentifier(publicKey))
   }
-  
+
   def deriveSubject(publicKey: PublicKey): X500Principal = {
     new X500Principal("CN=" + hexEncodePubKey(publicKey))
   }
-  
+
   def deriveMftFileNameForCertificate(publishingCertificatePublicKey: PublicKey): String = hexEncodePubKey(publishingCertificatePublicKey) + ".mft"
 
   def deriveName(rpkiRepositoryObject: CertificateRepositoryObject): String = rpkiRepositoryObject match {

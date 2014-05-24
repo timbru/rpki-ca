@@ -1,10 +1,12 @@
 package nl.bruijnzeels.tim.rpki.ca.ta
 
 import java.util.UUID
+
+import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
+import net.ripe.rpki.commons.crypto.crl.X509Crl
+
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
 import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningMaterial
-import net.ripe.rpki.commons.crypto.crl.X509Crl
-import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
 
 sealed trait TaEvent extends Event
 
