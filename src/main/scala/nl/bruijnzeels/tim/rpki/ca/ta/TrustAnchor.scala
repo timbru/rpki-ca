@@ -1,78 +1,58 @@
 package nl.bruijnzeels.tim.rpki.ca.ta
 
-import java.security.KeyPair
-import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
-import net.ripe.ipresource.IpResourceSet
-import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificateBuilder
-import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
-import org.bouncycastle.asn1.x509.KeyUsage
-import javax.security.auth.x500.X500Principal
-import net.ripe.rpki.commons.crypto.ValidityPeriod
-import org.joda.time.DateTime
-import java.math.BigInteger
 import java.net.URI
-import net.ripe.rpki.commons.crypto.x509cert.X509CertificateInformationAccessDescriptor
-import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
 import java.util.UUID
+
+import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
+import net.ripe.rpki.commons.crypto.crl.X509Crl
 
-case class SigningMaterial(keyPair: KeyPair, currentCertificate: X509ResourceCertificate, certificateUri: URI)
+import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
+import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningMaterial
+import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningSupport
 
-case class TaSigner(signingMaterial: SigningMaterial, mft: Option[ManifestCms] = None) {
+import org.joda.time.Period
+
+case class TaSigner(signingMaterial: SigningMaterial, mft: Option[ManifestCms] = None, crl: Option[X509Crl] = None) {
   
   def applyEvent(event: TaSignerEvent): TaSigner = event match {
     case created: TaSignerCreated => TaSigner(created.signingMaterial)
+    case published: TaSignerPublished => copy(mft = Some(published.mft), crl = Some(published.crl)) 
   }
   
-  def updatePublishedObjects() = {
+  def updatePublishedObjects(id: UUID): TaSignerPublished = {
+    val crl = SigningSupport.createCrl(signingMaterial, TaSigner.CrlNextUpdate)
+    val mft = SigningSupport.createManifest(signingMaterial, TaSigner.MftNextUpdate, TaSigner.MftValidityTime)
     
-    
+    TaSignerPublished(id, crl, mft)
   }
+  
+  
   
 }
 
 object TaSigner {
   
-  val TrustAnchorLifeTimeYears = 5
+  val TrustAnchorLifeTime = Period.years(5)
+  val CrlNextUpdate = Period.hours(24)
+  val MftNextUpdate = Period.days(1)
+  val MftValidityTime = Period.days(7)
   
   def create(id: UUID, name: String, resources: IpResourceSet, taCertificateUri: URI, publicationDir: URI): TaSignerCreated = {
     val keyPair = KeyPairSupport.createRpkiKeyPair
-    val certificate = createRootCertificate(name, keyPair, resources, publicationDir) 
+    val certificate = SigningSupport.createRootCertificate(name, keyPair, resources, publicationDir, TrustAnchorLifeTime) 
 
     TaSignerCreated(id, SigningMaterial(keyPair, certificate, taCertificateUri))
   }
-  
-  def createRootCertificate(name: String, keyPair: KeyPair, resources: IpResourceSet, publicationDir: URI) = {
-    val now = new DateTime()
-    val vp = new ValidityPeriod(now, now.plusYears(TrustAnchorLifeTimeYears))
-      
-    val subjectDN = new X500Principal("CN=" + name)
-    val manifestUri = publicationDir.resolve(name + ".mft")
-    
-    new X509ResourceCertificateBuilder()
-           .withCa(true)
-           .withAuthorityKeyIdentifier(false)
-           .withSigningKeyPair(keyPair)
-           .withKeyUsage(KeyUsage.cRLSign | KeyUsage.keyCertSign)
-           .withResources(resources)
-           .withValidityPeriod(vp)
-           .withSerial(BigInteger.ONE)
-           .withPublicKey(keyPair.getPublic())
-           .withSubjectDN(subjectDN)
-           .withSubjectKeyIdentifier(true)
-           .withIssuerDN(subjectDN)
-           .withSubjectInformationAccess(new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_CA_REPOSITORY, publicationDir),
-                                         new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_RPKI_MANIFEST, manifestUri))
-           .build()
-    }
-  
 }
 
 case class TrustAnchor(id: UUID, name: String = "", signer: Option[TaSigner] = None, events: List[TaEvent] = List()) {
 
   def applyEvent(event: TaEvent): TrustAnchor = event match {
+    case error: TaError => this // Errors must not have side-effects
     case created: TaCreated => copy(name = created.name, events = events :+ event)
     case signerCreated: TaSignerCreated => copy(signer = Some(TaSigner(signerCreated.signingMaterial)), events = events :+ event)
+    case signerEvent: TaSignerEvent => copy(signer = Some(signer.get.applyEvent(signerEvent)), events = events :+ event)
   }
 
   def initialise(resources: IpResourceSet, taCertificateUri: URI, publicationDir: URI) = {
@@ -80,7 +60,11 @@ case class TrustAnchor(id: UUID, name: String = "", signer: Option[TaSigner] = N
   }
   
   def publish() = {
-    
+    if (signer.isEmpty) {
+      applyEvent(TaError(id, "Trying to publish before initialising TrustAnchor"))
+    } else {
+      applyEvent(signer.get.updatePublishedObjects(id))
+    }
   }
   
   
