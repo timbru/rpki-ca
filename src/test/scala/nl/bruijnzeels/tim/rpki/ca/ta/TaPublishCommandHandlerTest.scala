@@ -22,44 +22,52 @@ class TaPublishCommandHandlerTest extends TrustAnchorTest {
     val taAfterPublish = TaPublishCommandHandler.handle(TaPublish(ta.id), ta)
 
     // then
-    val events = taAfterPublish.events
+    val publicationSet = taAfterPublish.signer.get.publicationSet.get
 
-    events should have size (2)
-    val published = events(1).asInstanceOf[TaPublicationSetUpdated]
+    publicationSet.crl should not be (null)
+    publicationSet.mft should not be (null)
 
-    published.publicationSet.crl should not be (null)
-    published.publicationSet.mft should not be (null)
+    publicationSet.crl.getNumber() should be(BigInteger.ONE)
+    publicationSet.crl.getRevokedCertificates() should have size (0)
 
-    published.publicationSet.crl.getNumber() should be(BigInteger.ONE)
-    published.publicationSet.crl.getRevokedCertificates() should have size (0)
+    publicationSet.mft.getNumber() should be(BigInteger.ONE)
+    publicationSet.mft.getFileNames() should have size (1)
+    publicationSet.mft.getFileNames() should contain(RpkiObjectNameSupport.deriveName(publicationSet.crl))
 
-    published.publicationSet.mft.getNumber() should be(BigInteger.ONE)
-    published.publicationSet.mft.getFileNames() should have size (1)
-    published.publicationSet.mft.getFileNames() should contain(RpkiObjectNameSupport.deriveName(published.publicationSet.crl))
-
-    val mftCertificate = published.publicationSet.mft.getCertificate()
+    val mftCertificate = publicationSet.mft.getCertificate()
     mftCertificate.getSerialNumber() should equal(BigInteger.ONE)
     mftCertificate.isResourceSetInherited() should be(true)
+
+    // make sure that the events can be re-applied
+    taAfterPublish should equal(givenInitialisedTa.applyEvents(taAfterPublish.events))
   }
 
   test("Should create new manifest and CRL when publishing again") {
 
     // given
     val ta = givenInitialisedTa
+    val taAfter1stPublish = TaPublishCommandHandler.handle(TaPublish(ta.id), ta)
 
     // when
-    val taAfter1stPublish = TaPublishCommandHandler.handle(TaPublish(ta.id), ta)
     val taAfter2ndPublish = TaPublishCommandHandler.handle(TaPublish(ta.id), taAfter1stPublish)
 
     // then
-    taAfter2ndPublish.events should have size (4)
-    val first = taAfter2ndPublish.events(1).asInstanceOf[TaPublicationSetUpdated]
-    val second = taAfter2ndPublish.events(3).asInstanceOf[TaPublicationSetUpdated]
+    val signerFor2nd = taAfter2ndPublish.signer.get
+    val publicationSetFor2nd = signerFor2nd.publicationSet.get
 
-    second.publicationSet.mft.getNumber() should equal(BigInteger.valueOf(2))
-    second.publicationSet.mft.getCertificate().getSerialNumber() should equal(BigInteger.valueOf(2))
-    second.publicationSet.crl.getNumber() should equal(BigInteger.valueOf(2))
+    val signerFor1st = taAfter1stPublish.signer.get
+    val publicationSetFor1st = signerFor1st.publicationSet.get
 
+    publicationSetFor2nd.mft.getNumber() should equal(BigInteger.valueOf(2))
+    publicationSetFor2nd.mft.getCertificate().getSerialNumber() should equal(BigInteger.valueOf(2))
+
+    publicationSetFor2nd.crl.getNumber() should equal(BigInteger.valueOf(2))
+    publicationSetFor2nd.crl.getRevokedCertificates() should have size (1)
+    publicationSetFor2nd.crl.isRevoked(publicationSetFor1st.mft.getCertificate().getCertificate()) should be(true)
+    publicationSetFor2nd.crl.isRevoked(publicationSetFor2nd.mft.getCertificate().getCertificate()) should be(false)
+
+    // make sure that the events can be re-applied
+    taAfter2ndPublish should equal(givenInitialisedTa.applyEvents(taAfter2ndPublish.events))
   }
 
 }

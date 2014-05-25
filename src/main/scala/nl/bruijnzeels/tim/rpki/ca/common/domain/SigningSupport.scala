@@ -30,7 +30,8 @@ case class SigningMaterial(keyPair: KeyPair, currentCertificate: X509ResourceCer
   def crlPublicationUri = currentCertificate.getRepositoryUri().resolve(RpkiObjectNameSupport.deriveMftFileNameForKey(keyPair.getPublic()))
 }
 
-case class CrlRequest(nextUpdateDuration: Period, crlNumber: BigInteger)
+case class Revocation(serial: BigInteger, revocationTime: DateTime, expiryTime: DateTime)
+case class CrlRequest(nextUpdateDuration: Period, crlNumber: BigInteger, revocations: List[Revocation])
 
 case class ManifestRequest(nextUpdateDuration: Period, validityDuration: Period, manifestNumber: BigInteger, publishedObjects: List[CertificateRepositoryObject] = List.empty, certificateSerial: BigInteger)
 case class ManifestEntry(name: String, content: Array[Byte])
@@ -43,13 +44,17 @@ object SigningSupport {
   def createCrl(signingMaterial: SigningMaterial, crlRequest: CrlRequest): X509Crl = {
 
     val now = new DateTime()
-    (new X509CrlBuilder)
+    val builder = (new X509CrlBuilder)
       .withThisUpdateTime(now)
       .withNextUpdateTime(now.plus(crlRequest.nextUpdateDuration))
       .withNumber(crlRequest.crlNumber)
       .withAuthorityKeyIdentifier(signingMaterial.keyPair.getPublic())
       .withIssuerDN(signingMaterial.currentCertificate.getSubject())
-      .build(signingMaterial.keyPair.getPrivate())
+
+    crlRequest.revocations.foldLeft(builder)((b, r) => {
+      if (r.expiryTime.isAfter(now)) b.addEntry(r.serial, r.revocationTime)
+      else b
+    }).build(signingMaterial.keyPair.getPrivate())
   }
 
   def createManifest(signingMaterial: SigningMaterial, manifestRequest: ManifestRequest): ManifestCms = {

@@ -13,25 +13,41 @@ import nl.bruijnzeels.tim.rpki.ca.common.domain.ManifestRequest
 import nl.bruijnzeels.tim.rpki.ca.common.domain.ManifestRequest
 import java.math.BigInteger
 import nl.bruijnzeels.tim.rpki.ca.common.domain.CrlRequest
+import org.joda.time.DateTime
+import nl.bruijnzeels.tim.rpki.ca.common.domain.Revocation
 
 case class TaPublicationSet(number: BigInteger, mft: ManifestCms, crl: X509Crl)
 
-case class TaSigner(signingMaterial: SigningMaterial, publicationSet: Option[TaPublicationSet] = None, lastIssuedSerial: BigInteger = BigInteger.ZERO) {
+case class TaSigner(signingMaterial: SigningMaterial, publicationSet: Option[TaPublicationSet] = None, revocationList: List[Revocation] = List.empty, lastIssuedSerial: BigInteger = BigInteger.ZERO) {
 
   def applyEvent(event: TaSignerEvent): TaSigner = event match {
     case created: TaSignerCreated => TaSigner(created.signingMaterial)
     case publicationSetUpdated: TaPublicationSetUpdated => copy(publicationSet = Some(publicationSetUpdated.publicationSet))
     case certificateSigned: TaCertificateSigned => copy(lastIssuedSerial = certificateSigned.certificate.getSerialNumber())
+    case revoked: TaRevocationAdded => copy(revocationList = revocationList :+ revoked.revocation)
   }
 
   def updatePublishedObjects(id: UUID): List[TaSignerEvent] = {
+
+    var publishEvents: List[TaSignerEvent] = List.empty
 
     val publicationSetNumber = publicationSet match {
       case None => BigInteger.ONE
       case Some(set) => set.number.add(BigInteger.ONE)
     }
 
-    val crlRequest = CrlRequest(nextUpdateDuration = TaSigner.CrlNextUpdate, crlNumber = publicationSetNumber)
+    // revoke the old manifest if we have it
+    val newRevocations = publicationSet match {
+      case None => revocationList
+      case Some(set) => {
+        val oldMftCertificate = set.mft.getCertificate()
+        val mftRevocation = Revocation(oldMftCertificate.getSerialNumber(), new DateTime(), oldMftCertificate.getValidityPeriod().getNotValidAfter())
+        publishEvents = publishEvents :+ TaRevocationAdded(id, mftRevocation)
+        revocationList :+ mftRevocation
+      }
+    }
+
+    val crlRequest = CrlRequest(nextUpdateDuration = TaSigner.CrlNextUpdate, crlNumber = publicationSetNumber, revocations = newRevocations)
     val crl = SigningSupport.createCrl(signingMaterial, crlRequest)
 
     val mftRequest = ManifestRequest(nextUpdateDuration = TaSigner.MftNextUpdate,
@@ -41,8 +57,10 @@ case class TaSigner(signingMaterial: SigningMaterial, publicationSet: Option[TaP
       certificateSerial = lastIssuedSerial.add(BigInteger.ONE))
     val mft = SigningSupport.createManifest(signingMaterial, mftRequest)
 
-    List(TaCertificateSigned(id, mft.getCertificate()),
+    publishEvents = publishEvents ++ List(TaCertificateSigned(id, mft.getCertificate()),
       TaPublicationSetUpdated(id, TaPublicationSet(publicationSetNumber, mft, crl)))
+
+    publishEvents
   }
 
 }
