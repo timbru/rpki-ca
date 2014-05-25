@@ -24,8 +24,8 @@ class TaPublishCommandHandlerTest extends TrustAnchorTest {
     // then
     val events = taAfterPublish.events
 
-    events should have size (1)
-    val published = events(0).asInstanceOf[TaPublicationSetUpdated]
+    events should have size (2)
+    val published = events(1).asInstanceOf[TaPublicationSetUpdated]
 
     published.publicationSet.crl should not be (null)
     published.publicationSet.mft should not be (null)
@@ -52,12 +52,14 @@ class TaPublishCommandHandlerTest extends TrustAnchorTest {
     val taAfter2ndPublish = TaPublishCommandHandler.handle(TaPublish(ta.id), taAfter1stPublish)
 
     // then
-    taAfter2ndPublish.events should have size (2)
-    val first = taAfter2ndPublish.events(0).asInstanceOf[TaPublicationSetUpdated]
-    val second = taAfter2ndPublish.events(1).asInstanceOf[TaPublicationSetUpdated]
+    taAfter2ndPublish.events should have size (4)
+    val first = taAfter2ndPublish.events(1).asInstanceOf[TaPublicationSetUpdated]
+    val second = taAfter2ndPublish.events(3).asInstanceOf[TaPublicationSetUpdated]
 
     second.publicationSet.mft.getNumber() should equal(BigInteger.valueOf(2))
+    second.publicationSet.mft.getCertificate().getSerialNumber() should equal(BigInteger.valueOf(2))
     second.publicationSet.crl.getNumber() should equal(BigInteger.valueOf(2))
+
   }
 
 }

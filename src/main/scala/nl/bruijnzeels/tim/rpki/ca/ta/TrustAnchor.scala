@@ -21,6 +21,7 @@ case class TaSigner(signingMaterial: SigningMaterial, publicationSet: Option[TaP
   def applyEvent(event: TaSignerEvent): TaSigner = event match {
     case created: TaSignerCreated => TaSigner(created.signingMaterial)
     case publicationSetUpdated: TaPublicationSetUpdated => copy(publicationSet = Some(publicationSetUpdated.publicationSet))
+    case certificateSigned: TaCertificateSigned => copy(lastIssuedSerial = certificateSigned.certificate.getSerialNumber())
   }
 
   def updatePublishedObjects(id: UUID): List[TaSignerEvent] = {
@@ -40,7 +41,8 @@ case class TaSigner(signingMaterial: SigningMaterial, publicationSet: Option[TaP
       certificateSerial = lastIssuedSerial.add(BigInteger.ONE))
     val mft = SigningSupport.createManifest(signingMaterial, mftRequest)
 
-    List(TaPublicationSetUpdated(id, TaPublicationSet(publicationSetNumber, mft, crl)))
+    List(TaCertificateSigned(id, mft.getCertificate()),
+      TaPublicationSetUpdated(id, TaPublicationSet(publicationSetNumber, mft, crl)))
   }
 
 }
