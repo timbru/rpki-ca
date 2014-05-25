@@ -10,13 +10,6 @@ import org.scalatest.Matchers
 
 abstract class TrustAnchorTest extends FunSuite with Matchers {
 
-  import TrustAnchorTest._
-
-  def givenInitialisedTa: TrustAnchor = TrustAnchor.rebuild(List(created, signerCreated))
-}
-
-object TrustAnchorTest {
-
   val TrustAnchorName = "root"
   val TrustAnchorId = UUID.fromString("fdff6f65-1d4d-4940-8193-7c71911a2ec5")
   val TrustAnchorResources: IpResourceSet = "10/8"
@@ -28,4 +21,7 @@ object TrustAnchorTest {
 
   val TrustAnchorKeyPair = signerCreated.signingMaterial.keyPair
 
+  def givenUninitialisedTa: TrustAnchor = TrustAnchor.rebuild(List(created))
+
+  def givenInitialisedTa: TrustAnchor = TrustAnchor.rebuild(List(created, signerCreated))
 }

@@ -11,8 +11,6 @@ import org.scalatest.Matchers
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TrustAnchorEventSourceTest extends TrustAnchorTest {
 
-  import TrustAnchorTest._
-
   test("Should reconstitute from events") {
     val ta = givenInitialisedTa
 

@@ -10,7 +10,6 @@ import nl.bruijnzeels.tim.rpki.ca.common.domain.Revocation
 
 sealed trait TaEvent extends Event
 
-case class TaError(id: UUID, message: String) extends TaEvent
 case class TaCreated(id: UUID, name: String) extends TaEvent
 case class TaSignerCreated(id: UUID, signingMaterial: SigningMaterial) extends TaEvent
 

@@ -9,7 +9,7 @@ import org.scalatest.FunSuite
 import org.scalatest.Matchers
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class TaCreateCommandHandlerTest extends FunSuite with Matchers {
+class TaCreateCommandHandlerTest extends TrustAnchorTest {
 
   test("Should initialise TA with KeyPair and self-signed certificate") {
 
@@ -30,7 +30,12 @@ class TaCreateCommandHandlerTest extends FunSuite with Matchers {
     signerCreatedEvent.id should equal(id)
     signerCreatedEvent.signingMaterial.certificateUri should equal(taUri)
     signerCreatedEvent.signingMaterial.currentCertificate.getResources() should equal(taResources)
+  }
 
+  test("Should not be allowed to initialise TA twice") {
+    val ta = givenInitialisedTa
+    val e = intercept[TrustAnchorException] { ta.initialise("10/8", "rsync://localhost/ta/root.cer", "rsync://localhost/ta/pub/") }
+    e.getMessage() should equal("This TA is already initialised")
   }
 
 }

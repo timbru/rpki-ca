@@ -27,7 +27,12 @@ case class TaSigner(signingMaterial: SigningMaterial, publicationSet: Option[TaP
     case revoked: TaRevocationAdded => copy(revocationList = revocationList :+ revoked.revocation)
   }
 
-  def updatePublishedObjects(id: UUID): List[TaSignerEvent] = {
+  /**
+   * Create a new publication set with an updated CRL and MFT for all current objects
+   *
+   * @return: A list of events
+   */
+  def publish(id: UUID): List[TaSignerEvent] = {
 
     var publishEvents: List[TaSignerEvent] = List.empty
 
@@ -80,6 +85,8 @@ object TaSigner {
   }
 }
 
+class TrustAnchorException(msg: String) extends RuntimeException(msg)
+
 case class TrustAnchor(id: UUID, name: String = "", signer: Option[TaSigner] = None, events: List[TaEvent] = List()) {
 
   def applyEvents(events: List[TaEvent]): TrustAnchor = {
@@ -87,21 +94,29 @@ case class TrustAnchor(id: UUID, name: String = "", signer: Option[TaSigner] = N
   }
 
   def applyEvent(event: TaEvent): TrustAnchor = event match {
-    case error: TaError => this // Errors must not have side-effects
     case created: TaCreated => copy(name = created.name, events = events :+ event)
     case signerCreated: TaSignerCreated => copy(signer = Some(TaSigner(signerCreated.signingMaterial)), events = events :+ event)
     case signerEvent: TaSignerEvent => copy(signer = Some(signer.get.applyEvent(signerEvent)), events = events :+ event)
   }
 
-  def initialise(resources: IpResourceSet, taCertificateUri: URI, publicationDir: URI) = {
+  /**
+   * Creates a signer for this TrustAnchor
+   */
+  def initialise(resources: IpResourceSet, taCertificateUri: URI, publicationDir: URI): TrustAnchor = {
+    if (signer.isDefined) {
+      throw new TrustAnchorException("This TA is already initialised")
+    }
     applyEvent(TaSigner.create(id, name, resources, taCertificateUri, publicationDir))
   }
 
-  def publish() = {
+  /**
+   * Create a new publication set with an updated CRL and MFT for all current objects
+   */
+  def publish(): TrustAnchor = {
     if (signer.isEmpty) {
-      applyEvent(TaError(id, "Trying to publish before initialising TrustAnchor"))
+      throw new TrustAnchorException("Trying to publish before initialising TrustAnchor")
     } else {
-      applyEvents(signer.get.updatePublishedObjects(id))
+      applyEvents(signer.get.publish(id))
     }
   }
 
