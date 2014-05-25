@@ -2,51 +2,69 @@ package nl.bruijnzeels.tim.rpki.ca.ta
 
 import java.net.URI
 import java.util.UUID
-
 import org.joda.time.Period
-
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
 import net.ripe.rpki.commons.crypto.crl.X509Crl
-
 import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
 import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningMaterial
 import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningSupport
+import nl.bruijnzeels.tim.rpki.ca.common.domain.ManifestRequest
+import nl.bruijnzeels.tim.rpki.ca.common.domain.ManifestRequest
+import java.math.BigInteger
+import nl.bruijnzeels.tim.rpki.ca.common.domain.CrlRequest
 
-case class TaSigner(signingMaterial: SigningMaterial, mft: Option[ManifestCms] = None, crl: Option[X509Crl] = None) {
-  
+case class TaPublicationSet(number: BigInteger, mft: ManifestCms, crl: X509Crl)
+
+case class TaSigner(signingMaterial: SigningMaterial, publicationSet: Option[TaPublicationSet] = None, lastIssuedSerial: BigInteger = BigInteger.ZERO) {
+
   def applyEvent(event: TaSignerEvent): TaSigner = event match {
     case created: TaSignerCreated => TaSigner(created.signingMaterial)
-    case published: TaSignerPublished => copy(mft = Some(published.mft), crl = Some(published.crl)) 
+    case publicationSetUpdated: TaPublicationSetUpdated => copy(publicationSet = Some(publicationSetUpdated.publicationSet))
   }
-  
-  def updatePublishedObjects(id: UUID): TaSignerPublished = {
-    val crl = SigningSupport.createCrl(signingMaterial, TaSigner.CrlNextUpdate)
-    val mft = SigningSupport.createManifest(signingMaterial, TaSigner.MftNextUpdate, TaSigner.MftValidityTime)
-    
-    TaSignerPublished(id, crl, mft)
+
+  def updatePublishedObjects(id: UUID): List[TaSignerEvent] = {
+
+    val publicationSetNumber = publicationSet match {
+      case None => BigInteger.ONE
+      case Some(set) => set.number.add(BigInteger.ONE)
+    }
+
+    val crlRequest = CrlRequest(nextUpdateDuration = TaSigner.CrlNextUpdate, crlNumber = publicationSetNumber)
+    val crl = SigningSupport.createCrl(signingMaterial, crlRequest)
+
+    val mftRequest = ManifestRequest(nextUpdateDuration = TaSigner.MftNextUpdate,
+      validityDuration = TaSigner.MftValidityTime,
+      manifestNumber = publicationSetNumber,
+      publishedObjects = List(crl),
+      certificateSerial = lastIssuedSerial.add(BigInteger.ONE))
+    val mft = SigningSupport.createManifest(signingMaterial, mftRequest)
+
+    List(TaPublicationSetUpdated(id, TaPublicationSet(publicationSetNumber, mft, crl)))
   }
-  
-  
-  
+
 }
 
 object TaSigner {
-  
+
   val TrustAnchorLifeTime = Period.years(5)
   val CrlNextUpdate = Period.hours(24)
   val MftNextUpdate = Period.days(1)
   val MftValidityTime = Period.days(7)
-  
+
   def create(id: UUID, name: String, resources: IpResourceSet, taCertificateUri: URI, publicationDir: URI): TaSignerCreated = {
     val keyPair = KeyPairSupport.createRpkiKeyPair
-    val certificate = SigningSupport.createRootCertificate(name, keyPair, resources, publicationDir, TrustAnchorLifeTime) 
+    val certificate = SigningSupport.createRootCertificate(name, keyPair, resources, publicationDir, TrustAnchorLifeTime)
 
     TaSignerCreated(id, SigningMaterial(keyPair, certificate, taCertificateUri))
   }
 }
 
 case class TrustAnchor(id: UUID, name: String = "", signer: Option[TaSigner] = None, events: List[TaEvent] = List()) {
+
+  def applyEvents(events: List[TaEvent]): TrustAnchor = {
+    events.foldLeft(this)((updated, event) => updated.applyEvent(event))
+  }
 
   def applyEvent(event: TaEvent): TrustAnchor = event match {
     case error: TaError => this // Errors must not have side-effects
@@ -58,31 +76,25 @@ case class TrustAnchor(id: UUID, name: String = "", signer: Option[TaSigner] = N
   def initialise(resources: IpResourceSet, taCertificateUri: URI, publicationDir: URI) = {
     applyEvent(TaSigner.create(id, name, resources, taCertificateUri, publicationDir))
   }
-  
+
   def publish() = {
     if (signer.isEmpty) {
       applyEvent(TaError(id, "Trying to publish before initialising TrustAnchor"))
     } else {
-      applyEvent(signer.get.updatePublishedObjects(id))
+      applyEvents(signer.get.updatePublishedObjects(id))
     }
   }
-  
-  
+
 }
 
 object TrustAnchor {
 
   def rebuild(events: List[TaEvent]): TrustAnchor = {
-    var ta = TrustAnchor(events(0).id)
-    for (e <- events) {
-      ta = ta.applyEvent(e)
-    }
-    ta.copy(events = List())
+    TrustAnchor(events(0).id).applyEvents(events).copy(events = List())
   }
 
   def create(id: UUID, name: String): TrustAnchor = {
-    val ta = TrustAnchor(id)
-    ta.applyEvent(TaCreated(id, name))
+    TrustAnchor(id).applyEvent(TaCreated(id, name))
   }
 
 }

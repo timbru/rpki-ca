@@ -9,7 +9,7 @@ import org.scalatest.FunSuite
 import org.scalatest.Matchers
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class CreateTaCommandHandlerTest extends FunSuite with Matchers {
+class TaCreateCommandHandlerTest extends FunSuite with Matchers {
 
   test("Should initialise TA with KeyPair and self-signed certificate") {
 

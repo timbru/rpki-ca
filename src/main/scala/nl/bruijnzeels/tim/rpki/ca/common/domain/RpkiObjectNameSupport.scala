@@ -37,7 +37,9 @@ object RpkiObjectNameSupport {
     new X500Principal("CN=" + hexEncodePubKey(publicKey))
   }
 
-  def deriveMftFileNameForCertificate(publishingCertificatePublicKey: PublicKey): String = hexEncodePubKey(publishingCertificatePublicKey) + ".mft"
+  def deriveCrlFileNameForKey(publicKey: PublicKey): String = hexEncodePubKey(publicKey) + ".crl"
+
+  def deriveMftFileNameForKey(publicKey: PublicKey): String = hexEncodePubKey(publicKey) + ".mft"
 
   def deriveName(rpkiRepositoryObject: CertificateRepositoryObject): String = rpkiRepositoryObject match {
     case crl: X509Crl => hexEncodeKeyIdentifier(crl.getAuthorityKeyIdentifier()) + ".crl"

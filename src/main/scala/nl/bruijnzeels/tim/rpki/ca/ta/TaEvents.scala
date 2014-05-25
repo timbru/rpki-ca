@@ -16,6 +16,5 @@ case class TaSignerCreated(id: UUID, signingMaterial: SigningMaterial) extends T
 
 sealed trait TaSignerEvent extends TaEvent
 
-case class TaSignerPublished(id: UUID, crl: X509Crl, mft: ManifestCms) extends TaSignerEvent
-
+case class TaPublicationSetUpdated(id: UUID, publicationSet: TaPublicationSet) extends TaSignerEvent
 
