@@ -1,20 +1,26 @@
 package nl.bruijnzeels.tim.rpki.ca.ta
 
+import java.math.BigInteger
 import java.net.URI
 import java.util.UUID
+import org.joda.time.DateTime
 import org.joda.time.Period
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
 import net.ripe.rpki.commons.crypto.crl.X509Crl
+import nl.bruijnzeels.tim.rpki.ca.common.domain.CrlRequest
 import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
+import nl.bruijnzeels.tim.rpki.ca.common.domain.ManifestRequest
+import nl.bruijnzeels.tim.rpki.ca.common.domain.Revocation
 import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningMaterial
 import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningSupport
-import nl.bruijnzeels.tim.rpki.ca.common.domain.ManifestRequest
-import nl.bruijnzeels.tim.rpki.ca.common.domain.ManifestRequest
-import java.math.BigInteger
-import nl.bruijnzeels.tim.rpki.ca.common.domain.CrlRequest
-import org.joda.time.DateTime
-import nl.bruijnzeels.tim.rpki.ca.common.domain.Revocation
+import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
+import java.security.PublicKey
+
+
+case class ChildKey(publicKey: PublicKey, currentCertificate: Option[X509ResourceCertificate])
+case class ChildResourceClass(name: String, entitledResources: IpResourceSet, knownKeys: List[ChildKey] = List.empty)
+case class Child(id: UUID, resourceClasses: List[ChildResourceClass] = List.empty)
 
 case class TaPublicationSet(number: BigInteger, mft: ManifestCms, crl: X509Crl)
 
@@ -87,7 +93,7 @@ object TaSigner {
 
 class TrustAnchorException(msg: String) extends RuntimeException(msg)
 
-case class TrustAnchor(id: UUID, name: String = "", signer: Option[TaSigner] = None, events: List[TaEvent] = List()) {
+case class TrustAnchor(id: UUID, name: String = "", signer: Option[TaSigner] = None, children: List[Child] = List.empty, events: List[TaEvent] = List.empty) {
 
   def applyEvents(events: List[TaEvent]): TrustAnchor = {
     events.foldLeft(this)((updated, event) => updated.applyEvent(event))
@@ -95,6 +101,7 @@ case class TrustAnchor(id: UUID, name: String = "", signer: Option[TaSigner] = N
 
   def applyEvent(event: TaEvent): TrustAnchor = event match {
     case created: TaCreated => copy(name = created.name, events = events :+ event)
+    case childAdded: TaChildAdded => copy(children = children :+ childAdded.child, events = events :+ event)
     case signerCreated: TaSignerCreated => copy(signer = Some(TaSigner(signerCreated.signingMaterial)), events = events :+ event)
     case signerEvent: TaSignerEvent => copy(signer = Some(signer.get.applyEvent(signerEvent)), events = events :+ event)
   }
@@ -118,6 +125,16 @@ case class TrustAnchor(id: UUID, name: String = "", signer: Option[TaSigner] = N
     } else {
       applyEvents(signer.get.publish(id))
     }
+  }
+  
+  /**
+   * Add a new child, throws exception if child already exists with same id
+   */
+  def addChild(childId: UUID): TrustAnchor = {
+    if (children.exists(_.id == childId)) {
+      throw new TrustAnchorException(s"Child with id: ${childId} already exists")
+    }
+    applyEvent(TaChildAdded(id, Child(id = childId)))
   }
 
 }

@@ -11,3 +11,5 @@ sealed trait TaCommand extends Command {
 
 case class TaCreate(id: UUID, name: String, resources: IpResourceSet, taCertificateUri: URI, publicationUri: URI) extends TaCommand
 case class TaPublish(id: UUID) extends TaCommand
+
+case class TaChildAdd(id: UUID, childId: UUID) extends TaCommand

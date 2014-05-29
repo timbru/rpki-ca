@@ -1,14 +1,8 @@
 package nl.bruijnzeels.tim.rpki.ca.ta
 
-import java.net.URI
-import java.util.UUID
-import net.ripe.ipresource.IpResourceSet
-import org.scalatest.FunSuite
-import org.scalatest.Matchers
-import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
-import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
 import java.math.BigInteger
-import java.math.BigInteger
+
+import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TaPublishCommandHandlerTest extends TrustAnchorTest {

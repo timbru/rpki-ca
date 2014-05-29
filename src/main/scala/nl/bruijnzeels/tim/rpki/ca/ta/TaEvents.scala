@@ -12,6 +12,7 @@ sealed trait TaEvent extends Event
 
 case class TaCreated(id: UUID, name: String) extends TaEvent
 case class TaSignerCreated(id: UUID, signingMaterial: SigningMaterial) extends TaEvent
+case class TaChildAdded(id: UUID, child: Child) extends TaEvent
 
 sealed trait TaSignerEvent extends TaEvent
 

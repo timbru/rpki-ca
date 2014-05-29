@@ -15,6 +15,8 @@ abstract class TrustAnchorTest extends FunSuite with Matchers {
   val TrustAnchorResources: IpResourceSet = "10/8"
   val TrustAnchorCertificateUri: URI = "rsync://localhost/ta.cer"
   val TrustAnchorPublicationUri: URI = "rsync://localhost/ta/"
+    
+  val TrustAnchorChildId = UUID.fromString("b716cfff-a58c-426c-81bf-096ae78abed7")
 
   val created = TaCreated(TrustAnchorId, TrustAnchorName)
   val signerCreated = TaSigner.create(TrustAnchorId, TrustAnchorName, TrustAnchorResources, TrustAnchorCertificateUri, TrustAnchorPublicationUri)
