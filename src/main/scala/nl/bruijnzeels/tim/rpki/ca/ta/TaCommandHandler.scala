@@ -16,7 +16,9 @@ case class TaCommandDispatcher() {
     val updatedTa = command match {
       case create: TaCreate => TaCreateCommandHandler.handle(create)
       case publish: TaPublish => TaPublishCommandHandler.handle(publish, existingTa.get)
-      case addChild: TaChildAdd => TaChildAddCommandHandler.handle(addChild, existingTa.get)
+      case childAdd: TaChildAdd => TaChildAddCommandHandler.handle(childAdd, existingTa.get)
+      case childSetEntitlements: TaChildSetResourceEntitlements => TaChildSetResourceEntitlementsCommandHandler.handle(childSetEntitlements, existingTa.get)
+      case childRequestCertificate: TaChildRequestResourceCertificate => TaChildRequestResourceCertificateCommandHandler.handle(childRequestCertificate, existingTa.get)
     }
 
     TaStore.save(updatedTa)
@@ -37,5 +39,13 @@ object TaPublishCommandHandler extends TaCommandHandler[TaPublish] {
 
 object TaChildAddCommandHandler extends TaCommandHandler[TaChildAdd] {
   override def handle(command: TaChildAdd, ta: TrustAnchor) = ta.addChild(command.childId)
+}
+
+object TaChildSetResourceEntitlementsCommandHandler extends TaCommandHandler[TaChildSetResourceEntitlements] {
+  override def handle(command: TaChildSetResourceEntitlements, ta: TrustAnchor) = ta.childSetResourceEntitlements(command.childId, command.entitlements)
+}
+
+object TaChildRequestResourceCertificateCommandHandler extends TaCommandHandler[TaChildRequestResourceCertificate] {
+  override def handle(command: TaChildRequestResourceCertificate, ta: TrustAnchor) = ta.childProcessResourceCertificateRequest(command.childId, command.request)
 }
 

@@ -12,6 +12,8 @@ class TaChildAddCommandHandlerTest extends TrustAnchorTest {
     
     child.id should equal(TrustAnchorChildId)
     child.resourceClasses should have size (0)
+    
+    ta should equal(givenInitialisedTa.applyEvents(ta.events))
   }
 
 }

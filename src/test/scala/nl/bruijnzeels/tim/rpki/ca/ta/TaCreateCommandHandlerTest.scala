@@ -35,7 +35,7 @@ class TaCreateCommandHandlerTest extends TrustAnchorTest {
   test("Should not be allowed to initialise TA twice") {
     val ta = givenInitialisedTa
     val e = intercept[TrustAnchorException] { ta.initialise("10/8", "rsync://localhost/ta/root.cer", "rsync://localhost/ta/pub/") }
-    e.getMessage() should equal("This TA is already initialised")
+    e.getMessage() should equal("Signer already initialised")
   }
 
 }

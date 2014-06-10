@@ -2,11 +2,11 @@ package nl.bruijnzeels.tim.rpki.ca.ta
 
 import java.net.URI
 import java.util.UUID
-
 import net.ripe.ipresource.IpResourceSet
-
 import org.scalatest.FunSuite
 import org.scalatest.Matchers
+import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
+import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
 
 abstract class TrustAnchorTest extends FunSuite with Matchers {
 
@@ -20,10 +20,18 @@ abstract class TrustAnchorTest extends FunSuite with Matchers {
 
   val created = TaCreated(TrustAnchorId, TrustAnchorName)
   val signerCreated = TaSigner.create(TrustAnchorId, TrustAnchorName, TrustAnchorResources, TrustAnchorCertificateUri, TrustAnchorPublicationUri)
-
   val TrustAnchorKeyPair = signerCreated.signingMaterial.keyPair
 
-  def givenUninitialisedTa: TrustAnchor = TrustAnchor.rebuild(List(created))
+  
+  val ChildPublicationUri: URI = s"rsync://localhost/${TrustAnchorChildId}/"
+  val ChildPublicationMftUri: URI = ChildPublicationUri.resolve("child.mft")
+  val ChildKeyPair = KeyPairSupport.createRpkiKeyPair
+  val ChildSubject = RpkiObjectNameSupport.deriveSubject(ChildKeyPair.getPublic()) 
 
+  val childCreated = TaChildAdded(TrustAnchorId, Child(TrustAnchorId, TrustAnchorChildId))
+
+
+  def givenUninitialisedTa: TrustAnchor = TrustAnchor.rebuild(List(created))
   def givenInitialisedTa: TrustAnchor = TrustAnchor.rebuild(List(created, signerCreated))
+  def givenTaWithChild: TrustAnchor = TrustAnchor.rebuild(List(created, signerCreated, childCreated))
 }

@@ -10,7 +10,7 @@ class TaPublishCommandHandlerTest extends TrustAnchorTest {
   test("Should fail with sensible error if the ta is not initialised") {
     val ta = givenUninitialisedTa
     val e = intercept[TrustAnchorException] { TaPublishCommandHandler.handle(TaPublish(ta.id), ta) }
-    e.getMessage() should equal("Trying to publish before initialising TrustAnchor")
+    e.getMessage() should equal("No signer initialised")
   }
 
   test("Should create manifest and CRL for freshly initialised TA without other signed objects") {
