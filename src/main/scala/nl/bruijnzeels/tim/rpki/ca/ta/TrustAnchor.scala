@@ -20,50 +20,86 @@ import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssua
 import net.ripe.ipresource.IpResourceType
 import scala.collection.JavaConverters._
 import nl.bruijnzeels.tim.rpki.ca.common.domain.IpResourceSupport
+import org.bouncycastle.pkcs.PKCS10CertificationRequest
+import nl.bruijnzeels.tim.rpki.ca.common.domain.ChildCertificateSignRequest
 
-case class ChildKey(publicKey: PublicKey, currentCertificate: Option[X509ResourceCertificate])
-case class ChildResourceClass(name: String, entitledResources: IpResourceSet, knownKeys: List[ChildKey] = List.empty)
+case class ChildKeyCertificates(currentCertificate: X509ResourceCertificate, oldCertificates: List[X509ResourceCertificate] = List.empty) {
 
-case class Child(taId: UUID, id: UUID, resourceClasses: List[ChildResourceClass] = List.empty, log: List[String] = List.empty) {
+  def withNewCertificate(certificate: X509ResourceCertificate) = copy(currentCertificate = certificate, oldCertificates = oldCertificates :+ currentCertificate)
 
-  def applyEvent(event: TaChildEvent) = event match {
-    case rcAdded: TaChildResourceClassAdded => copy(resourceClasses = resourceClasses :+ ChildResourceClass(rcAdded.entitlement.resourceClassName, rcAdded.entitlement.entitledResources))
-    case rcRemoved: TaChildResourceClassRemoved => copy(resourceClasses = resourceClasses.filterNot(_.name == rcRemoved.name))
-    case requestRejected: TaChildCertificateRequestRejected => copy(log = log :+ requestRejected.reason)
-    case _ => ???
-  }
+}
 
-  def updateEntitlements(entitlements: List[ResourceEntitlement]): List[TaChildEvent] = {
-    findNewEntitlements(entitlements).map(ne => TaChildResourceClassAdded(taId, id, ne)) ++
-      findRemovedResourceClasses(entitlements).map(rc => TaChildResourceClassRemoved(taId, id, rc.name))
-  }
+case class ChildResourceClass(entitledResources: IpResourceSet, knownKeys: Map[PublicKey, ChildKeyCertificates] = Map.empty) {
 
-  private def findNewEntitlements(entitlements: List[ResourceEntitlement]) = {
-    val existingResourceClassNames = resourceClasses.map(_.name)
-    entitlements.filter(ne => !existingResourceClassNames.contains(ne.resourceClassName))
-  }
-
-  private def findExistingResourceClasses(entitlements: List[ResourceEntitlement]) = {
-    val currentRCNames = entitlements.map(_.resourceClassName)
-    resourceClasses.filter(rc => currentRCNames.contains(rc.name))
-  }
-
-  private def findRemovedResourceClasses(entitlements: List[ResourceEntitlement]) = {
-    val currentRCNames = entitlements.map(_.resourceClassName)
-    resourceClasses.filter(rc => !currentRCNames.contains(rc.name))
+  def certificateReceived(certificate: X509ResourceCertificate) = {
+    val pubKey = certificate.getPublicKey
+    val childCertificates = knownKeys.get(pubKey) match {
+      case None => ChildKeyCertificates(certificate)
+      case Some(ckc) => ckc.withNewCertificate(certificate)
+    }
+    copy(knownKeys = knownKeys + (pubKey -> childCertificates))
   }
 
 }
 
-case class TaPublicationSet(number: BigInteger, mft: ManifestCms, crl: X509Crl)
+case class Child(taId: UUID, id: UUID, resourceClasses: Map[String, ChildResourceClass] = Map.empty, log: List[String] = List.empty) {
+
+  def applyEvent(event: TaChildEvent) = event match {
+    case rcAdded: TaChildResourceClassAdded => copy(resourceClasses = resourceClasses + (rcAdded.entitlement.resourceClassName -> ChildResourceClass(rcAdded.entitlement.entitledResources)))
+    case rcRemoved: TaChildResourceClassRemoved => copy(resourceClasses = resourceClasses - (rcRemoved.name))
+    case requestRejected: TaChildCertificateRequestRejected => copy(log = log :+ requestRejected.reason)
+    case certReceived: TaChildCertificateReceived => {
+      val rcName = certReceived.resourceClassName
+      val cert = certReceived.certificate
+      val updatedRC = resourceClasses.getOrElse(rcName, throw new TrustAnchorException("Certificate received for unknown resource class")).certificateReceived(cert)
+      copy(resourceClasses = resourceClasses + (rcName -> updatedRC), log = log :+ "Certificate received: " + cert.getSubject())
+    }
+  }
+
+  def updateEntitlements(entitlements: List[ResourceEntitlement]): List[TaChildEvent] = {
+    findNewEntitlements(entitlements).map(ne => TaChildResourceClassAdded(taId, id, ne)) ++
+      findRemovedResourceClasses(entitlements).map(removed => TaChildResourceClassRemoved(taId, id, removed))
+  }
+
+  private def findNewEntitlements(entitlements: List[ResourceEntitlement]) = {
+    entitlements.filter(ne => !resourceClasses.isDefinedAt(ne.resourceClassName))
+  }
+
+  //  private def findExistingResourceClasses(entitlements: List[ResourceEntitlement]) = {
+  //    val currentRCNames = entitlements.map(_.resourceClassName)
+  //    resourceClasses.filter(rc => currentRCNames.contains(rc.name))
+  //  }
+
+  private def findRemovedResourceClasses(entitlements: List[ResourceEntitlement]) = {
+    val newNames = entitlements.map(_.resourceClassName)
+    resourceClasses.filter(rc => !newNames.contains(rc._1)).keys.toList
+  }
+
+}
+
+case class TaPublicationSet(number: BigInteger, mft: ManifestCms, crl: X509Crl, certs: Map[PublicKey, X509ResourceCertificate] = Map.empty)
 
 case class TaSigner(signingMaterial: SigningMaterial, publicationSet: Option[TaPublicationSet] = None, revocationList: List[Revocation] = List.empty, lastIssuedSerial: BigInteger = BigInteger.ZERO) {
 
   def applyEvent(event: TaSignerEvent): TaSigner = event match {
     case created: TaSignerCreated => TaSigner(created.signingMaterial)
     case publicationSetUpdated: TaPublicationSetUpdated => copy(publicationSet = Some(publicationSetUpdated.publicationSet))
-    case certificateSigned: TaCertificateSigned => copy(lastIssuedSerial = certificateSigned.certificate.getSerialNumber())
+    case taCertificateSigned: TaCertificateSigned => copy(lastIssuedSerial = taCertificateSigned.certificate.getSerialNumber())
+    case childCertificateSigned: TaChildCertificateSigned => copy(lastIssuedSerial = childCertificateSigned.certificate.getSerialNumber())
     case revoked: TaRevocationAdded => copy(revocationList = revocationList :+ revoked.revocation)
+  }
+
+  /**
+   * Sign a child certificate request
+   */
+  def signChildRequest(taId: UUID, resources: IpResourceSet, pkcs10Request: PKCS10CertificationRequest) = {
+    val childCaRequest = ChildCertificateSignRequest(
+      pkcs10Request = pkcs10Request,
+      resources = resources,
+      validityDuration = TaSigner.ChildCaLifeTime,
+      serial = lastIssuedSerial.add(BigInteger.ONE))
+
+    TaChildCertificateSigned(taId, SigningSupport.createChildCaCertificate(signingMaterial, childCaRequest))
   }
 
   /**
@@ -71,7 +107,7 @@ case class TaSigner(signingMaterial: SigningMaterial, publicationSet: Option[TaP
    *
    * @return: A list of events
    */
-  def publish(id: UUID): List[TaSignerEvent] = {
+  def publish(id: UUID, newCertificate: Option[X509ResourceCertificate] = None): List[TaSignerEvent] = {
 
     var publishEvents: List[TaSignerEvent] = List.empty
 
@@ -91,18 +127,31 @@ case class TaSigner(signingMaterial: SigningMaterial, publicationSet: Option[TaP
       }
     }
 
+    // Make a new CRL
     val crlRequest = CrlRequest(nextUpdateDuration = TaSigner.CrlNextUpdate, crlNumber = publicationSetNumber, revocations = newRevocations)
     val crl = SigningSupport.createCrl(signingMaterial, crlRequest)
+
+    // Determine the list of child certificates to publish
+    val publishedCertificates: Map[PublicKey, X509ResourceCertificate] = publicationSet match {
+      case None => newCertificate match {
+        case None => Map.empty
+        case Some(cert) => Map(cert.getPublicKey() -> cert)
+      }
+      case Some(set) => newCertificate match {
+        case None => set.certs
+        case Some(cert) => set.certs + (cert.getPublicKey -> cert)
+      }
+    }
 
     val mftRequest = ManifestRequest(nextUpdateDuration = TaSigner.MftNextUpdate,
       validityDuration = TaSigner.MftValidityTime,
       manifestNumber = publicationSetNumber,
-      publishedObjects = List(crl),
+      publishedObjects = List(crl) ++ publishedCertificates.values.toList,
       certificateSerial = lastIssuedSerial.add(BigInteger.ONE))
     val mft = SigningSupport.createManifest(signingMaterial, mftRequest)
 
     publishEvents = publishEvents ++ List(TaCertificateSigned(id, mft.getCertificate()),
-      TaPublicationSetUpdated(id, TaPublicationSet(publicationSetNumber, mft, crl)))
+      TaPublicationSetUpdated(id, TaPublicationSet(publicationSetNumber, mft, crl, publishedCertificates)))
 
     publishEvents
   }
@@ -112,6 +161,7 @@ case class TaSigner(signingMaterial: SigningMaterial, publicationSet: Option[TaP
 object TaSigner {
 
   val TrustAnchorLifeTime = Period.years(5)
+  val ChildCaLifeTime = Period.years(1)
   val CrlNextUpdate = Period.hours(24)
   val MftNextUpdate = Period.days(1)
   val MftValidityTime = Period.days(7)
@@ -122,6 +172,7 @@ object TaSigner {
 
     TaSignerCreated(id, SigningMaterial(keyPair, certificate, taCertificateUri))
   }
+
 }
 
 class TrustAnchorException(msg: String) extends RuntimeException(msg)
@@ -200,17 +251,21 @@ case class TrustAnchor(id: UUID, name: String = "", signer: Option[TaSigner] = N
   def childProcessResourceCertificateRequest(childId: UUID, request: CertificateIssuanceRequestPayload) = {
     val child = getChild(childId)
     val resourceClassName = request.getRequestElement().getClassName()
-    
-    child.resourceClasses.find(_.name == resourceClassName) match {
+
+    child.resourceClasses.get(resourceClassName) match {
       case None => applyEvent(TaChildCertificateRequestRejected(id, childId, "Unknown resource class: " + resourceClassName))
       case Some(rc) => {
         try {
-        	val resources = IpResourceSupport.determineResources(rc.entitledResources, request)
-        	
-        	
-            this
+          val resources = IpResourceSupport.determineResources(rc.entitledResources, request)
+          val pkcs10Req = request.getRequestElement().getCertificateRequest()
+
+          val signedEvent = signer.get.signChildRequest(id, resources, pkcs10Req)
+          val publishEvents = signer.get.publish(id, Some(signedEvent.certificate))
+          val receivedEvent = TaChildCertificateReceived(id, childId, resourceClassName, signedEvent.certificate)
+
+          applyEvents(List(signedEvent, receivedEvent) ++ publishEvents)
         } catch {
-          case e: IllegalArgumentException => applyEvent(TaChildCertificateRequestRejected(id, childId, e.getMessage()))
+          case e: Exception => applyEvent(TaChildCertificateRequestRejected(id, childId, e.getMessage()))
         }
       }
     }

@@ -5,14 +5,10 @@ import java.net.URI
 import java.security.KeyPair
 import java.security.PublicKey
 import java.util.EnumSet
-
 import javax.security.auth.x500.X500Principal
-
 import org.bouncycastle.asn1.x509.KeyUsage
-
 import org.joda.time.DateTime
 import org.joda.time.Period
-
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.ipresource.IpResourceType
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
@@ -25,6 +21,9 @@ import net.ripe.rpki.commons.crypto.x509cert.RpkiSignedObjectEeCertificateBuilde
 import net.ripe.rpki.commons.crypto.x509cert.X509CertificateInformationAccessDescriptor
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificateBuilder
+import org.bouncycastle.pkcs.PKCS10CertificationRequest
+import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestParser
+import net.ripe.rpki.commons.crypto.x509cert.RpkiCaCertificateBuilder
 
 case class SigningMaterial(keyPair: KeyPair, currentCertificate: X509ResourceCertificate, certificateUri: URI) {
   def crlPublicationUri = currentCertificate.getRepositoryUri().resolve(RpkiObjectNameSupport.deriveMftFileNameForKey(keyPair.getPublic()))
@@ -38,6 +37,8 @@ case class ManifestEntry(name: String, content: Array[Byte])
 
 case class GenericCertificateSignRequestInfo(pubKey: PublicKey, validityPeriod: ValidityPeriod, serial: BigInteger, resources: IpResourceSet)
 case class EndEntityCertificateSignRequestInfo(rpkiObjectUri: URI, genericInfo: GenericCertificateSignRequestInfo)
+
+case class ChildCertificateSignRequest(pkcs10Request: PKCS10CertificationRequest, resources: IpResourceSet, validityDuration: Period, serial: BigInteger)
 
 object SigningSupport {
 
@@ -103,6 +104,28 @@ object SigningSupport {
     builder.build()
   }
 
+  def createChildCaCertificate(signingMaterial: SigningMaterial, childCaCertRequest: ChildCertificateSignRequest) = {
+    val reqParser = new RpkiCaCertificateRequestParser(childCaCertRequest.pkcs10Request)
+    
+    val builder = new RpkiCaCertificateBuilder
+    builder.withCaRepositoryUri(reqParser.getCaRepositoryUri())
+    builder.withManifestUri(reqParser.getManifestUri())
+    builder.withPublicKey(reqParser.getPublicKey())
+    builder.withResources(childCaCertRequest.resources)
+    builder.withSubjectDN(RpkiObjectNameSupport.deriveSubject(reqParser.getPublicKey()))
+    
+    val now = new DateTime()
+    val validityPeriod = new ValidityPeriod(now, now.plus(childCaCertRequest.validityDuration))
+    builder.withValidityPeriod(validityPeriod)
+    builder.withSerial(childCaCertRequest.serial)
+    
+    builder.withIssuerDN(signingMaterial.currentCertificate.getSubject())
+    builder.withCrlUri(signingMaterial.crlPublicationUri)
+    builder.withParentResourceCertificatePublicationUri(signingMaterial.certificateUri)
+    builder.withSigningKeyPair(signingMaterial.keyPair)
+    builder.build()
+  }
+  
   def createRootCertificate(name: String, keyPair: KeyPair, resources: IpResourceSet, publicationDir: URI, validityDuration: Period) = {
     val now = new DateTime()
     val vp = new ValidityPeriod(now, now.plus(validityDuration))
@@ -126,5 +149,6 @@ object SigningSupport {
         new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_RPKI_MANIFEST, manifestUri))
       .build()
   }
+  
 
 }

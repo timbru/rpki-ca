@@ -31,7 +31,7 @@ case class TaChildResourceClassUpdated(id: UUID, childId: UUID, entitlement: Res
 case class TaChildResourceClassRemoved(id: UUID, childId: UUID, name: String) extends TaChildEvent
 
 //case class TaChildAutomaticCertificateReissuanceRequested(id: UUID, resourceClass: String, resources: IpResourceSet, oldCertificate: X509ResourceCertificate) extends TaChildEvent
-case class TaChildCertificateReceived(id: UUID, childId: UUID, certificate: X509ResourceCertificate) extends TaChildEvent
+case class TaChildCertificateReceived(id: UUID, childId: UUID, resourceClassName: String, certificate: X509ResourceCertificate) extends TaChildEvent
 case class TaChildCertificateRequestRejected(id: UUID, childId: UUID, reason: String) extends TaChildEvent
 
 

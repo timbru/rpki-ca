@@ -46,8 +46,8 @@ class TaChildRequestResourceCertificateCommandHandlerTest extends TrustAnchorTes
     val childAfterRequest = taAfterRequest.children(0)
     childAfterRequest.log should contain("Unknown resource class: my fantasy")
   }
-  
-  ignore("Should honor resource request") {
+
+  test("Should honor resource request") {
     val ChildResourceEntitlement = ResourceEntitlement("private use IP", IpResourceSet.IP_PRIVATE_USE_RESOURCES)
     val command = TaChildSetResourceEntitlements(id = TrustAnchorId, childId = TrustAnchorChildId, entitlements = List(ChildResourceEntitlement))
     val ta = TaChildSetResourceEntitlementsCommandHandler.handle(command, givenTaWithChild)
@@ -56,6 +56,37 @@ class TaChildRequestResourceCertificateCommandHandlerTest extends TrustAnchorTes
 
     val taAfterRequest = TaChildRequestResourceCertificateCommandHandler.handle(childCertificateRequest, ta)
     val childAfterRequest = taAfterRequest.children(0)
-    childAfterRequest.log should contain("Certificate received")
-  }  
+
+    val childKeys = childAfterRequest.resourceClasses.get("private use IP").get.knownKeys
+    childKeys should have size (1)
+    val childCertificate = childKeys.values.head.currentCertificate
+    childCertificate.getResources() should equal(IpResourceSet.IP_PRIVATE_USE_RESOURCES)
+
+    taAfterRequest.signer.get.publicationSet.get.certs.values should contain(childCertificate)
+  }
+
+  test("Should sign valid request and only publish the latest certificate for key") {
+    val ChildResourceEntitlement = ResourceEntitlement("private use IP", IpResourceSet.IP_PRIVATE_USE_RESOURCES)
+    val command = TaChildSetResourceEntitlements(id = TrustAnchorId, childId = TrustAnchorChildId, entitlements = List(ChildResourceEntitlement))
+    val ta = TaChildSetResourceEntitlementsCommandHandler.handle(command, givenTaWithChild)
+
+    val firstChildCertificateRequest = createRequest(ChildResourceEntitlement.resourceClassName)
+    val taAfterFirstRequest = TaChildRequestResourceCertificateCommandHandler.handle(firstChildCertificateRequest, ta)
+    val childAfterFirstRequest = taAfterFirstRequest.children(0)
+
+    val firstChildCertificate = childAfterFirstRequest.resourceClasses.get("private use IP").get.knownKeys.values.head.currentCertificate
+    taAfterFirstRequest.signer.get.publicationSet.get.certs.values should contain(firstChildCertificate)
+
+    val secondChildCertificateRequest = createRequest(ChildResourceEntitlement.resourceClassName)
+    val taAfterSecondRequest = TaChildRequestResourceCertificateCommandHandler.handle(secondChildCertificateRequest, taAfterFirstRequest)
+    val childAfterSecondRequest = taAfterSecondRequest.children(0)
+
+    val secondChildCertificate = childAfterSecondRequest.resourceClasses.get("private use IP").get.knownKeys.values.head.currentCertificate
+    firstChildCertificate should not equal (secondChildCertificate)
+
+    taAfterSecondRequest.signer.get.publicationSet.get.certs.values should not contain (firstChildCertificate)
+    taAfterSecondRequest.signer.get.publicationSet.get.certs.values should contain(secondChildCertificate)
+
+  }
+
 }
