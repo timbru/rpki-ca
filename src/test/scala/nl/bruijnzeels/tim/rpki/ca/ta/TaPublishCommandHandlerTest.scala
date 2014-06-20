@@ -52,11 +52,11 @@ class TaPublishCommandHandlerTest extends TrustAnchorTest {
     val taAfter2ndPublish = TaPublishCommandHandler.handle(TaPublish(ta.id), taAfter1stPublish)
 
     // then
-    val signerFor2nd = taAfter2ndPublish.signer.get
-    val publicationSetFor2nd = signerFor2nd.publicationSet.get
-
     val signerFor1st = taAfter1stPublish.signer.get
     val publicationSetFor1st = signerFor1st.publicationSet.get
+
+    val signerFor2nd = taAfter2ndPublish.signer.get
+    val publicationSetFor2nd = signerFor2nd.publicationSet.get
 
     publicationSetFor2nd.mft.getNumber() should equal(BigInteger.valueOf(2))
     publicationSetFor2nd.mft.getCertificate().getSerialNumber() should equal(BigInteger.valueOf(2))

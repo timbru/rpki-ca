@@ -7,6 +7,8 @@ import org.scalatest.FunSuite
 import org.scalatest.Matchers
 import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
 import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
+import nl.bruijnzeels.tim.rpki.ca.core.Child
+import nl.bruijnzeels.tim.rpki.ca.core.Signer
 
 abstract class TrustAnchorTest extends FunSuite with Matchers {
 
@@ -15,23 +17,25 @@ abstract class TrustAnchorTest extends FunSuite with Matchers {
   val TrustAnchorResources: IpResourceSet = "10/8"
   val TrustAnchorCertificateUri: URI = "rsync://localhost/ta.cer"
   val TrustAnchorPublicationUri: URI = "rsync://localhost/ta/"
-    
+
   val TrustAnchorChildId = UUID.fromString("b716cfff-a58c-426c-81bf-096ae78abed7")
 
   val created = TaCreated(TrustAnchorId, TrustAnchorName)
-  val signerCreated = TaSigner.create(TrustAnchorId, TrustAnchorName, TrustAnchorResources, TrustAnchorCertificateUri, TrustAnchorPublicationUri)
+
+  val taSignerCreateEvents = Signer.createSelfSigned(TrustAnchorId, TrustAnchorName, TrustAnchorResources, TrustAnchorCertificateUri, TrustAnchorPublicationUri)
+  val signerCreated = taSignerCreateEvents(0).asInstanceOf[TaSignerCreated]
+  val taCertificateSelfSigned = taSignerCreateEvents(1).asInstanceOf[TaCertificateSigned]
+
   val TrustAnchorKeyPair = signerCreated.signingMaterial.keyPair
 
-  
   val ChildPublicationUri: URI = s"rsync://localhost/${TrustAnchorChildId}/"
   val ChildPublicationMftUri: URI = ChildPublicationUri.resolve("child.mft")
   val ChildKeyPair = KeyPairSupport.createRpkiKeyPair
-  val ChildSubject = RpkiObjectNameSupport.deriveSubject(ChildKeyPair.getPublic()) 
+  val ChildSubject = RpkiObjectNameSupport.deriveSubject(ChildKeyPair.getPublic())
 
-  val childCreated = TaChildAdded(TrustAnchorId, Child(TrustAnchorId, TrustAnchorChildId))
-
+  //  val childCreated = TaChildAdded(TrustAnchorId, Child(TrustAnchorId, TrustAnchorChildId))
 
   def givenUninitialisedTa: TrustAnchor = TrustAnchor.rebuild(List(created))
   def givenInitialisedTa: TrustAnchor = TrustAnchor.rebuild(List(created, signerCreated))
-  def givenTaWithChild: TrustAnchor = TrustAnchor.rebuild(List(created, signerCreated, childCreated))
+  //  def givenTaWithChild: TrustAnchor = TrustAnchor.rebuild(List(created, signerCreated, childCreated))
 }

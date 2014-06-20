@@ -23,13 +23,16 @@ class TaCreateCommandHandlerTest extends TrustAnchorTest {
 
     val events = createdTa.events
 
-    events should have size (2)
+    events should have size (3)
     events(0) should equal(TaCreated(id, "root"))
 
     val signerCreatedEvent = events(1).asInstanceOf[TaSignerCreated]
     signerCreatedEvent.id should equal(id)
     signerCreatedEvent.signingMaterial.certificateUri should equal(taUri)
     signerCreatedEvent.signingMaterial.currentCertificate.getResources() should equal(taResources)
+
+    val taCertificateSignedEvent = events(2).asInstanceOf[TaCertificateSigned]
+    taCertificateSignedEvent.certificate should equal(signerCreatedEvent.signingMaterial.currentCertificate)
   }
 
   test("Should not be allowed to initialise TA twice") {
