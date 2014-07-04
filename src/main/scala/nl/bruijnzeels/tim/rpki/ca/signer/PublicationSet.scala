@@ -1,23 +1,17 @@
-package nl.bruijnzeels.tim.rpki.ca.core
+package nl.bruijnzeels.tim.rpki.ca.signer
 
 import java.math.BigInteger
-import java.security.PublicKey
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
 import net.ripe.rpki.commons.crypto.crl.X509Crl
-import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
 import org.joda.time.Period
 import nl.bruijnzeels.tim.rpki.ca.common.domain.CrlRequest
 import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningSupport
 import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningMaterial
 import nl.bruijnzeels.tim.rpki.ca.common.domain.ManifestRequest
-import nl.bruijnzeels.tim.rpki.ca.ta.TaPublicationSetUpdated
 import java.util.UUID
-import nl.bruijnzeels.tim.rpki.ca.ta.TaCertificateSigned
 import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningMaterial
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
 import nl.bruijnzeels.tim.rpki.ca.common.domain.Revocation
-import org.joda.time.DateTime
-import nl.bruijnzeels.tim.rpki.ca.ta.TaRevocationAdded
 
 case class PublicationSet(number: BigInteger, mft: ManifestCms, crl: X509Crl, publishedObjects: List[CertificateRepositoryObject] = List.empty) {
 
@@ -33,9 +27,9 @@ case class PublicationSet(number: BigInteger, mft: ManifestCms, crl: X509Crl, pu
     val newMft = createMft(signingMaterialWithMftRevocation, newSetNumber, publishedObjects :+ newCrl)
 
     List(
-      TaRevocationAdded(caId, mftRevocation),
-      TaCertificateSigned(caId, newMft.getCertificate()),
-      TaPublicationSetUpdated(caId, PublicationSet(newSetNumber, newMft, newCrl, publishedObjects)))
+      SignerAddedRevocation(caId, mftRevocation),
+      SignerSignedCertificate(caId, newMft.getCertificate()),
+      SignerUpdatedPublicationSet(caId, PublicationSet(newSetNumber, newMft, newCrl, publishedObjects)))
   }
 
 }
@@ -52,8 +46,8 @@ object PublicationSet {
     val mft = createMft(signingMaterial, setNumber, List(crl))
 
     List(
-      TaCertificateSigned(caId, mft.getCertificate()),
-      TaPublicationSetUpdated(caId, PublicationSet(setNumber, mft, crl)))
+      SignerSignedCertificate(caId, mft.getCertificate()),
+      SignerUpdatedPublicationSet(caId, PublicationSet(setNumber, mft, crl)))
   }
 
   def createCrl(signingMaterial: SigningMaterial, setNumber: BigInteger) = {

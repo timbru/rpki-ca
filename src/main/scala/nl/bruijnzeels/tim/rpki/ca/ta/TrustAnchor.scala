@@ -6,8 +6,9 @@ import java.util.UUID
 import net.ripe.ipresource.IpResourceSet
 
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
-import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningMaterial
-import nl.bruijnzeels.tim.rpki.ca.core.Signer
+import nl.bruijnzeels.tim.rpki.ca.signer.Signer
+import nl.bruijnzeels.tim.rpki.ca.signer.SignerCreated
+import nl.bruijnzeels.tim.rpki.ca.signer.SignerEvent
 
 class TrustAnchorException(msg: String) extends RuntimeException(msg)
 
@@ -19,11 +20,11 @@ case class TrustAnchor(id: UUID, name: String = "", signer: Option[Signer] = Non
 
   def applyEvent(event: Event): TrustAnchor = event match {
     case created: TaCreated => copy(name = created.name, events = events :+ event)
-    case signerCreated: TaSignerCreated => copy(signer = Some(Signer(signerCreated.signingMaterial)), events = events :+ event)
-    case signerEvent: TaSignerEvent => copy(signer = applySignerEvent(signerEvent), events = events :+ event)
+    case signerCreated: SignerCreated => copy(signer = Some(Signer(signerCreated.signingMaterial)), events = events :+ event)
+    case signerEvent: SignerEvent => copy(signer = applySignerEvent(signerEvent), events = events :+ event)
   }
 
-  private def applySignerEvent(signerEvent: TaSignerEvent) = Some(signer.get.applyEvent(signerEvent))
+  private def applySignerEvent(signerEvent: SignerEvent) = Some(signer.get.applyEvent(signerEvent))
 
   // Signer support
   private def validateSignerExists(): Unit = if (signer.isEmpty) { throw new TrustAnchorException("No signer initialised") }

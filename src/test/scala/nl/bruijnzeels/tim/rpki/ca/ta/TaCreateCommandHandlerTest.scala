@@ -2,11 +2,11 @@ package nl.bruijnzeels.tim.rpki.ca.ta
 
 import java.net.URI
 import java.util.UUID
-
 import net.ripe.ipresource.IpResourceSet
-
 import org.scalatest.FunSuite
 import org.scalatest.Matchers
+import nl.bruijnzeels.tim.rpki.ca.signer.SignerCreated
+import nl.bruijnzeels.tim.rpki.ca.signer.SignerSignedCertificate
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TaCreateCommandHandlerTest extends TrustAnchorTest {
@@ -26,12 +26,12 @@ class TaCreateCommandHandlerTest extends TrustAnchorTest {
     events should have size (3)
     events(0) should equal(TaCreated(id, "root"))
 
-    val signerCreatedEvent = events(1).asInstanceOf[TaSignerCreated]
+    val signerCreatedEvent = events(1).asInstanceOf[SignerCreated]
     signerCreatedEvent.id should equal(id)
     signerCreatedEvent.signingMaterial.certificateUri should equal(taUri)
     signerCreatedEvent.signingMaterial.currentCertificate.getResources() should equal(taResources)
 
-    val taCertificateSignedEvent = events(2).asInstanceOf[TaCertificateSigned]
+    val taCertificateSignedEvent = events(2).asInstanceOf[SignerSignedCertificate]
     taCertificateSignedEvent.certificate should equal(signerCreatedEvent.signingMaterial.currentCertificate)
   }
 

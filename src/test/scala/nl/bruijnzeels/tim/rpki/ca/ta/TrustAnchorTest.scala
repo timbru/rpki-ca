@@ -8,7 +8,9 @@ import org.scalatest.Matchers
 import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
 import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
 import nl.bruijnzeels.tim.rpki.ca.core.Child
-import nl.bruijnzeels.tim.rpki.ca.core.Signer
+import nl.bruijnzeels.tim.rpki.ca.signer.Signer
+import nl.bruijnzeels.tim.rpki.ca.signer.SignerCreated
+import nl.bruijnzeels.tim.rpki.ca.signer.SignerSignedCertificate
 
 abstract class TrustAnchorTest extends FunSuite with Matchers {
 
@@ -23,8 +25,8 @@ abstract class TrustAnchorTest extends FunSuite with Matchers {
   val created = TaCreated(TrustAnchorId, TrustAnchorName)
 
   val taSignerCreateEvents = Signer.createSelfSigned(TrustAnchorId, TrustAnchorName, TrustAnchorResources, TrustAnchorCertificateUri, TrustAnchorPublicationUri)
-  val signerCreated = taSignerCreateEvents(0).asInstanceOf[TaSignerCreated]
-  val taCertificateSelfSigned = taSignerCreateEvents(1).asInstanceOf[TaCertificateSigned]
+  val signerCreated = taSignerCreateEvents(0).asInstanceOf[SignerCreated]
+  val taCertificateSelfSigned = taSignerCreateEvents(1).asInstanceOf[SignerSignedCertificate]
 
   val TrustAnchorKeyPair = signerCreated.signingMaterial.keyPair
 

@@ -8,22 +8,14 @@ import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningMaterial
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
 import nl.bruijnzeels.tim.rpki.ca.common.domain.Revocation
 import net.ripe.ipresource.IpResourceSet
-import nl.bruijnzeels.tim.rpki.ca.core.PublicationSet
+import nl.bruijnzeels.tim.rpki.ca.signer.PublicationSet
 import nl.bruijnzeels.tim.rpki.ca.core.Child
 
 sealed trait TaEvent extends Event
 
 case class TaCreated(id: UUID, name: String) extends TaEvent
 
-sealed trait TaSignerEvent extends Event
-
-case class TaSignerCreated(id: UUID, signingMaterial: SigningMaterial) extends TaSignerEvent
-case class TaPublicationSetUpdated(id: UUID, publicationSet: PublicationSet) extends TaSignerEvent
-case class TaCertificateSigned(id: UUID, certificate: X509ResourceCertificate) extends TaSignerEvent
-case class TaRevocationAdded(id: UUID, revocation: Revocation) extends TaSignerEvent
-case class TaChildAdded(id: UUID, child: Child) extends TaSignerEvent
-
-sealed trait ChildEvent extends TaSignerEvent {
+sealed trait ChildEvent extends TaEvent {
   def childId: UUID
 }
 
