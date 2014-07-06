@@ -23,10 +23,13 @@ case class Signer(
 
   import Signer._
 
+  def applyEvents(events: List[SignerEvent]): Signer = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
+
   def applyEvent(event: SignerEvent): Signer = event match {
     case created: SignerCreated => Signer(created.signingMaterial)
     case published: SignerUpdatedPublicationSet => copy(publicationSet = Some(published.publicationSet))
     case signed: SignerSignedCertificate => copy(signingMaterial = signingMaterial.updateLastSerial(signed.certificate.getSerialNumber()))
+    case rejected: SignerRejectedCertificate => this // No effects here, returned to communicate rejection gracefully
     case revoked: SignerAddedRevocation => copy(revocationList = revocationList :+ revoked.revocation)
   }
 
@@ -41,19 +44,22 @@ case class Signer(
   /**
    * Sign a child certificate request
    */
-  def signChildRequest(caId: UUID, childId: UUID, resources: IpResourceSet, pkcs10Request: PKCS10CertificationRequest) = {
+  def signChildCertificateRequest(caId: UUID, resources: IpResourceSet, pkcs10Request: PKCS10CertificationRequest): Either[SignerSignedCertificate, SignerRejectedCertificate] = {
     val childCaRequest = ChildCertificateSignRequest(
       pkcs10Request = pkcs10Request,
       resources = resources,
       validityDuration = ChildCaLifeTime,
       serial = signingMaterial.lastSerial.add(BigInteger.ONE))
 
-    // if (! signingMaterial.currentCertificate.getResources().contains(resources)) { reject } 
-    // if (! child.entitledResources.contains(resources)) { reject }
+    val overclaimingResources = new IpResourceSet(resources)
+    overclaimingResources.removeAll(signingMaterial.currentCertificate.getResources())
 
-    val childCertificate = SigningSupport.createChildCaCertificate(signingMaterial, childCaRequest)
+    if (overclaimingResources.isEmpty()) {
+      Left(SignerSignedCertificate(caId, SigningSupport.createChildCaCertificate(signingMaterial, childCaRequest)))
+    } else {
+      Right(SignerRejectedCertificate(caId, s"Child certificate request includes resources not included in parent certificate: ${overclaimingResources}"))
+    }
 
-    List(SignerSignedCertificate(caId, childCertificate))
   }
 
 }
@@ -75,8 +81,6 @@ object Signer {
       SignerSignedCertificate(id, certificate))
   }
 
-  def buildFromEvents(events: List[SignerEvent]): Signer = {
-    events.foldLeft(Signer(null))((updated, event) => updated.applyEvent(event))
-  }
+  def buildFromEvents(events: List[SignerEvent]): Signer = Signer(null).applyEvents(events)
 
 }
