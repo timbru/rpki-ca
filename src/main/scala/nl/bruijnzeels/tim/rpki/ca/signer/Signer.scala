@@ -75,4 +75,8 @@ object Signer {
       SignerSignedCertificate(id, certificate))
   }
 
+  def buildFromEvents(events: List[SignerEvent]): Signer = {
+    events.foldLeft(Signer(null))((updated, event) => updated.applyEvent(event))
+  }
+
 }
