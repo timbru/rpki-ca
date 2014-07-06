@@ -3,18 +3,15 @@ package nl.bruijnzeels.tim.rpki.ca.signer
 import java.math.BigInteger
 import java.net.URI
 import java.util.UUID
-
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
-
 import org.joda.time.Period
-
 import net.ripe.ipresource.IpResourceSet
-
 import nl.bruijnzeels.tim.rpki.ca.common.domain.ChildCertificateSignRequest
 import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
 import nl.bruijnzeels.tim.rpki.ca.common.domain.Revocation
 import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningMaterial
 import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningSupport
+import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
 
 case class Signer(
   signingMaterial: SigningMaterial,
@@ -34,11 +31,14 @@ case class Signer(
   }
 
   /**
-   * Re-publish
+   * Publish or re-publish.
+   *
+   * Creates initial publication set for the first publication and will use existing publication set
+   * so that mft and crl numbers can be tracked properly
    */
-  def publish(caId: UUID) = publicationSet match {
-    case None => PublicationSet.createFirst(caId, signingMaterial)
-    case Some(set) => set.publish(caId, signingMaterial)
+  def publish(caId: UUID, products: List[CertificateRepositoryObject] = List.empty) = publicationSet match {
+    case None => PublicationSet.createFirst(caId, signingMaterial, products)
+    case Some(set) => set.publish(caId, signingMaterial, products)
   }
 
   /**

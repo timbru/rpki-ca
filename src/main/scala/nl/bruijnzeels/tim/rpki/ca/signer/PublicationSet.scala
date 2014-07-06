@@ -13,23 +13,23 @@ import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningMaterial
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
 import nl.bruijnzeels.tim.rpki.ca.common.domain.Revocation
 
-case class PublicationSet(number: BigInteger, mft: ManifestCms, crl: X509Crl, publishedObjects: List[CertificateRepositoryObject] = List.empty) {
+case class PublicationSet(number: BigInteger, mft: ManifestCms, crl: X509Crl, products: List[CertificateRepositoryObject] = List.empty) {
 
   import PublicationSet._
 
-  def publish(caId: UUID, signingMaterial: SigningMaterial, publishedObjects: List[CertificateRepositoryObject] = List.empty) = {
+  def publish(caId: UUID, signingMaterial: SigningMaterial, products: List[CertificateRepositoryObject] = List.empty) = {
 
     val mftRevocation = Revocation.forCertificate(mft.getCertificate)
     val signingMaterialWithMftRevocation = signingMaterial.withNewRevocation(mftRevocation)
     val newSetNumber = number.add(BigInteger.ONE)
 
     val newCrl = createCrl(signingMaterialWithMftRevocation, newSetNumber)
-    val newMft = createMft(signingMaterialWithMftRevocation, newSetNumber, publishedObjects :+ newCrl)
+    val newMft = createMft(signingMaterialWithMftRevocation, newSetNumber, products :+ newCrl)
 
     List(
       SignerAddedRevocation(caId, mftRevocation),
       SignerSignedCertificate(caId, newMft.getCertificate()),
-      SignerUpdatedPublicationSet(caId, PublicationSet(newSetNumber, newMft, newCrl, publishedObjects)))
+      SignerUpdatedPublicationSet(caId, PublicationSet(newSetNumber, newMft, newCrl, products)))
   }
 
 }
@@ -40,14 +40,14 @@ object PublicationSet {
   val MftNextUpdate = Period.days(1)
   val MftValidityTime = Period.days(7)
 
-  def createFirst(caId: UUID, signingMaterial: SigningMaterial) = {
+  def createFirst(caId: UUID, signingMaterial: SigningMaterial, products: List[CertificateRepositoryObject] = List.empty) = {
     val setNumber = BigInteger.ONE
     val crl = createCrl(signingMaterial, setNumber)
-    val mft = createMft(signingMaterial, setNumber, List(crl))
+    val mft = createMft(signingMaterial, setNumber, products :+ crl)
 
     List(
       SignerSignedCertificate(caId, mft.getCertificate()),
-      SignerUpdatedPublicationSet(caId, PublicationSet(setNumber, mft, crl)))
+      SignerUpdatedPublicationSet(caId, PublicationSet(setNumber, mft, crl, products)))
   }
 
   def createCrl(signingMaterial: SigningMaterial, setNumber: BigInteger) = {

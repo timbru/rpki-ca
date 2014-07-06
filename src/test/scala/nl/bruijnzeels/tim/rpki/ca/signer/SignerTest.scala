@@ -75,4 +75,59 @@ class SignerTest extends FunSuite with Matchers {
     rejectionEvent.reason should include("192.168.0.0/24")
   }
 
+  test("should publish") {
+    selfSignedSigner.publicationSet.isEmpty should be(true)
+
+    val signerAfterFirstPublish = selfSignedSigner.applyEvents(selfSignedSigner.publish(AggregateId))
+
+    signerAfterFirstPublish.signingMaterial.lastSerial should equal(BigInteger.valueOf(2)) // Manifest EE certificate should have been signed
+
+    signerAfterFirstPublish.publicationSet.isDefined should be(true)
+    val publicationSet = signerAfterFirstPublish.publicationSet.get
+    publicationSet.number should equal(BigInteger.ONE)
+    publicationSet.crl.getNumber() should equal(BigInteger.ONE)
+    publicationSet.mft.getNumber() should equal(BigInteger.ONE)
+    publicationSet.products should have size (0)
+
+    signerAfterFirstPublish.revocationList should have size (0)
+  }
+
+  test("should RE-publish and revoke old manifest") {
+    selfSignedSigner.publicationSet.isEmpty should be(true)
+
+    val signerAfterFirstPublish = selfSignedSigner.applyEvents(selfSignedSigner.publish(AggregateId))
+    val signerAfterSecondPublish = signerAfterFirstPublish.applyEvents(signerAfterFirstPublish.publish(AggregateId))
+
+    signerAfterSecondPublish.signingMaterial.lastSerial should equal(BigInteger.valueOf(3)) // Manifest EE certificate should have been signed
+
+    signerAfterSecondPublish.publicationSet.isDefined should be(true)
+    val publicationSet = signerAfterSecondPublish.publicationSet.get
+    publicationSet.number should equal(BigInteger.valueOf(2))
+    publicationSet.crl.getNumber() should equal(BigInteger.valueOf(2))
+    publicationSet.mft.getNumber() should equal(BigInteger.valueOf(2))
+    publicationSet.products should have size (0)
+
+    // should revoke mft EE for first publish
+    val firstPublishMft = signerAfterFirstPublish.publicationSet.get.mft
+
+    signerAfterSecondPublish.revocationList should have size (1)
+    publicationSet.crl.isRevoked(firstPublishMft.getCertificate().getCertificate()) should be(true)
+  }
+
+  test("should publish objects") {
+
+    val signingResponse = selfSignedSigner.signChildCertificateRequest(AggregateId, "10.0.0.0/24", createChildPkcs10Request)
+    val signedEvent = signingResponse.left.get
+    val childCertificate = signedEvent.certificate
+    val signerAfterSigning = selfSignedSigner.applyEvent(signedEvent)
+
+    val signerAfterPublish = signerAfterSigning.applyEvents(signerAfterSigning.publish(AggregateId, List(childCertificate)))
+
+    val set = signerAfterPublish.publicationSet.get
+
+    set.mft.getFileNames() should have size (2)
+    set.mft.containsFile(RpkiObjectNameSupport.deriveName(childCertificate)) should be(true)
+    set.products equals List(childCertificate)
+  }
+
 }
