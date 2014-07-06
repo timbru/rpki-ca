@@ -1,4 +1,5 @@
-package nl.bruijnzeels.tim.rpki.ca.ta
+package nl.bruijnzeels.tim.rpki.ca
+package ta
 
 import java.net.URI
 import java.util.UUID
