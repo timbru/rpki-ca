@@ -1,24 +1,27 @@
 package nl.bruijnzeels.tim.rpki
 package ca
+package rc
 package signer
 
-import org.scalatest.FunSuite
-import java.util.UUID
-import net.ripe.ipresource.IpResource
-import net.ripe.ipresource.IpResourceSet
-import java.net.URI
-import org.scalatest.Matchers
-import javax.security.auth.x500.X500Principal
-import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestBuilder
-import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayloadBuilder
-import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
-import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
 import java.math.BigInteger
+import java.net.URI
+import java.util.UUID
+
+import javax.security.auth.x500.X500Principal
+
+import net.ripe.ipresource.IpResourceSet
+import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestBuilder
+
+import common.domain.KeyPairSupport
+import common.domain.RpkiObjectNameSupport
+import org.scalatest.FunSuite
+import org.scalatest.Matchers
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SignerTest extends FunSuite with Matchers {
 
   val AggregateId = UUID.fromString("3e13717b-da5b-4371-a8c1-45d390fd8dc7")
+  val ResourceClassName = "test resource class"
   val SignerName = "test signer"
   val SignerSubject = new X500Principal("CN=" + SignerName)
   val SignerResources: IpResourceSet = "10/8"
@@ -37,7 +40,7 @@ class SignerTest extends FunSuite with Matchers {
     .withSubject(ChildSubject)
     .build(ChildKeyPair)
 
-  val selfSignedSigner = Signer.buildFromEvents(Signer.createSelfSigned(AggregateId, SignerName, SignerResources, SignerCertificateUri, SignerPublicationDir))
+  val selfSignedSigner = Signer.buildFromEvents(Signer.createSelfSigned(AggregateId, ResourceClassName, SignerName, SignerResources, SignerCertificateUri, SignerPublicationDir))
 
   test("should create self-signed signer") {
 
@@ -50,7 +53,7 @@ class SignerTest extends FunSuite with Matchers {
   }
 
   test("should sign child certificate request") {
-    val signingResponse = selfSignedSigner.signChildCertificateRequest(AggregateId, "10.0.0.0/24", createChildPkcs10Request)
+    val signingResponse = selfSignedSigner.signChildCertificateRequest(AggregateId, ResourceClassName, "10.0.0.0/24", createChildPkcs10Request)
 
     signingResponse.isLeft should be(true)
 
@@ -68,7 +71,7 @@ class SignerTest extends FunSuite with Matchers {
   }
 
   test("should reject overclaiming child certificate request") {
-    val signingResponse = selfSignedSigner.signChildCertificateRequest(AggregateId, "192.168.0.0/24", createChildPkcs10Request)
+    val signingResponse = selfSignedSigner.signChildCertificateRequest(AggregateId, ResourceClassName, "192.168.0.0/24", createChildPkcs10Request)
     signingResponse.isRight should be(true)
 
     val rejectionEvent = signingResponse.right.get
@@ -78,7 +81,7 @@ class SignerTest extends FunSuite with Matchers {
   test("should publish") {
     selfSignedSigner.publicationSet.isEmpty should be(true)
 
-    val signerAfterFirstPublish = selfSignedSigner.applyEvents(selfSignedSigner.publish(AggregateId))
+    val signerAfterFirstPublish = selfSignedSigner.applyEvents(selfSignedSigner.publish(AggregateId, ResourceClassName))
 
     signerAfterFirstPublish.signingMaterial.lastSerial should equal(BigInteger.valueOf(2)) // Manifest EE certificate should have been signed
 
@@ -95,8 +98,8 @@ class SignerTest extends FunSuite with Matchers {
   test("should RE-publish and revoke old manifest") {
     selfSignedSigner.publicationSet.isEmpty should be(true)
 
-    val signerAfterFirstPublish = selfSignedSigner.applyEvents(selfSignedSigner.publish(AggregateId))
-    val signerAfterSecondPublish = signerAfterFirstPublish.applyEvents(signerAfterFirstPublish.publish(AggregateId))
+    val signerAfterFirstPublish = selfSignedSigner.applyEvents(selfSignedSigner.publish(AggregateId, ResourceClassName))
+    val signerAfterSecondPublish = signerAfterFirstPublish.applyEvents(signerAfterFirstPublish.publish(AggregateId, ResourceClassName))
 
     signerAfterSecondPublish.signingMaterial.lastSerial should equal(BigInteger.valueOf(3)) // Manifest EE certificate should have been signed
 
@@ -116,12 +119,12 @@ class SignerTest extends FunSuite with Matchers {
 
   test("should publish objects") {
 
-    val signingResponse = selfSignedSigner.signChildCertificateRequest(AggregateId, "10.0.0.0/24", createChildPkcs10Request)
+    val signingResponse = selfSignedSigner.signChildCertificateRequest(AggregateId, ResourceClassName, "10.0.0.0/24", createChildPkcs10Request)
     val signedEvent = signingResponse.left.get
     val childCertificate = signedEvent.certificate
     val signerAfterSigning = selfSignedSigner.applyEvent(signedEvent)
 
-    val signerAfterPublish = signerAfterSigning.applyEvents(signerAfterSigning.publish(AggregateId, List(childCertificate)))
+    val signerAfterPublish = signerAfterSigning.applyEvents(signerAfterSigning.publish(AggregateId, ResourceClassName, List(childCertificate)))
 
     val set = signerAfterPublish.publicationSet.get
 

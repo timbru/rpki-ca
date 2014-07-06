@@ -1,4 +1,4 @@
-package nl.bruijnzeels.tim.rpki.ca.core.child
+package nl.bruijnzeels.tim.rpki.ca.rc.child
 
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
 import java.util.UUID

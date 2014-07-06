@@ -1,17 +1,24 @@
-package nl.bruijnzeels.tim.rpki.ca.signer
+package nl.bruijnzeels.tim.rpki
+package ca
+package rc
+package signer
 
 import java.math.BigInteger
 import java.net.URI
 import java.util.UUID
+
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
+
 import org.joda.time.Period
+
 import net.ripe.ipresource.IpResourceSet
-import nl.bruijnzeels.tim.rpki.ca.common.domain.ChildCertificateSignRequest
-import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
-import nl.bruijnzeels.tim.rpki.ca.common.domain.Revocation
-import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningMaterial
-import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningSupport
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
+
+import common.domain.ChildCertificateSignRequest
+import common.domain.KeyPairSupport
+import common.domain.Revocation
+import common.domain.SigningMaterial
+import common.domain.SigningSupport
 
 case class Signer(
   signingMaterial: SigningMaterial,
@@ -23,7 +30,7 @@ case class Signer(
   def applyEvents(events: List[SignerEvent]): Signer = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
 
   def applyEvent(event: SignerEvent): Signer = event match {
-    case created: SignerCreated => Signer(created.signingMaterial)
+    case signingMaterialCreated: SignerSigningMaterialCreated => copy(signingMaterial = signingMaterialCreated.signingMaterial)
     case published: SignerUpdatedPublicationSet => copy(publicationSet = Some(published.publicationSet))
     case signed: SignerSignedCertificate => copy(signingMaterial = signingMaterial.updateLastSerial(signed.certificate.getSerialNumber()))
     case rejected: SignerRejectedCertificate => this // No effects here, returned to communicate rejection gracefully
@@ -36,15 +43,15 @@ case class Signer(
    * Creates initial publication set for the first publication and will use existing publication set
    * so that mft and crl numbers can be tracked properly
    */
-  def publish(caId: UUID, products: List[CertificateRepositoryObject] = List.empty) = publicationSet match {
-    case None => PublicationSet.createFirst(caId, signingMaterial, products)
-    case Some(set) => set.publish(caId, signingMaterial, products)
+  def publish(aggregateId: UUID, resourceClassName: String, products: List[CertificateRepositoryObject] = List.empty) = publicationSet match {
+    case None => PublicationSet.createFirst(aggregateId, resourceClassName, signingMaterial, products)
+    case Some(set) => set.publish(aggregateId, resourceClassName, signingMaterial, products)
   }
 
   /**
    * Sign a child certificate request
    */
-  def signChildCertificateRequest(caId: UUID, resources: IpResourceSet, pkcs10Request: PKCS10CertificationRequest): Either[SignerSignedCertificate, SignerRejectedCertificate] = {
+  def signChildCertificateRequest(aggregateId: UUID, resourceClassName: String, resources: IpResourceSet, pkcs10Request: PKCS10CertificationRequest): Either[SignerSignedCertificate, SignerRejectedCertificate] = {
     val childCaRequest = ChildCertificateSignRequest(
       pkcs10Request = pkcs10Request,
       resources = resources,
@@ -55,9 +62,9 @@ case class Signer(
     overclaimingResources.removeAll(signingMaterial.currentCertificate.getResources())
 
     if (overclaimingResources.isEmpty()) {
-      Left(SignerSignedCertificate(caId, SigningSupport.createChildCaCertificate(signingMaterial, childCaRequest)))
+      Left(SignerSignedCertificate(aggregateId, resourceClassName, SigningSupport.createChildCaCertificate(signingMaterial, childCaRequest)))
     } else {
-      Right(SignerRejectedCertificate(caId, s"Child certificate request includes resources not included in parent certificate: ${overclaimingResources}"))
+      Right(SignerRejectedCertificate(aggregateId, resourceClassName, s"Child certificate request includes resources not included in parent certificate: ${overclaimingResources}"))
     }
 
   }
@@ -72,13 +79,13 @@ object Signer {
   val MftNextUpdate = Period.days(1)
   val MftValidityTime = Period.days(7)
 
-  def createSelfSigned(id: UUID, name: String, resources: IpResourceSet, taCertificateUri: URI, publicationDir: URI): List[SignerEvent] = {
+  def createSelfSigned(aggregateId: UUID, resourceClassName: String, name: String, resources: IpResourceSet, taCertificateUri: URI, publicationDir: URI): List[SignerEvent] = {
     val keyPair = KeyPairSupport.createRpkiKeyPair
     val certificate = SigningSupport.createRootCertificate(name, keyPair, resources, publicationDir, TrustAnchorLifeTime)
 
     List(
-      SignerCreated(id, SigningMaterial(keyPair, certificate, taCertificateUri, BigInteger.ZERO)),
-      SignerSignedCertificate(id, certificate))
+      SignerSigningMaterialCreated(aggregateId, resourceClassName, SigningMaterial(keyPair, certificate, taCertificateUri, BigInteger.ZERO)),
+      SignerSignedCertificate(aggregateId, resourceClassName, certificate))
   }
 
   def buildFromEvents(events: List[SignerEvent]): Signer = Signer(null).applyEvents(events)

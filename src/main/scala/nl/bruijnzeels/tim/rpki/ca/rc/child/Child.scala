@@ -1,8 +1,7 @@
-package nl.bruijnzeels.tim.rpki.ca.core.child
+package nl.bruijnzeels.tim.rpki.ca.rc.child
 
 import java.security.PublicKey
 import java.util.UUID
-
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
 
