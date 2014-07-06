@@ -1,12 +1,10 @@
-package nl.bruijnzeels.tim.rpki.ca.core
+package nl.bruijnzeels.tim.rpki.ca.core.child
 
 import java.security.PublicKey
 import java.util.UUID
+
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
-import nl.bruijnzeels.tim.rpki.ca.ta.TaChildCertificateReceived
-import nl.bruijnzeels.tim.rpki.ca.ta.ChildEvent
-import nl.bruijnzeels.tim.rpki.ca.ta.ChildResourceEntitlementsUpdated
 
 case class ChildKeyCertificates(currentCertificate: X509ResourceCertificate, oldCertificates: List[X509ResourceCertificate] = List.empty) {
   def withNewCertificate(certificate: X509ResourceCertificate) = copy(currentCertificate = certificate, oldCertificates = oldCertificates :+ currentCertificate)

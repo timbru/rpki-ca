@@ -51,7 +51,7 @@ case class TrustAnchor(id: UUID, name: String = "", signer: Option[Signer] = Non
 object TrustAnchor {
 
   def rebuild(events: List[Event]): TrustAnchor = {
-    TrustAnchor(events(0).id).applyEvents(events).copy(events = List())
+    TrustAnchor(events(0).aggregateId).applyEvents(events).copy(events = List())
   }
 
   def create(id: UUID, name: String): TrustAnchor = {

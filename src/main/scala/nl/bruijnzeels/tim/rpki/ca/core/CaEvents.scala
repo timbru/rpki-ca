@@ -10,5 +10,5 @@ import nl.bruijnzeels.tim.rpki.ca.common.domain.Revocation
 
 sealed trait CaEvent extends Event
 
-case class CaCreated(id: UUID, name: String) extends CaEvent
+case class CaCreated(aggregateId: UUID, name: String) extends CaEvent
 

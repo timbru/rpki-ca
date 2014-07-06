@@ -8,7 +8,7 @@ import org.scalatest.FunSuite
 import org.scalatest.Matchers
 import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
 import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
-import nl.bruijnzeels.tim.rpki.ca.core.Child
+import nl.bruijnzeels.tim.rpki.ca.core.child.Child
 import nl.bruijnzeels.tim.rpki.ca.signer.Signer
 import nl.bruijnzeels.tim.rpki.ca.signer.SignerCreated
 import nl.bruijnzeels.tim.rpki.ca.signer.SignerSignedCertificate
