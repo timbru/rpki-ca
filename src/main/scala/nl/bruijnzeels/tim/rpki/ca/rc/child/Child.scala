@@ -9,7 +9,7 @@ case class ChildKeyCertificates(currentCertificate: X509ResourceCertificate, old
   def withNewCertificate(certificate: X509ResourceCertificate) = copy(currentCertificate = certificate, oldCertificates = oldCertificates :+ currentCertificate)
 }
 
-case class Child(taId: UUID, id: UUID, entitledResources: IpResourceSet, knownKeys: Map[PublicKey, ChildKeyCertificates] = Map.empty, log: List[String] = List.empty) {
+case class Child(aggregateId: UUID, id: UUID, entitledResources: IpResourceSet, knownKeys: Map[PublicKey, ChildKeyCertificates] = Map.empty, log: List[String] = List.empty) {
 
   def applyEvent(event: ChildEvent) = event match {
     case resourceUpdated: ChildResourceEntitlementsUpdated => copy(entitledResources = resourceUpdated.entitledResources, log = log :+ "Updated resources: " + resourceUpdated.entitledResources)
@@ -27,4 +27,8 @@ case class Child(taId: UUID, id: UUID, entitledResources: IpResourceSet, knownKe
     copy(knownKeys = knownKeys + (pubKey -> childCertificates), log = log :+ "Certificate received: " + cert.getSubject())
   }
 
+}
+
+object Child {
+  def created(created: ChildCreated) = Child(aggregateId = created.aggregateId, id = created.childId, entitledResources = created.entitledResources)
 }

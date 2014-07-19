@@ -26,6 +26,8 @@ case class Signer(
   revocationList: List[Revocation] = List.empty) {
 
   import Signer._
+  
+  def resources = signingMaterial.currentCertificate.getResources
 
   def applyEvents(events: List[SignerEvent]): Signer = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
 

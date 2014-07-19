@@ -1,8 +1,16 @@
 package nl.bruijnzeels.tim.rpki.ca.rc
 
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
-import nl.bruijnzeels.tim.rpki.ca.rc.child.Child
+import java.util.UUID
 import net.ripe.ipresource.IpResourceSet
+import nl.bruijnzeels.tim.rpki.ca.rc.child.Child
+import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildCreated
+import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildCreated
+import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildEvent
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerEvent
+import scala.util.Either
+import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildRejected
+import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildRejected
 
 /**
  * The name for this class: ResourceClass is taken from the "Provisioning Resource Certificates" Protocol.
@@ -12,10 +20,31 @@ import net.ripe.ipresource.IpResourceSet
  * Instead resources may be grouped in what are called resource classes.
  *
  */
-case class ResourceClass(resourceClassName: String, entitledResources: IpResourceSet, currentSigner: Signer = Signer(null), children: List[Child] = List.empty) {
+case class ResourceClass(aggregateId: UUID, resourceClassName: String, currentSigner: Signer, children: List[Child] = List.empty) {
+
+  def applyEvents(events: List[ResourceClassEvent]): ResourceClass = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
 
   def applyEvent(event: ResourceClassEvent): ResourceClass = event match {
-    case created: ResourceClassCreated => this
+    case signerEvent: SignerEvent => copy(currentSigner = currentSigner.applyEvent(signerEvent))
+    case childCreated: ChildCreated => copy(children = children :+ Child.created(childCreated))
   }
 
+  def isOverclaiming(resources: IpResourceSet) = {
+    val overclaiming = new IpResourceSet(resources) // Don't modify input..
+    overclaiming.removeAll(currentSigner.resources)
+    ! overclaiming.isEmpty
+  }
+
+  def addChild(childId: UUID, entitledResources: IpResourceSet): Either[ChildCreated, ChildRejected] = {
+    if (!isOverclaiming(entitledResources)) {
+      Left(ChildCreated(aggregateId = aggregateId, resourceClassName = resourceClassName, childId = childId, entitledResources = entitledResources))
+    } else {
+      Right(ChildRejected(aggregateId = aggregateId, resourceClassName = resourceClassName, childId = childId, reason = "Child has entitled resources not held by this resource class"))
+    }
+  }
+
+}
+
+object ResourceClass {
+  def created(created: ResourceClassCreated) = ResourceClass(aggregateId = created.aggregateId, resourceClassName = created.resourceClassName, currentSigner = created.currentSigner)
 }
