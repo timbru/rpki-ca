@@ -5,15 +5,21 @@ package rc
 
 import java.net.URI
 import java.util.UUID
+
 import org.scalatest.FunSuite
 import org.scalatest.Matchers
+
 import javax.security.auth.x500.X500Principal
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestBuilder
 import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
 import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
 import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildCreated
+import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildReceivedCertificate
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerSignedCertificate
+import nl.bruijnzeels.tim.rpki.ca.stringToIpResourceSet
+import nl.bruijnzeels.tim.rpki.ca.stringToUri
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ResourceClassTest extends FunSuite with Matchers {
@@ -43,6 +49,19 @@ class ResourceClassTest extends FunSuite with Matchers {
       case Right(failedEvent) =>
       case _ => fail("Should have refused to create child")
     }
+  }
+  
+  test("Should sign child request and store certificate") {
+    RcWithChild.processChildCertificateRequest(ChildId, Some(ChildResources), ChildPkcs10Request) match {
+      case Right(error) => fail("Should sign request")
+      case Left(events) => {
+        events should have size (2)
+        val signed = events(0).asInstanceOf[SignerSignedCertificate]
+        val received = events(1).asInstanceOf[ChildReceivedCertificate]
+        signed.certificate should equal (received.certificate)
+      }
+    }
+    
   }
 
 }
