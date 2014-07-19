@@ -41,7 +41,7 @@ class TrustAnchorTest extends FunSuite with Matchers {
   test("Should publish") {
     val ta = TrustAnchorInitial.publish
     
-    // Publishing is testing in more detail elsewhere, here I just want to verify that it's done
+    // Publishing is tested in more detail elsewhere, here I just want to verify that it's done
     val set = ta.resourceClasses.get(TrustAnchor.DefaultResourceClassName).get.currentSigner.publicationSet.get
     set.number should equal (BigInteger.ONE)
     
