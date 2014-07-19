@@ -26,7 +26,6 @@ object TrustAnchorCreateCommandHandler {
   def handle(command: TrustAnchorCreate) = TrustAnchor.create(command.id, command.name, command.taCertificateUri, command.publicationUri, command.resources)
 }
 
-
 trait TrustAnchorCommandHandler[C <: TrustAnchorCommand] {
   def handle(command: C, ta: TrustAnchor): TrustAnchor
 }

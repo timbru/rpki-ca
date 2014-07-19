@@ -17,11 +17,3 @@ case class ChildCreated(aggregateId: UUID, resourceClassName: String, childId: U
 
 case class ChildUpdatedResourceEntitlements(aggregateId: UUID, resourceClassName: String, childId: UUID, entitledResources: IpResourceSet) extends ChildEvent
 case class ChildReceivedCertificate(aggregateId: UUID, resourceClassName: String, childId: UUID, certificate: X509ResourceCertificate) extends ChildEvent
-
-case class TaChildCertificateRequestRejected(aggregateId: UUID, resourceClassName: String, childId: UUID, reason: String) extends ChildEvent
-case class TaChildCertificateRevocationRequested(aggregateId: UUID, resourceClassName: String, childId: UUID, certificate: X509ResourceCertificate) extends ChildEvent
-case class TaChildCertificatePublicationRequested(aggregateId: UUID, resourceClassName: String, childId: UUID, certificate: X509ResourceCertificate) extends ChildEvent
-case class TaChildCertificateWithdrawRequested(aggregateId: UUID, resourceClassName: String, childId: UUID, certificate: X509ResourceCertificate) extends ChildEvent
-
-//case class TaChildAutomaticCertificateReissuanceRequested(id: UUID, resourceClass: String, resources: IpResourceSet, oldCertificate: X509ResourceCertificate) extends TaChildEvent
-
