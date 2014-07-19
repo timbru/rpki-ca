@@ -43,14 +43,14 @@ class ResourceClassTest extends FunSuite with Matchers {
       case _ => fail("Should have created  child")
     }
   }
-  
+
   test("Should NOT add child with resources not held") {
     RcWithSelfSignedSigner.addChild(ChildId, "192.168.0.0/16") match {
       case Right(failedEvent) =>
       case _ => fail("Should have refused to create child")
     }
   }
-  
+
   test("Should sign child request and store certificate") {
     RcWithChild.processChildCertificateRequest(ChildId, Some(ChildResources), ChildPkcs10Request) match {
       case Right(error) => fail("Should sign request")
@@ -58,10 +58,16 @@ class ResourceClassTest extends FunSuite with Matchers {
         events should have size (2)
         val signed = events(0).asInstanceOf[SignerSignedCertificate]
         val received = events(1).asInstanceOf[ChildReceivedCertificate]
-        signed.certificate should equal (received.certificate)
+        signed.certificate should equal(received.certificate)
       }
     }
+  }
+
+  test("Should publish certificate for child") {
+    val rcAfterPublish = RcWithCertifiedChild.applyEvents(RcWithCertifiedChild.publish())
     
+    val set = rcAfterPublish.currentSigner.publicationSet.get
+    set.products should have size (1)
   }
 
 }
@@ -99,9 +105,13 @@ object ResourceClassTest {
   val RcCreatedEvent = ResourceClassCreated(aggregateId = AggregateId, resourceClassName = ResourceClassName)
 
   val RcWithSelfSignedSigner = ResourceClass.created(RcCreatedEvent).applyEvents(SelfSignedSignerCreatedEvents)
-  
+
   val ChildAddedEvent = RcWithSelfSignedSigner.addChild(ChildId, ChildResources).left.get
-  
+
   val RcWithChild = RcWithSelfSignedSigner.applyEvent(ChildAddedEvent)
+
+  val RcChildSignEvents = RcWithChild.processChildCertificateRequest(ChildId, Some(ChildResources), ChildPkcs10Request).left.get
+
+  val RcWithCertifiedChild = RcWithChild.applyEvents(RcChildSignEvents)
 
 }

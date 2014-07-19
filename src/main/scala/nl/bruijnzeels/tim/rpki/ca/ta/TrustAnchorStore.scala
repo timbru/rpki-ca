@@ -10,7 +10,7 @@ object TrustAnchorStore {
     if (events.size == 0) {
       None
     } else {
-      Some(TrustAnchor.rebuild(events))
+      Some(TrustAnchor.rebuild(events).clearEventList())
     }
   }
 

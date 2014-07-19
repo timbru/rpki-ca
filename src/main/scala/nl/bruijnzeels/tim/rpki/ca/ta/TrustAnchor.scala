@@ -22,12 +22,14 @@ case class TrustAnchor(id: UUID, name: String, resourceClasses: Map[String, Reso
     case _ => throw new UnknownEventException(event)
   }
   
-  def clearEventList() = copy(events = List.empty)
-
-  def processRcEvent(event: ResourceClassEvent) = resourceClasses.get(event.resourceClassName) match {
+  private def processRcEvent(event: ResourceClassEvent) = resourceClasses.get(event.resourceClassName) match {
     case None => resourceClasses
     case Some(rc) => resourceClasses + (event.resourceClassName -> rc.applyEvent(event))
   }
+  
+  def clearEventList() = copy(events = List.empty)
+  
+  def publish(): TrustAnchor = applyEvents(resourceClasses.values.flatMap(rc => rc.publish()).toList)
 
 }
 
@@ -35,12 +37,12 @@ object TrustAnchor {
 
   val DefaultResourceClassName = "default"
 
-  def rebuild(events: List[Event]) = events.head match {
+  def rebuild(events: List[Event]): TrustAnchor = events.head match {
     case created: TrustAnchorCreated => TrustAnchor(id = created.aggregateId, name = created.name, events = List(created)).applyEvents(events.tail)
     case event: Event => throw new IllegalArgumentException(s"First event MUST be creation of the TrustAnchor, was: ${event}")
   }
 
-  def create(aggregateId: UUID, name: String, taCertificateUri: URI, publicationDir: URI, resources: IpResourceSet) = {
+  def create(aggregateId: UUID, name: String, taCertificateUri: URI, publicationDir: URI, resources: IpResourceSet): TrustAnchor = {
     val taCreated = TrustAnchorCreated(aggregateId, name)
     val resourceClassCreatedEvent = ResourceClassCreated(aggregateId, DefaultResourceClassName)
     val createSignerEvents = Signer.createSelfSigned(aggregateId, DefaultResourceClassName, name, resources, taCertificateUri, publicationDir)

@@ -10,6 +10,7 @@ import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerEvent
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildReceivedCertificate
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerCreated
+import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildEvent
 
 /**
  * The name for this class: ResourceClass is taken from the "Provisioning Resource Certificates" Protocol.
@@ -27,9 +28,15 @@ case class ResourceClass(aggregateId: UUID, resourceClassName: String, currentSi
     case signerCreated: SignerCreated => copy(currentSigner = Signer(null))
     case signerEvent: SignerEvent => copy(currentSigner = currentSigner.applyEvent(signerEvent))
     case childCreated: ChildCreated => copy(children = children + (childCreated.childId -> Child.created(childCreated)))
+    case childEvent: ChildEvent => copy(children = processChildEvent(childEvent))
+  }
+  
+  private def processChildEvent(event: ChildEvent) = {
+    val child = children.getOrElse(event.childId, throw new IllegalArgumentException(s"Unknown child with id: ${event.childId}"))
+    children + (child.id -> child.applyEvent(event))
   }
 
-  def isOverclaiming(resources: IpResourceSet) = {
+  private def isOverclaiming(resources: IpResourceSet) = {
     val overclaiming = new IpResourceSet(resources) // Don't modify input..
     overclaiming.removeAll(currentSigner.resources)
     !overclaiming.isEmpty
@@ -43,9 +50,18 @@ case class ResourceClass(aggregateId: UUID, resourceClassName: String, currentSi
     }
   }
 
-  def processChildCertificateRequest(childId: UUID, requestedResources: Option[IpResourceSet], pkcs10Request: PKCS10CertificationRequest): Either[List[ResourceClassEvent], ResourceClassError] = {
-
-    children.get(childId) match {
+  /**
+   * <p>
+   * Process a certificate sign request for a child. Returns list of events in case this is successful,
+   * or an error in case:
+   * </p>
+   * <ul>
+   *   <li>the child is not known</li>
+   *   <li>the request includes resources the child is not entitled to</li>
+   *   <li>the request includes resources this resource class is not authoritative over</li>
+   * </ul>
+   */
+  def processChildCertificateRequest(childId: UUID, requestedResources: Option[IpResourceSet], pkcs10Request: PKCS10CertificationRequest): Either[List[ResourceClassEvent], ResourceClassError] = children.get(childId) match {
       case None => Right(UnknownChild(childId))
       case Some(child) => {
         val resources = requestedResources.getOrElse(child.entitledResources)
@@ -59,10 +75,15 @@ case class ResourceClass(aggregateId: UUID, resourceClassName: String, currentSi
           }
         }
       }
-    }
-
   }
 
+  /**
+   * Publish this resource class and all current certificates
+   */
+  def publish() = {
+    val certificates = children.values.flatMap(c => c.currentCertificates).toList
+    currentSigner.publish(aggregateId, resourceClassName, certificates)
+  }
 }
 
 object ResourceClass {

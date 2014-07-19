@@ -15,6 +15,7 @@ case class TaCommandDispatcher() {
 
     val updatedTa = command match {
       case create: TrustAnchorCreate => TrustAnchorCreateCommandHandler.handle(create)
+      case publish: TrustAnchorPublish => TrustAnchorPublishCommandHandler.handle(publish, existingTa.get)
     }
 
     TrustAnchorStore.save(updatedTa)
@@ -26,14 +27,13 @@ object TrustAnchorCreateCommandHandler {
 }
 
 
-//
-//trait TaCommandHandler[C <: TaCommand] {
-//  def handle(command: C, ta: TrustAnchor): TrustAnchor
-//}
-//
-//object TaPublishCommandHandler extends TaCommandHandler[TaPublish] {
-//  override def handle(command: TaPublish, ta: TrustAnchor) = ta.publish()
-//}
+trait TrustAnchorCommandHandler[C <: TrustAnchorCommand] {
+  def handle(command: C, ta: TrustAnchor): TrustAnchor
+}
+
+object TrustAnchorPublishCommandHandler extends TrustAnchorCommandHandler[TrustAnchorPublish] {
+  override def handle(command: TrustAnchorPublish, ta: TrustAnchor) = ta.publish()
+}
 //
 ////object TaChildAddCommandHandler extends TaCommandHandler[TaChildAdd] {
 ////  override def handle(command: TaChildAdd, ta: TrustAnchor) = ta.addChild(command.childId)
