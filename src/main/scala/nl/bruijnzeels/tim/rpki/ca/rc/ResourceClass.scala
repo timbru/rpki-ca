@@ -1,16 +1,14 @@
 package nl.bruijnzeels.tim.rpki.ca.rc
 
 import java.util.UUID
+
+import scala.util.Either
+
 import net.ripe.ipresource.IpResourceSet
 import nl.bruijnzeels.tim.rpki.ca.rc.child.Child
 import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildCreated
-import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildCreated
-import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildEvent
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerEvent
-import scala.util.Either
-import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildRejected
-import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildRejected
 
 /**
  * The name for this class: ResourceClass is taken from the "Provisioning Resource Certificates" Protocol.
@@ -35,14 +33,14 @@ case class ResourceClass(aggregateId: UUID, resourceClassName: String, currentSi
     ! overclaiming.isEmpty
   }
 
-  def addChild(childId: UUID, entitledResources: IpResourceSet): Either[ChildCreated, ChildRejected] = {
+  def addChild(childId: UUID, entitledResources: IpResourceSet): Either[ChildCreated, ResourceClassError] = {
     if (!isOverclaiming(entitledResources)) {
       Left(ChildCreated(aggregateId = aggregateId, resourceClassName = resourceClassName, childId = childId, entitledResources = entitledResources))
     } else {
-      Right(ChildRejected(aggregateId = aggregateId, resourceClassName = resourceClassName, childId = childId, reason = "Child has entitled resources not held by this resource class"))
+      Right(CannotAddChildWithOverclaimingResources)
     }
   }
-
+  
 }
 
 object ResourceClass {

@@ -15,5 +15,4 @@ sealed trait SignerEvent extends ResourceClassEvent
 case class SignerSigningMaterialCreated(aggregateId: UUID, resourceClassName: String, signingMaterial: SigningMaterial) extends SignerEvent
 case class SignerUpdatedPublicationSet(aggregateId: UUID, resourceClassName: String, publicationSet: PublicationSet) extends SignerEvent
 case class SignerSignedCertificate(aggregateId: UUID, resourceClassName: String, certificate: X509ResourceCertificate) extends SignerEvent
-case class SignerRejectedCertificate(aggregateId: UUID, resourceClassName: String, reason: String) extends SignerEvent
 case class SignerAddedRevocation(aggregateId: UUID, resourceClassName: String, revocation: Revocation) extends SignerEvent

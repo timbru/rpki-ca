@@ -35,7 +35,6 @@ case class Signer(
     case signingMaterialCreated: SignerSigningMaterialCreated => copy(signingMaterial = signingMaterialCreated.signingMaterial)
     case published: SignerUpdatedPublicationSet => copy(publicationSet = Some(published.publicationSet))
     case signed: SignerSignedCertificate => copy(signingMaterial = signingMaterial.updateLastSerial(signed.certificate.getSerialNumber()))
-    case rejected: SignerRejectedCertificate => this // No effects here, returned to communicate rejection gracefully
     case revoked: SignerAddedRevocation => copy(revocationList = revocationList :+ revoked.revocation)
   }
 
@@ -53,7 +52,7 @@ case class Signer(
   /**
    * Sign a child certificate request
    */
-  def signChildCertificateRequest(aggregateId: UUID, resourceClassName: String, resources: IpResourceSet, pkcs10Request: PKCS10CertificationRequest): Either[SignerSignedCertificate, SignerRejectedCertificate] = {
+  def signChildCertificateRequest(aggregateId: UUID, resourceClassName: String, resources: IpResourceSet, pkcs10Request: PKCS10CertificationRequest): Either[SignerSignedCertificate, RejectedCertificate] = {
     val childCaRequest = ChildCertificateSignRequest(
       pkcs10Request = pkcs10Request,
       resources = resources,
@@ -66,7 +65,7 @@ case class Signer(
     if (overclaimingResources.isEmpty()) {
       Left(SignerSignedCertificate(aggregateId, resourceClassName, SigningSupport.createChildCaCertificate(signingMaterial, childCaRequest)))
     } else {
-      Right(SignerRejectedCertificate(aggregateId, resourceClassName, s"Child certificate request includes resources not included in parent certificate: ${overclaimingResources}"))
+      Right(RejectedCertificate(s"Child certificate request includes resources not included in parent certificate: ${overclaimingResources}"))
     }
 
   }

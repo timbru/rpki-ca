@@ -14,8 +14,6 @@ sealed trait ChildEvent extends ResourceClassEvent {
 }
 
 case class ChildCreated(aggregateId: UUID, resourceClassName: String, childId: UUID, entitledResources: IpResourceSet) extends ChildEvent
-case class ChildRejected(aggregateId: UUID, resourceClassName: String, childId: UUID, reason: String) extends ChildEvent
-
 
 case class ChildResourceEntitlementsUpdated(aggregateId: UUID, resourceClassName: String, childId: UUID, entitledResources: IpResourceSet) extends ChildEvent
 //
