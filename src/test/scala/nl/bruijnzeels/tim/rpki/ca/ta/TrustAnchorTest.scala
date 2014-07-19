@@ -27,7 +27,7 @@ class TrustAnchorTest extends FunSuite with Matchers {
 
     val ta = TrustAnchorCreateCommandHandler.handle(create)
 
-    val rc = ta.resourceClasses.get(TrustAnchor.DefaultResourceClassName).get
+    val rc = ta.resourceClass.get
     val signingMaterial = rc.currentSigner.signingMaterial
     val certificate = signingMaterial.currentCertificate
 
@@ -42,7 +42,7 @@ class TrustAnchorTest extends FunSuite with Matchers {
     val ta = TrustAnchorInitial.publish
     
     // Publishing is tested in more detail elsewhere, here I just want to verify that it's done
-    val set = ta.resourceClasses.get(TrustAnchor.DefaultResourceClassName).get.currentSigner.publicationSet.get
+    val set = ta.resourceClass.get.currentSigner.publicationSet.get
     set.number should equal (BigInteger.ONE)
     
     ta should equal(TrustAnchor.rebuild(ta.events))

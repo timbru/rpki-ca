@@ -12,24 +12,21 @@ import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassCreated
 import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassCreated
 import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassEvent
 
-case class TrustAnchor(id: UUID, name: String, resourceClasses: Map[String, ResourceClass] = Map.empty, events: List[Event] = List.empty) extends AggregateRoot {
+case class TrustAnchor(id: UUID, name: String, resourceClass: Option[ResourceClass] = None, events: List[Event] = List.empty) extends AggregateRoot {
 
   def applyEvents(events: List[Event]): TrustAnchor = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
 
   def applyEvent(event: Event): TrustAnchor = event match {
-    case resourceClassCreated: ResourceClassCreated => copy(resourceClasses = resourceClasses + (resourceClassCreated.resourceClassName -> ResourceClass.created(resourceClassCreated)), events = events :+ event)
-    case resourceClassEvent: ResourceClassEvent => copy(resourceClasses = processRcEvent(resourceClassEvent), events = events :+ event)
-    case _ => throw new UnknownEventException(event)
-  }
-  
-  private def processRcEvent(event: ResourceClassEvent) = resourceClasses.get(event.resourceClassName) match {
-    case None => resourceClasses
-    case Some(rc) => resourceClasses + (event.resourceClassName -> rc.applyEvent(event))
+    case resourceClassCreated: ResourceClassCreated => copy(resourceClass = Some(ResourceClass.created(resourceClassCreated)), events = events :+ event)
+    case resourceClassEvent: ResourceClassEvent => copy(resourceClass = Some(resourceClass.get.applyEvent(resourceClassEvent)), events = events :+ event)
   }
   
   def clearEventList() = copy(events = List.empty)
   
-  def publish(): TrustAnchor = applyEvents(resourceClasses.values.flatMap(rc => rc.publish()).toList)
+  def publish(): TrustAnchor = resourceClass match {
+    case None => this // nothing to do
+    case Some(rc) => applyEvents(rc.publish)
+  }
 
 }
 
