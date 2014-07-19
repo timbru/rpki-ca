@@ -9,6 +9,7 @@ import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerEvent
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildReceivedCertificate
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerCreated
 
 /**
  * The name for this class: ResourceClass is taken from the "Provisioning Resource Certificates" Protocol.
@@ -23,6 +24,7 @@ case class ResourceClass(aggregateId: UUID, resourceClassName: String, currentSi
   def applyEvents(events: List[ResourceClassEvent]): ResourceClass = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
 
   def applyEvent(event: ResourceClassEvent): ResourceClass = event match {
+    case signerCreated: SignerCreated => copy(currentSigner = Signer(null))
     case signerEvent: SignerEvent => copy(currentSigner = currentSigner.applyEvent(signerEvent))
     case childCreated: ChildCreated => copy(children = children + (childCreated.childId -> Child.created(childCreated)))
   }
@@ -64,5 +66,5 @@ case class ResourceClass(aggregateId: UUID, resourceClassName: String, currentSi
 }
 
 object ResourceClass {
-  def created(created: ResourceClassCreated) = ResourceClass(aggregateId = created.aggregateId, resourceClassName = created.resourceClassName, currentSigner = created.currentSigner)
+  def created(created: ResourceClassCreated) = ResourceClass(aggregateId = created.aggregateId, resourceClassName = created.resourceClassName, currentSigner = null)
 }

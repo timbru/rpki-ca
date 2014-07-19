@@ -96,9 +96,9 @@ object ResourceClassTest {
 
   val SelfSignedSigner = Signer.buildFromEvents(SelfSignedSignerCreatedEvents)
 
-  val RcWithSelfSignedSignerCreatedEvent = ResourceClassCreated(aggregateId = AggregateId, resourceClassName = ResourceClassName, currentSigner = SelfSignedSigner)
+  val RcCreatedEvent = ResourceClassCreated(aggregateId = AggregateId, resourceClassName = ResourceClassName)
 
-  val RcWithSelfSignedSigner = ResourceClass.created(RcWithSelfSignedSignerCreatedEvent)
+  val RcWithSelfSignedSigner = ResourceClass.created(RcCreatedEvent).applyEvents(SelfSignedSignerCreatedEvents)
   
   val ChildAddedEvent = RcWithSelfSignedSigner.addChild(ChildId, ChildResources).left.get
   

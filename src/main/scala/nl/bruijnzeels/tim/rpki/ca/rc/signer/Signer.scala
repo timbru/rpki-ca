@@ -32,6 +32,7 @@ case class Signer(
   def applyEvents(events: List[SignerEvent]): Signer = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
 
   def applyEvent(event: SignerEvent): Signer = event match {
+    case created: SignerCreated => Signer(null) // 
     case signingMaterialCreated: SignerSigningMaterialCreated => copy(signingMaterial = signingMaterialCreated.signingMaterial)
     case published: SignerUpdatedPublicationSet => copy(publicationSet = Some(published.publicationSet))
     case signed: SignerSignedCertificate => copy(signingMaterial = signingMaterial.updateLastSerial(signed.certificate.getSerialNumber()))
@@ -85,6 +86,7 @@ object Signer {
     val certificate = SigningSupport.createRootCertificate(name, keyPair, resources, publicationDir, TrustAnchorLifeTime)
 
     List(
+      SignerCreated(aggregateId, resourceClassName),
       SignerSigningMaterialCreated(aggregateId, resourceClassName, SigningMaterial(keyPair, certificate, taCertificateUri, BigInteger.ZERO)),
       SignerSignedCertificate(aggregateId, resourceClassName, certificate))
   }
