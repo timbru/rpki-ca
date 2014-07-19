@@ -36,8 +36,6 @@ class ResourceClassTest extends FunSuite with Matchers {
       }
       case _ => fail("Should have created  child")
     }
-   
-    
   }
   
   test("Should NOT add child with resources not held") {
@@ -69,7 +67,7 @@ object ResourceClassTest {
 
   val ChildCreatedEvent = ChildCreated(aggregateId = AggregateId, resourceClassName = ResourceClassName, childId = ChildId, entitledResources = ChildResources)
 
-  def createChildPkcs10Request() = new RpkiCaCertificateRequestBuilder()
+  val ChildPkcs10Request = new RpkiCaCertificateRequestBuilder()
     .withCaRepositoryUri(ChildPublicationUri)
     .withManifestUri(ChildPublicationMftUri)
     .withSubject(ChildSubject)
@@ -82,5 +80,9 @@ object ResourceClassTest {
   val RcWithSelfSignedSignerCreatedEvent = ResourceClassCreated(aggregateId = AggregateId, resourceClassName = ResourceClassName, currentSigner = SelfSignedSigner)
 
   val RcWithSelfSignedSigner = ResourceClass.created(RcWithSelfSignedSignerCreatedEvent)
+  
+  val ChildAddedEvent = RcWithSelfSignedSigner.addChild(ChildId, ChildResources).left.get
+  
+  val RcWithChild = RcWithSelfSignedSigner.applyEvent(ChildAddedEvent)
 
 }

@@ -34,7 +34,7 @@ class SignerTest extends FunSuite with Matchers {
   }
 
   test("should sign child certificate request") {
-    val signingResponse = SelfSignedSigner.signChildCertificateRequest(AggregateId, ResourceClassName, "10.0.0.0/24", createChildPkcs10Request)
+    val signingResponse = SelfSignedSigner.signChildCertificateRequest(AggregateId, ResourceClassName, "10.0.0.0/24", ChildPkcs10Request)
 
     signingResponse.isLeft should be(true)
 
@@ -52,7 +52,7 @@ class SignerTest extends FunSuite with Matchers {
   }
 
   test("should reject overclaiming child certificate request") {
-    val signingResponse = SelfSignedSigner.signChildCertificateRequest(AggregateId, ResourceClassName, "192.168.0.0/24", createChildPkcs10Request)
+    val signingResponse = SelfSignedSigner.signChildCertificateRequest(AggregateId, ResourceClassName, "192.168.0.0/24", ChildPkcs10Request)
     signingResponse.isRight should be(true)
 
     val rejectionEvent = signingResponse.right.get
@@ -100,7 +100,7 @@ class SignerTest extends FunSuite with Matchers {
 
   test("should publish objects") {
 
-    val signingResponse = SelfSignedSigner.signChildCertificateRequest(AggregateId, ResourceClassName, "10.0.0.0/24", createChildPkcs10Request)
+    val signingResponse = SelfSignedSigner.signChildCertificateRequest(AggregateId, ResourceClassName, "10.0.0.0/24", ChildPkcs10Request)
     val signedEvent = signingResponse.left.get
     val childCertificate = signedEvent.certificate
     val signerAfterSigning = SelfSignedSigner.applyEvent(signedEvent)
