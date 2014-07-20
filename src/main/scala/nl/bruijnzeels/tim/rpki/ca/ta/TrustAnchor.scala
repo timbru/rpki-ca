@@ -11,14 +11,21 @@ import java.net.URI
 import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassCreated
 import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassCreated
 import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassEvent
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicator
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorCreated
 
-case class TrustAnchor(id: UUID, name: String, resourceClass: Option[ResourceClass] = None, events: List[Event] = List.empty) extends AggregateRoot {
+case class TrustAnchor(id: UUID,
+					   name: String,
+					   resourceClass: Option[ResourceClass] = None,
+					   communicator: Option[ProvisioningCommunicator] = None,
+					   events: List[Event] = List.empty) extends AggregateRoot {
 
   def applyEvents(events: List[Event]): TrustAnchor = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
 
   def applyEvent(event: Event): TrustAnchor = event match {
     case resourceClassCreated: ResourceClassCreated => copy(resourceClass = Some(ResourceClass.created(resourceClassCreated)), events = events :+ event)
     case resourceClassEvent: ResourceClassEvent => copy(resourceClass = Some(resourceClass.get.applyEvent(resourceClassEvent)), events = events :+ event)
+    case communicatorCreated: ProvisioningCommunicatorCreated => copy(communicator = Some(ProvisioningCommunicator(communicatorCreated.myIdentity)), events = events :+ event)
   }
   
   def clearEventList() = copy(events = List.empty)
@@ -43,8 +50,9 @@ object TrustAnchor {
     val taCreated = TrustAnchorCreated(aggregateId, name)
     val resourceClassCreatedEvent = ResourceClassCreated(aggregateId, DefaultResourceClassName)
     val createSignerEvents = Signer.createSelfSigned(aggregateId, DefaultResourceClassName, name, resources, taCertificateUri, publicationDir)
+    val createProvisioningCommunicatorEvent = ProvisioningCommunicator.create(aggregateId)
 
-    rebuild(List(taCreated, resourceClassCreatedEvent) ++ createSignerEvents)
+    rebuild(List(taCreated, resourceClassCreatedEvent) ++ createSignerEvents :+ createProvisioningCommunicatorEvent)
   }
 
 }
