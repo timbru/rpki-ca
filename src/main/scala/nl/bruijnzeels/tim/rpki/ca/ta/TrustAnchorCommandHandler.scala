@@ -17,6 +17,7 @@ case class TaCommandDispatcher() {
       case create: TrustAnchorCreate => TrustAnchorCreateCommandHandler.handle(create)
       case publish: TrustAnchorPublish => TrustAnchorPublishCommandHandler.handle(publish, existingTa.get)
       case addChild: TrustAnchorAddChild => TrustAnchorAddChildCommandHandler.handle(addChild, existingTa.get)
+      case resourceListQuery: TrustAnchorProcessResourceListQuery => TrustAnchorProcessResourceListQueryCommandHandler.handle(resourceListQuery, existingTa.get)
     }
 
     TrustAnchorStore.save(updatedTa)
@@ -38,3 +39,8 @@ object TrustAnchorPublishCommandHandler extends TrustAnchorCommandHandler[TrustA
 object TrustAnchorAddChildCommandHandler extends TrustAnchorCommandHandler[TrustAnchorAddChild] {
   override def handle(command: TrustAnchorAddChild, ta: TrustAnchor) = ta.addChild(command.childId, command.childXml, command.childResources)
 }
+
+object TrustAnchorProcessResourceListQueryCommandHandler extends TrustAnchorCommandHandler[TrustAnchorProcessResourceListQuery] {
+  override def handle(command: TrustAnchorProcessResourceListQuery, ta: TrustAnchor) = ???
+}
+

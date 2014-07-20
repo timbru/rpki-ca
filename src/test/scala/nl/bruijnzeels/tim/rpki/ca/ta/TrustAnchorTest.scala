@@ -1,17 +1,19 @@
 package nl.bruijnzeels.tim.rpki.ca
 package ta
 
-import org.scalatest.Matchers
-import org.scalatest.FunSuite
-import java.net.URI
-import net.ripe.ipresource.IpResourceSet
-import java.util.UUID
-import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
-import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
-import javax.security.auth.x500.X500Principal
 import java.math.BigInteger
-import nl.bruijnzeels.tim.rpki.ca.provisioning.MyIdentity
+import java.net.URI
+import java.util.UUID
+
+import org.scalatest.Finders
+import org.scalatest.FunSuite
+import org.scalatest.Matchers
+
+import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.provisioning.identity.ChildIdentitySerializer
+import nl.bruijnzeels.tim.rpki.ca.provisioning.MyIdentity
+import nl.bruijnzeels.tim.rpki.ca.stringToIpResourceSet
+import nl.bruijnzeels.tim.rpki.ca.stringToUri
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TrustAnchorTest extends FunSuite with Matchers {
@@ -29,7 +31,7 @@ class TrustAnchorTest extends FunSuite with Matchers {
 
     val ta = TrustAnchorCreateCommandHandler.handle(create)
 
-    val rc = ta.resourceClass.get
+    val rc = ta.resourceClass
     val signingMaterial = rc.currentSigner.signingMaterial
     val certificate = signingMaterial.currentCertificate
 
@@ -38,8 +40,8 @@ class TrustAnchorTest extends FunSuite with Matchers {
     certificate.getRepositoryUri() should equal(TrustAnchorPubUri)
     
     ta.communicator should not be (None)
-    ta.communicator.get.me.id should equal (TrustAnchorId)
-    ta.communicator.get.children should have size (0) 
+    ta.communicator.me.id should equal (TrustAnchorId)
+    ta.communicator.children should have size (0) 
 
     ta should equal(TrustAnchor.rebuild(ta.events))
   }
@@ -48,7 +50,7 @@ class TrustAnchorTest extends FunSuite with Matchers {
     val ta = TrustAnchorInitial.publish
     
     // Publishing is tested in more detail elsewhere, here I just want to verify that it's done
-    val set = ta.resourceClass.get.currentSigner.publicationSet.get
+    val set = ta.resourceClass.currentSigner.publicationSet.get
     set.number should equal (BigInteger.ONE)
     
     ta should equal(TrustAnchor.rebuild(ta.events))
@@ -59,9 +61,8 @@ class TrustAnchorTest extends FunSuite with Matchers {
     
     val taWithChild = TrustAnchorAddChildCommandHandler.handle(addChild, TrustAnchorInitial)
     
-    
-    
-    
+    taWithChild.communicator.children.isDefinedAt(ChildId) should be (true)
+    taWithChild.resourceClass.children.isDefinedAt(ChildId) should be (true)
   }
 
 }

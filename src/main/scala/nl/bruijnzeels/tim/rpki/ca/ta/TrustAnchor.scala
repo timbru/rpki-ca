@@ -14,40 +14,39 @@ import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassEvent
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicator
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorCreated
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorEvent
+import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
 
 case class TrustAnchor(id: UUID,
   name: String,
-  resourceClass: Option[ResourceClass] = None,
-  communicator: Option[ProvisioningCommunicator] = None,
+  resourceClass: ResourceClass = null,
+  communicator: ProvisioningCommunicator = null,
   events: List[Event] = List.empty) extends AggregateRoot {
 
   def applyEvents(events: List[Event]): TrustAnchor = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
 
   def applyEvent(event: Event): TrustAnchor = event match {
-    case resourceClassCreated: ResourceClassCreated => copy(resourceClass = Some(ResourceClass.created(resourceClassCreated)), events = events :+ event)
-    case resourceClassEvent: ResourceClassEvent => copy(resourceClass = Some(resourceClass.get.applyEvent(resourceClassEvent)), events = events :+ event)
-    case communicatorCreated: ProvisioningCommunicatorCreated => copy(communicator = Some(ProvisioningCommunicator(communicatorCreated.myIdentity)), events = events :+ event)
-    case comminicatorEvent: ProvisioningCommunicatorEvent => copy(communicator = Some(communicator.get.applyEvent(comminicatorEvent)), events = events :+ event) 
+    case resourceClassCreated: ResourceClassCreated => copy(resourceClass = ResourceClass.created(resourceClassCreated), events = events :+ event)
+    case resourceClassEvent: ResourceClassEvent => copy(resourceClass = resourceClass.applyEvent(resourceClassEvent), events = events :+ event)
+    case communicatorCreated: ProvisioningCommunicatorCreated => copy(communicator = ProvisioningCommunicator(communicatorCreated.myIdentity), events = events :+ event)
+    case comminicatorEvent: ProvisioningCommunicatorEvent => copy(communicator = communicator.applyEvent(comminicatorEvent), events = events :+ event)
   }
 
   def clearEventList() = copy(events = List.empty)
 
-  def publish(): TrustAnchor = resourceClass match {
-    case None => this // nothing to do
-    case Some(rc) => applyEvents(rc.publish)
+  def publish(): TrustAnchor = applyEvents(resourceClass.publish)
+
+  def addChild(childId: UUID, childXml: String, childResources: IpResourceSet): TrustAnchor = {
+    resourceClass.addChild(childId, childResources) match {
+      case Left(created) => applyEvents(List(created, communicator.addChild(id, childId, childXml)))
+      case Right(failed) => throw new TrustAnchorException(failed.reason)
+    }
   }
 
-  def addChild(childId: UUID, childXml: String, childResources: IpResourceSet): TrustAnchor = communicator match {
-    case None => throw new TrustAnchorException("Cannot add child before TA communicator is initialised")
-    case Some(pc) => resourceClass match {
-      case None => throw new TrustAnchorException("Cannot add child before TA resource class in initialised")
-      case Some(rc) => {
-        rc.addChild(childId, childResources) match {
-          case Left(created) => applyEvents(List(created, pc.addChild(id, childId, childXml)))
-          case Right(failed) => throw new TrustAnchorException(failed.reason)
-        }
-      }
-    }
+  /**
+   * Will return a new TA that has the response registered with the child
+   */
+  def processListQuery(childId: UUID, provisioningCmsObject: ProvisioningCmsObject) = {
+
   }
 
 }

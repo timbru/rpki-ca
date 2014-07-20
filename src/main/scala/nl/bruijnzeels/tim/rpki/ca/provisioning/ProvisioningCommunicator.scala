@@ -11,7 +11,7 @@ case class ProvisioningCommunicator(me: MyIdentity, children: Map[UUID, ChildIde
   
   def applyEvent(event: ProvisioningCommunicatorEvent) = event match {
     case created: ProvisioningCommunicatorCreated => ProvisioningCommunicator(created.myIdentity)
-    case childAdded: ProvisioningCommunicatorAddedChild => copy(children = children + (childAdded.aggregateId -> childAdded.childIdentity))
+    case childAdded: ProvisioningCommunicatorAddedChild => copy(children = children + (childAdded.childIdentity.childId -> childAdded.childIdentity))
   }
   
   private def validateChildDoesNotExist(childId: UUID) = if (children.isDefinedAt(childId)) { throw new IllegalArgumentException(s"Child with id $childId} should not exist")}
