@@ -10,7 +10,7 @@ import javax.security.auth.x500.X500Principal
 case class MyIdentity(id: UUID, identityCertificate: ProvisioningIdentityCertificate, keyPair: KeyPair) {
   
   def toChildIdentity() = new net.ripe.rpki.commons.provisioning.identity.ChildIdentity(id.toString, identityCertificate)
-
+  
 }
 
 object MyIdentity {

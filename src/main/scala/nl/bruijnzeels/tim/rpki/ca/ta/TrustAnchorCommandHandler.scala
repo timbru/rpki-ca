@@ -16,6 +16,7 @@ case class TaCommandDispatcher() {
     val updatedTa = command match {
       case create: TrustAnchorCreate => TrustAnchorCreateCommandHandler.handle(create)
       case publish: TrustAnchorPublish => TrustAnchorPublishCommandHandler.handle(publish, existingTa.get)
+      case addChild: TrustAnchorAddChild => TrustAnchorAddChildCommandHandler.handle(addChild, existingTa.get)
     }
 
     TrustAnchorStore.save(updatedTa)
@@ -33,16 +34,7 @@ trait TrustAnchorCommandHandler[C <: TrustAnchorCommand] {
 object TrustAnchorPublishCommandHandler extends TrustAnchorCommandHandler[TrustAnchorPublish] {
   override def handle(command: TrustAnchorPublish, ta: TrustAnchor) = ta.publish()
 }
-//
-////object TaChildAddCommandHandler extends TaCommandHandler[TaChildAdd] {
-////  override def handle(command: TaChildAdd, ta: TrustAnchor) = ta.addChild(command.childId)
-////}
-////
-////object TaChildSetResourceEntitlementsCommandHandler extends TaCommandHandler[TaChildSetResourceEntitlements] {
-////  override def handle(command: TaChildSetResourceEntitlements, ta: TrustAnchor) = ta.childSetResourceEntitlements(command.childId, command.entitlements)
-////}
-////
-////object TaChildRequestResourceCertificateCommandHandler extends TaCommandHandler[TaChildRequestResourceCertificate] {
-////  override def handle(command: TaChildRequestResourceCertificate, ta: TrustAnchor) = ta.childProcessResourceCertificateRequest(command.childId, command.request)
-////}
-//
+
+object TrustAnchorAddChildCommandHandler extends TrustAnchorCommandHandler[TrustAnchorAddChild] {
+  override def handle(command: TrustAnchorAddChild, ta: TrustAnchor) = ta.addChild(command.childId, command.childXml, command.childResources)
+}

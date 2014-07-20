@@ -6,3 +6,4 @@ import java.util.UUID
 sealed trait ProvisioningCommunicatorEvent extends Event
 
 case class ProvisioningCommunicatorCreated(aggregateId: UUID, myIdentity: MyIdentity) extends ProvisioningCommunicatorEvent
+case class ProvisioningCommunicatorAddedChild(aggregateId: UUID, childIdentity: ChildIdentity) extends ProvisioningCommunicatorEvent

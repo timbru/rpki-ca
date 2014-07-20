@@ -12,3 +12,4 @@ sealed trait TrustAnchorCommand extends Command {
 
 case class TrustAnchorCreate(id: UUID, name: String, resources: IpResourceSet, taCertificateUri: URI, publicationUri: URI) extends TrustAnchorCommand
 case class TrustAnchorPublish(id: UUID) extends TrustAnchorCommand
+case class TrustAnchorAddChild(id: UUID, childId: UUID, childXml: String, childResources: IpResourceSet) extends TrustAnchorCommand
