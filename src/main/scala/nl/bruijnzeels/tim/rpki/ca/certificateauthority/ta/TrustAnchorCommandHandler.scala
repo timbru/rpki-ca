@@ -3,7 +3,7 @@ package nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 import java.util.UUID
 
-case class TaCommandDispatcher() {
+object TrustAnchorCommandDispatcher {
   
   def load(id: UUID): Option[TrustAnchor] = {
     val events = EventStore.retrieve(id)

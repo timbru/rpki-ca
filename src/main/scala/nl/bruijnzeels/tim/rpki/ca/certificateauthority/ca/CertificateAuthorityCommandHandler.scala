@@ -5,7 +5,7 @@ import java.util.UUID
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorCommand
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 
-class CertificateAuthorityCommandDispatcher {
+object CertificateAuthorityCommandDispatcher {
 
   def load(id: UUID): Option[CertificateAuthority] = {
     val events = EventStore.retrieve(id)
