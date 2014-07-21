@@ -8,4 +8,5 @@ import common.cqrs.Event
 sealed trait CertificateAuthorityEvent extends Event
 
 case class CertificateAuthorityCreated(aggregateId: UUID, name: String) extends CertificateAuthorityEvent
+case class CertificateAuthorityAddedParent(aggregateId: UUID) extends CertificateAuthorityEvent
 

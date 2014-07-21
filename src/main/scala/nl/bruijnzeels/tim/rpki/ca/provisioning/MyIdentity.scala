@@ -14,12 +14,17 @@ import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObjectBuilder
 import net.ripe.rpki.commons.provisioning.payload.AbstractProvisioningPayload
 import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
+import java.net.URI
 
 case class MyIdentity(id: UUID, identityCertificate: ProvisioningIdentityCertificate, keyPair: KeyPair) {
   
   import X509CertificateBuilderHelper.DEFAULT_SIGNATURE_PROVIDER
+  
+  
 
   def toChildIdentity() = new net.ripe.rpki.commons.provisioning.identity.ChildIdentity(id.toString, identityCertificate)
+  
+
 
   def createProvisioningCms(recipient: String, payload: AbstractProvisioningPayload) = {
     // set recipient and child properly.. hard to do before this point

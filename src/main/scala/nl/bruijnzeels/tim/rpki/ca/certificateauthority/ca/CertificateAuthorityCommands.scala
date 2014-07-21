@@ -9,3 +9,4 @@ sealed trait CertificateAuthorityCommand extends Command {
 }
 
 case class CertificateAuthorityCreate(id: UUID, name: String) extends CertificateAuthorityCommand
+case class CertificateAuthorityAddParent(id: UUID, parentXml: String) extends CertificateAuthorityCommand

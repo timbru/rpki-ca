@@ -6,6 +6,7 @@ import common.cqrs.Event
 import provisioning.ProvisioningCommunicator
 import rc.ResourceClass
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorCreated
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorEvent
 
 /**
  *  A Certificate Authority in RPKI. Needs to have a parent which can be either
@@ -29,9 +30,12 @@ case class CertificateAuthority(
   
   def applyEvent(event: Event): CertificateAuthority = event match {
     case communicatorCreated: ProvisioningCommunicatorCreated => copy(communicator = ProvisioningCommunicator(communicatorCreated.myIdentity), events = events :+ event)
+    case communicatorEvent: ProvisioningCommunicatorEvent => copy(communicator = communicator.applyEvent(communicatorEvent), events = events :+ event)
   }
   
   def clearEventList() = copy(events = List.empty)
+  
+  def addParent(parentXml: String) = applyEvent(communicator.addParent(id, parentXml))
 
 }
 
