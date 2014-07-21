@@ -1,4 +1,4 @@
-package nl.bruijnzeels.tim.rpki.ca.ta
+package nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta
 
 case class TaCommandDispatcher() {
 

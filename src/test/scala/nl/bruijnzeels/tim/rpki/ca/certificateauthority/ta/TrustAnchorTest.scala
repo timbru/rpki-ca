@@ -1,24 +1,23 @@
 package nl.bruijnzeels.tim.rpki.ca
-package ta
+package certificateauthority.ta
 
 import java.math.BigInteger
 import java.net.URI
 import java.util.UUID
-import org.scalatest.Finders
+
 import org.scalatest.FunSuite
 import org.scalatest.Matchers
+
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.provisioning.identity.ChildIdentitySerializer
-import nl.bruijnzeels.tim.rpki.ca.provisioning.MyIdentity
-import nl.bruijnzeels.tim.rpki.ca.stringToIpResourceSet
-import nl.bruijnzeels.tim.rpki.ca.stringToUri
 import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayloadBuilder
 import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassListResponsePayload
+import provisioning.MyIdentity
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TrustAnchorTest extends FunSuite with Matchers {
 
-  import TrustAnchorTest._
+import TrustAnchorTest._
 
   test("Should create TA with selfsigned signer and provisioning communicator") {
 
