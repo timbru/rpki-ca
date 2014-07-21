@@ -24,6 +24,11 @@ import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificateBuilder
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestParser
 import net.ripe.rpki.commons.crypto.x509cert.RpkiCaCertificateBuilder
+import net.ripe.rpki.commons.provisioning.x509.ProvisioningCmsCertificateBuilder
+import net.ripe.rpki.commons.provisioning.payload.AbstractProvisioningPayload
+import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObjectBuilder
+import net.ripe.rpki.commons.provisioning.x509.ProvisioningIdentityCertificate
+import net.ripe.rpki.commons.crypto.x509cert.X509CertificateBuilderHelper
 
 case class SigningMaterial(keyPair: KeyPair,
   currentCertificate: X509ResourceCertificate,
@@ -60,6 +65,8 @@ case class EndEntityCertificateSignRequestInfo(rpkiObjectUri: URI, genericInfo: 
 case class ChildCertificateSignRequest(pkcs10Request: PKCS10CertificationRequest, resources: IpResourceSet, validityDuration: Period, serial: BigInteger)
 
 object SigningSupport {
+
+  import X509CertificateBuilderHelper.DEFAULT_SIGNATURE_PROVIDER
 
   def createCrl(signingMaterial: SigningMaterial, crlRequest: CrlRequest): X509Crl = {
 
@@ -167,6 +174,38 @@ object SigningSupport {
       .withSubjectInformationAccess(new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_CA_REPOSITORY, publicationDir),
         new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_RPKI_MANIFEST, manifestUri))
       .build()
+  }
+
+  def createProvisioningCms(sender: String, recipient: String, signingCertificate: ProvisioningIdentityCertificate, signingKeyPair: KeyPair, payload: AbstractProvisioningPayload) = {
+    // set recipient and child properly.. hard to do before this point
+    payload.setRecipient(recipient)
+    payload.setSender(sender)
+
+    val eeKeyPair = KeyPairSupport.createRpkiKeyPair
+
+    val eeCert = new ProvisioningCmsCertificateBuilder()
+      .withIssuerDN(signingCertificate.getSubject())
+      .withSubjectDN(RpkiObjectNameSupport.deriveSubject(eeKeyPair.getPublic()))
+      .withSigningKeyPair(signingKeyPair)
+      .withSerial(BigInteger.valueOf(DateTime.now().toInstant().getMillis())) // Todo: track serials
+      .withPublicKey(eeKeyPair.getPublic())
+      .withSignatureProvider(DEFAULT_SIGNATURE_PROVIDER)
+      .build()
+
+    val crl = new X509CrlBuilder()
+      .withIssuerDN(signingCertificate.getSubject())
+      .withAuthorityKeyIdentifier(signingKeyPair.getPublic())
+      .withThisUpdateTime(DateTime.now)
+      .withNextUpdateTime(DateTime.now.plusHours(24))
+      .withNumber(BigInteger.valueOf(DateTime.now().toInstant().getMillis()))
+      .build(signingKeyPair.getPrivate()).getCrl()
+
+    new ProvisioningCmsObjectBuilder()
+      .withCmsCertificate(eeCert.getCertificate())
+      .withCrl(crl)
+      .withPayloadContent(payload)
+      .withSignatureProvider(DEFAULT_SIGNATURE_PROVIDER)
+      .build(eeKeyPair.getPrivate())
   }
 
 }

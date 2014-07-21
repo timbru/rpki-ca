@@ -5,6 +5,7 @@ import org.scalatest.FunSuite
 import java.util.UUID
 import net.ripe.rpki.commons.provisioning.identity.ChildIdentitySerializer
 import net.ripe.rpki.commons.provisioning.identity.ParentIdentitySerializer
+import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayloadBuilder
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ProvisioningCommunicatorTest extends FunSuite with Matchers {
@@ -32,7 +33,7 @@ class ProvisioningCommunicatorTest extends FunSuite with Matchers {
     parentId.getParentIdCertificate() should equal(pc.me.identityCertificate)
   }
   
-  test("Should add parent") {
+  test("Should add parent, and sign requests to parent with proper sender and recipient..") {
     val childPc = ProvisioningCommunicator(ProvisioningCommunicator.create(UUID.randomUUID()).myIdentity)
     val childXml = new ChildIdentitySerializer().serialize(childPc.me.toChildIdentity)
     
@@ -42,6 +43,14 @@ class ProvisioningCommunicatorTest extends FunSuite with Matchers {
     val childWithParent = childPc.applyEvent(childPc.addParent(childPc.me.id, parentXml))
     
     childWithParent.parent should equal(Some(ParentIdentity.fromXml(parentXml)))
+    
+    val requestCms = childWithParent.signRequest(new ResourceClassListQueryPayloadBuilder().build())
+    val requestPayload = requestCms.getPayload()
+    
+    val parentId = new ParentIdentitySerializer().deserialize(parentXml)
+    
+    requestPayload.getRecipient() should equal(parentId.getParentHandle())
+    requestPayload.getSender() should equal(parentId.getChildHandle())
   }
   
 }

@@ -4,15 +4,14 @@ package certificateauthority.ta
 import java.math.BigInteger
 import java.net.URI
 import java.util.UUID
-
 import org.scalatest.FunSuite
 import org.scalatest.Matchers
-
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.provisioning.identity.ChildIdentitySerializer
 import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayloadBuilder
 import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassListResponsePayload
 import provisioning.MyIdentity
+import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningSupport
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TrustAnchorTest extends FunSuite with Matchers {
@@ -68,7 +67,12 @@ import TrustAnchorTest._
     val addChild = TrustAnchorAddChild(id = TrustAnchorId, childId = ChildId, childXml = ChildXml, childResources = ChildResources)
     val taWithChild = TrustAnchorAddChildCommandHandler.handle(addChild, TrustAnchorInitial)
     
-    val request = ChildIdentity.createProvisioningCms(TrustAnchorId.toString, new ResourceClassListQueryPayloadBuilder().build())
+    val request = SigningSupport.createProvisioningCms(
+      sender = ChildId.toString,
+      recipient = TrustAnchorId.toString,
+      signingCertificate = ChildIdentity.identityCertificate,
+      signingKeyPair = ChildIdentity.keyPair,
+      payload = new ResourceClassListQueryPayloadBuilder().build()) 
     
     val command = TrustAnchorProcessResourceListQuery(TrustAnchorId, ChildId, request)
     

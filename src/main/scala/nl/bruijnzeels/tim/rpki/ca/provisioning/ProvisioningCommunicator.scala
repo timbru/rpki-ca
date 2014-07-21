@@ -7,6 +7,9 @@ import net.ripe.rpki.commons.provisioning.payload.AbstractProvisioningPayload
 import net.ripe.rpki.commons.provisioning.x509.ProvisioningCmsCertificateBuilder
 import java.net.URI
 
+import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningSupport
+
+
 /**
  * Handles identities, communication messages, and validation between
  * this CA and its children
@@ -41,7 +44,23 @@ case class ProvisioningCommunicator(me: MyIdentity, parent: Option[ParentIdentit
     case Some(child) => child.validateMessage(cmsObject)
   }
 
-  def signResponse(childId: UUID, payload: AbstractProvisioningPayload) = me.createProvisioningCms(childId.toString, payload)
+  def signRequest(payload: AbstractProvisioningPayload) = {
+    SigningSupport.createProvisioningCms(
+      sender = parent.get.myHandle,
+      recipient = parent.get.parentHandle,
+      signingCertificate = me.identityCertificate,
+      signingKeyPair = me.keyPair,
+      payload = payload)
+  }
+  
+  def signResponse(childId: UUID, payload: AbstractProvisioningPayload) = { 
+    SigningSupport.createProvisioningCms(
+      sender = me.id.toString(),
+      recipient = childId.toString,
+      signingCertificate = me.identityCertificate,
+      signingKeyPair = me.keyPair,
+      payload = payload)
+  }
 
   def getExchangesForChild(childId: UUID) = childExchanges.filter(_.childId == childId)
 
