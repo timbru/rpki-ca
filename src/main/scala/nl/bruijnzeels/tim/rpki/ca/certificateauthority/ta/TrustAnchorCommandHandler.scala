@@ -1,9 +1,26 @@
 package nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta
 
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
+import java.util.UUID
+
 case class TaCommandDispatcher() {
+  
+  def load(id: UUID): Option[TrustAnchor] = {
+    val events = EventStore.retrieve(id)
+    if (events.size == 0) {
+      None
+    } else {
+      Some(TrustAnchor.rebuild(events).clearEventList())
+    }
+  }
+
+  def save(ta: TrustAnchor) = {
+    EventStore.store(ta.events)
+  }
+
 
   def dispatch(command: TrustAnchorCommand) = {
-    val existingTa = TrustAnchorStore.load(command.id)
+    val existingTa = load(command.id)
 
     if (existingTa.isDefined && command.isInstanceOf[TrustAnchorCreate]) {
       throw new IllegalArgumentException("Can't create new TA with id " + command.id + ", TA with same id exists")
@@ -20,7 +37,7 @@ case class TaCommandDispatcher() {
       case resourceListQuery: TrustAnchorProcessResourceListQuery => TrustAnchorProcessResourceListQueryCommandHandler.handle(resourceListQuery, existingTa.get)
     }
 
-    TrustAnchorStore.save(updatedTa)
+    save(updatedTa)
   }
 }
 

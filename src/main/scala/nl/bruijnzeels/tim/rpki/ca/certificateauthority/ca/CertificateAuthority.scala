@@ -2,10 +2,10 @@ package nl.bruijnzeels.tim.rpki.ca
 package certificateauthority.ca
 
 import java.util.UUID
-
 import common.cqrs.Event
 import provisioning.ProvisioningCommunicator
 import rc.ResourceClass
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorCreated
 
 /**
  *  A Certificate Authority in RPKI. Needs to have a parent which can be either
@@ -28,8 +28,10 @@ case class CertificateAuthority(
   def applyEvents(events: List[Event]): CertificateAuthority = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
   
   def applyEvent(event: Event): CertificateAuthority = event match {
-    case _ => ???
+    case communicatorCreated: ProvisioningCommunicatorCreated => copy(communicator = ProvisioningCommunicator(communicatorCreated.myIdentity), events = events :+ event)
   }
+  
+  def clearEventList() = copy(events = List.empty)
 
 }
 
@@ -42,8 +44,9 @@ object CertificateAuthority {
   
   def create(id: UUID, name: String) = {
     val created = CertificateAuthorityCreated(aggregateId = id, name = name)
+    val createdProvisioningCommunicator = ProvisioningCommunicator.create(id)
     
-    rebuild(List(created))
+    rebuild(List(created, createdProvisioningCommunicator))
   }
 
 }

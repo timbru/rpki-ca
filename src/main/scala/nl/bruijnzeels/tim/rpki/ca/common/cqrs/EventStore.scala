@@ -5,7 +5,7 @@ import java.util.UUID
 
 object EventStore {
 
-  // TODO: Have a nice thread safe event store. Use STM?
+  // TODO: Use persistent thread safe storage, sign and verify this shit!, log this stuff?
   var eventList: List[Event] = List.empty
 
   def retrieve(aggregateId: UUID): List[Event] = eventList.filter(_.aggregateId == aggregateId)
