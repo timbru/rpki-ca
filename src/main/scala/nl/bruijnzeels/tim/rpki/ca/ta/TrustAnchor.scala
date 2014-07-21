@@ -15,8 +15,16 @@ import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicator
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorCreated
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorEvent
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningMessageValidationFailure
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningMessageValidationSuccess
+import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayload
+import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassListResponsePayloadBuilder
+import net.ripe.rpki.commons.provisioning.payload.common.GenericClassElementBuilder
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorPerformedChildExchange
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningChildExchange
 
-case class TrustAnchor(id: UUID,
+case class TrustAnchor(
+  id: UUID,
   name: String,
   resourceClass: ResourceClass = null,
   communicator: ProvisioningCommunicator = null,
@@ -45,7 +53,24 @@ case class TrustAnchor(id: UUID,
   /**
    * Will return a new TA that has the response registered with the child
    */
-  def processListQuery(childId: UUID, provisioningCmsObject: ProvisioningCmsObject) = {
+  def processListQuery(childId: UUID, request: ProvisioningCmsObject) = {
+    communicator.validateMessage(childId, request) match {
+      case failure: ProvisioningMessageValidationFailure => throw new TrustAnchorException(failure.reason)
+      case success: ProvisioningMessageValidationSuccess => {
+        success.payload match {
+          case query: ResourceClassListQueryPayload => {
+            val builder = new ResourceClassListResponsePayloadBuilder()
+            builder.addClassElement(resourceClass.buildClassResponseForChild(childId))
+            val responsePayload = builder.build()
+
+            val response = communicator.signResponse(childId, responsePayload)
+
+            applyEvent(ProvisioningCommunicatorPerformedChildExchange(id, ProvisioningChildExchange(childId, request, response)))
+          }
+          case _ => throw new TrustAnchorException("Expected resource class list query")
+        }
+      }
+    }
 
   }
 

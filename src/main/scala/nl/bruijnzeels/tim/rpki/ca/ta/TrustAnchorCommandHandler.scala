@@ -41,6 +41,6 @@ object TrustAnchorAddChildCommandHandler extends TrustAnchorCommandHandler[Trust
 }
 
 object TrustAnchorProcessResourceListQueryCommandHandler extends TrustAnchorCommandHandler[TrustAnchorProcessResourceListQuery] {
-  override def handle(command: TrustAnchorProcessResourceListQuery, ta: TrustAnchor) = ???
+  override def handle(command: TrustAnchorProcessResourceListQuery, ta: TrustAnchor) = ta.processListQuery(command.childId, command.provisioningCmsObject)
 }
 

@@ -4,16 +4,16 @@ package ta
 import java.math.BigInteger
 import java.net.URI
 import java.util.UUID
-
 import org.scalatest.Finders
 import org.scalatest.FunSuite
 import org.scalatest.Matchers
-
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.provisioning.identity.ChildIdentitySerializer
 import nl.bruijnzeels.tim.rpki.ca.provisioning.MyIdentity
 import nl.bruijnzeels.tim.rpki.ca.stringToIpResourceSet
 import nl.bruijnzeels.tim.rpki.ca.stringToUri
+import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayloadBuilder
+import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassListResponsePayload
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TrustAnchorTest extends FunSuite with Matchers {
@@ -38,31 +38,55 @@ class TrustAnchorTest extends FunSuite with Matchers {
     signingMaterial.certificateUri should equal(TrustAnchorCertUri)
     certificate.getResources() should equal(TrustAnchorResources)
     certificate.getRepositoryUri() should equal(TrustAnchorPubUri)
-    
+
     ta.communicator should not be (None)
-    ta.communicator.me.id should equal (TrustAnchorId)
-    ta.communicator.children should have size (0) 
+    ta.communicator.me.id should equal(TrustAnchorId)
+    ta.communicator.children should have size (0)
 
     ta should equal(TrustAnchor.rebuild(ta.events))
   }
 
   test("Should publish") {
     val ta = TrustAnchorInitial.publish
-    
+
     // Publishing is tested in more detail elsewhere, here I just want to verify that it's done
     val set = ta.resourceClass.currentSigner.publicationSet.get
-    set.number should equal (BigInteger.ONE)
-    
+    set.number should equal(BigInteger.ONE)
+
     ta should equal(TrustAnchor.rebuild(ta.events))
   }
-  
+
   test("Should add child") {
     val addChild = TrustAnchorAddChild(id = TrustAnchorId, childId = ChildId, childXml = ChildXml, childResources = ChildResources)
-    
+
+    val taWithChild = TrustAnchorAddChildCommandHandler.handle(addChild, TrustAnchorInitial)
+
+    taWithChild.communicator.children.isDefinedAt(ChildId) should be(true)
+    taWithChild.resourceClass.children.isDefinedAt(ChildId) should be(true)
+  }
+
+  test("Should process child resource class list query") {
+    val addChild = TrustAnchorAddChild(id = TrustAnchorId, childId = ChildId, childXml = ChildXml, childResources = ChildResources)
     val taWithChild = TrustAnchorAddChildCommandHandler.handle(addChild, TrustAnchorInitial)
     
-    taWithChild.communicator.children.isDefinedAt(ChildId) should be (true)
-    taWithChild.resourceClass.children.isDefinedAt(ChildId) should be (true)
+    val request = ChildIdentity.createProvisioningCms(TrustAnchorId.toString, new ResourceClassListQueryPayloadBuilder().build())
+    
+    val command = TrustAnchorProcessResourceListQuery(TrustAnchorId, ChildId, request)
+    
+    val taAfterResponse = TrustAnchorProcessResourceListQueryCommandHandler.handle(command, taWithChild)
+    
+    val exchange = taAfterResponse.communicator.getExchangesForChild(ChildId)(0)
+    
+    val responsePayload = exchange.response.getPayload().asInstanceOf[ResourceClassListResponsePayload]
+    responsePayload.getSender should equal (TrustAnchorId.toString())
+    responsePayload.getRecipient should equal (ChildId.toString())
+
+    val resourceClassInResponse = responsePayload.getClassElements().get(0)
+    resourceClassInResponse.getCertificateElements() should be (null)
+    resourceClassInResponse.getClassName() should equal (TrustAnchor.DefaultResourceClassName)
+    resourceClassInResponse.getResourceSetIpv4() should equal (ChildResources)
+    resourceClassInResponse.getResourceSetIpv6() should equal(new IpResourceSet())
+    resourceClassInResponse.getResourceSetAsn() should equal(new IpResourceSet())
   }
 
 }
@@ -74,10 +98,11 @@ object TrustAnchorTest {
   val TrustAnchorCertUri: URI = "rsync://host/ta/ta.cer"
   val TrustAnchorPubUri: URI = "rsync://host/repository/"
   val TrustAnchorResources = IpResourceSet.ALL_PRIVATE_USE_RESOURCES
-  
+
   val ChildId = UUID.fromString("3a87a4b1-6e22-4a63-ad0f-06f83ad3ca16")
-  val ChildXml = new ChildIdentitySerializer().serialize(MyIdentity.create(ChildId).toChildIdentity)
-  val ChildResources: IpResourceSet = "192.168.0.0/16" 
+  val ChildIdentity = MyIdentity.create(ChildId)
+  val ChildXml = new ChildIdentitySerializer().serialize(ChildIdentity.toChildIdentity)
+  val ChildResources: IpResourceSet = "192.168.0.0/16"
 
   val TrustAnchorInitial =
     TrustAnchorCreateCommandHandler.handle(
