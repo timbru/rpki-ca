@@ -23,6 +23,9 @@ import net.ripe.rpki.commons.provisioning.payload.common.GenericClassElementBuil
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorPerformedChildExchange
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningChildExchange
 
+/**
+ * Root Certificate Authority for RPKI. Does not have a parent CA and has a self-signed certificate.
+ */
 case class TrustAnchor(
   id: UUID,
   name: String,
