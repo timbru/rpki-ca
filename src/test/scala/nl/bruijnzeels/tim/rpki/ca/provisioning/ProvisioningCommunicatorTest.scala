@@ -19,7 +19,7 @@ class ProvisioningCommunicatorTest extends FunSuite with Matchers {
   
   test("Should create parent xml") {
     val childId = MyIdentity.create(UUID.randomUUID)
-    val childXml = new ChildIdentitySerializer().serialize(childId.toChildIdentity)
+    val childXml = childId.toChildXml
     
     val pc = ProvisioningCommunicator(ProvisioningCommunicator.create(UUID.randomUUID()).myIdentity)
     val parentXml = pc.applyEvent(pc.addChild(pc.me.id, childId.id, childXml)).getParentXmlForChild(childId.id)
@@ -35,7 +35,7 @@ class ProvisioningCommunicatorTest extends FunSuite with Matchers {
   
   test("Should add parent, and sign requests to parent with proper sender and recipient..") {
     val childPc = ProvisioningCommunicator(ProvisioningCommunicator.create(UUID.randomUUID()).myIdentity)
-    val childXml = new ChildIdentitySerializer().serialize(childPc.me.toChildIdentity)
+    val childXml = childPc.me.toChildXml
     
     val parentPc = ProvisioningCommunicator(ProvisioningCommunicator.create(UUID.randomUUID()).myIdentity)
     val parentXml = parentPc.applyEvent(parentPc.addChild(parentPc.me.id, childPc.me.id, childXml)).getParentXmlForChild(childPc.me.id).get

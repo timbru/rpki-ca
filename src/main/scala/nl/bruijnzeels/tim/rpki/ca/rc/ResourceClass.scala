@@ -18,6 +18,7 @@ import org.joda.time.DateTimeZone
 import net.ripe.rpki.commons.provisioning.payload.common.CertificateElementBuilder
 import java.net.URI
 import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
+import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
 
 /**
  * The name for this class: ResourceClass is taken from the "Provisioning Resource Certificates" Protocol.
@@ -27,7 +28,11 @@ import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
  * Instead resources may be grouped in what are called resource classes.
  *
  */
-case class ResourceClass(aggregateId: UUID, resourceClassName: String, currentSigner: Signer, children: Map[UUID, Child] = Map.empty) {
+case class ResourceClass(
+  aggregateId: UUID,
+  resourceClassName: String,
+  currentSigner: Signer,
+  children: Map[UUID, Child] = Map.empty) {
 
   def applyEvents(events: List[ResourceClassEvent]): ResourceClass = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
 
@@ -49,18 +54,23 @@ case class ResourceClass(aggregateId: UUID, resourceClassName: String, currentSi
     !overclaiming.isEmpty
   }
 
-  def buildClassResponseForChild(childId: UUID) = {
-    val child = children.get(childId).get
-    val responseBuilder = new GenericClassElementBuilder()
+  private def createClassElementBuilder(child: Child) = {
+    new GenericClassElementBuilder()
       .withClassName(resourceClassName)
       .withCertificateAuthorityUri(List(currentSigner.signingMaterial.certificateUri).asJava)
       .withIpResourceSet(child.entitledResources)
       .withValidityNotAfter(new DateTime().plusYears(1).withZone(DateTimeZone.UTC))
       .withIssuer(currentSigner.signingMaterial.currentCertificate)
+  }
 
+  def buildClassResponseForChild(childId: UUID) = {
+    val child = children.get(childId).get
+
+    val responseBuilder = createClassElementBuilder(child)
+
+    // Here we return *all* certificates
     val certificateElements = child.currentCertificates.map { certificate =>
-      // TODO: Publish something real in rsync?
-      val certificatePublicationUri = URI.create("rsync://invalid.com/repository" + RpkiObjectNameSupport.deriveName(certificate))
+      val certificatePublicationUri = URI.create("rsync://invalid.com/repository/" + RpkiObjectNameSupport.deriveName(certificate))
 
       new CertificateElementBuilder().withIpResources(certificate.getResources())
         .withCertificatePublishedLocations(List(certificatePublicationUri).asJava)
@@ -72,6 +82,19 @@ case class ResourceClass(aggregateId: UUID, resourceClassName: String, currentSi
     } else {
       responseBuilder.buildResourceClassListResponseClassElement()
     }
+  }
+
+  def buildCertificateIssuanceResponse(childId: UUID, certificate: X509ResourceCertificate) = {
+    val certificateElement = {
+      val certificatePublicationUri = URI.create("rsync://invalid.com/repository/" + RpkiObjectNameSupport.deriveName(certificate))
+      new CertificateElementBuilder().withIpResources(certificate.getResources())
+        .withCertificatePublishedLocations(List(certificatePublicationUri).asJava)
+        .withCertificate(certificate).build()
+    }
+    
+    createClassElementBuilder(children.get(childId).get)
+      .withCertificateElements(List(certificateElement).asJava)
+      .buildCertificateIssuanceResponseClassElement()
   }
 
   def addChild(childId: UUID, entitledResources: IpResourceSet): Either[ChildCreated, ResourceClassError] = {

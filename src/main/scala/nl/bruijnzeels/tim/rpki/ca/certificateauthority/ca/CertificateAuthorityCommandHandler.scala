@@ -37,6 +37,7 @@ object CertificateAuthorityCommandDispatcher {
     }
 
     save(updatedCa)
+    updatedCa
   }
 }
 

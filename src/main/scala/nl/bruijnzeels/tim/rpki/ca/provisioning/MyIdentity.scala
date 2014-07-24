@@ -9,7 +9,11 @@ import net.ripe.rpki.commons.provisioning.x509.ProvisioningIdentityCertificateBu
 import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
 
 case class MyIdentity(id: UUID, identityCertificate: ProvisioningIdentityCertificate, keyPair: KeyPair) {
-  def toChildIdentity() = new net.ripe.rpki.commons.provisioning.identity.ChildIdentity(id.toString, identityCertificate)
+  
+  def toChildXml() = {
+    import net.ripe.rpki.commons.provisioning.identity._
+    new ChildIdentitySerializer().serialize(new ChildIdentity(id.toString, identityCertificate))
+  }
 }
 
 object MyIdentity {

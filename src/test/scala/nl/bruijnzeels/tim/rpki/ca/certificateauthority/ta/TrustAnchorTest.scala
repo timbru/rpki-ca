@@ -104,7 +104,7 @@ object TrustAnchorTest {
 
   val ChildId = UUID.fromString("3a87a4b1-6e22-4a63-ad0f-06f83ad3ca16")
   val ChildIdentity = MyIdentity.create(ChildId)
-  val ChildXml = new ChildIdentitySerializer().serialize(ChildIdentity.toChildIdentity)
+  val ChildXml = ChildIdentity.toChildXml
   val ChildResources: IpResourceSet = "192.168.0.0/16"
 
   val TrustAnchorInitial =

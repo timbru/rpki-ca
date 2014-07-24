@@ -2,11 +2,27 @@ package nl.bruijnzeels.tim.rpki.ca
 package certificateauthority.ca
 
 import java.util.UUID
-import common.cqrs.Event
-import provisioning.ProvisioningCommunicator
-import rc.ResourceClass
+import scala.collection.JavaConverters._
+import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
+import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassListResponsePayload
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicator
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorCreated
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorEvent
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningMessageValidationFailure
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningMessageValidationSuccess
+import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClass
+import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassCreated
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
+import java.net.URI
+import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayloadBuilder
+import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassEvent
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorPerformedParentExchange
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningParentExchange
+import net.ripe.rpki.commons.provisioning.payload.AbstractProvisioningPayload
+import net.ripe.rpki.commons.provisioning.payload.issue.response.CertificateIssuanceResponsePayload
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerReceivedCertificate
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
 
 /**
  *  A Certificate Authority in RPKI. Needs to have a parent which can be either
@@ -22,35 +38,90 @@ import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorEvent
 case class CertificateAuthority(
   id: UUID,
   name: String,
-  resourceClass: List[ResourceClass] = List.empty,
+  resourceClasses: Map[String, ResourceClass] = Map.empty,
   communicator: ProvisioningCommunicator = null,
   events: List[Event] = List.empty) {
-  
+
   def applyEvents(events: List[Event]): CertificateAuthority = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
-  
+
   def applyEvent(event: Event): CertificateAuthority = event match {
     case communicatorCreated: ProvisioningCommunicatorCreated => copy(communicator = ProvisioningCommunicator(communicatorCreated.myIdentity), events = events :+ event)
     case communicatorEvent: ProvisioningCommunicatorEvent => copy(communicator = communicator.applyEvent(communicatorEvent), events = events :+ event)
+    case resourceClassCreated: ResourceClassCreated => copy(resourceClasses = resourceClasses + (resourceClassCreated.resourceClassName -> ResourceClass.created(resourceClassCreated)), events = events :+ event)
+    case resourceClassEvent: ResourceClassEvent => copy(resourceClasses = processResourceClassEvent(resourceClassEvent), events = events :+ event)
   }
-  
+
+  def processResourceClassEvent(event: ResourceClassEvent) = {
+    val rc = resourceClasses.getOrElse(event.resourceClassName, throw new IllegalArgumentException("Got event for unknown resource class"))
+    resourceClasses + (rc.resourceClassName -> rc.applyEvent(event))
+  }
+
   def clearEventList() = copy(events = List.empty)
-  
+
   def addParent(parentXml: String) = applyEvent(communicator.addParent(id, parentXml))
+
+  def processResourceClassListResponse(myRequest: ProvisioningCmsObject, response: ProvisioningCmsObject) = {
+    communicator.validateParentResponse(response) match {
+      case failure: ProvisioningMessageValidationFailure => throw new CertificateAuthorityException(failure.reason)
+      case success: ProvisioningMessageValidationSuccess => {
+        success.payload match {
+          case classListResponse: ResourceClassListResponsePayload => {
+            val resourceClassEvents = classListResponse.getClassElements().asScala.map(_.getClassName()).flatMap { className =>
+              if (resourceClasses.contains(className)) {
+                ??? // won't do updates for now
+              } else {
+                List(ResourceClassCreated(id, className)) ++
+                  Signer.create(id, className, URI.create(s"rsync://invalid.com/${id}/${className}/")) :+
+                  ProvisioningCommunicatorPerformedParentExchange(id, ProvisioningParentExchange(myRequest, response))
+              }
+            }.toList
+            applyEvents(resourceClassEvents)
+          }
+          // TODO: Gracefully handle error response (other response types are more problematic though)
+          case _ => throw new CertificateAuthorityException("Expected resource class list response, but got: " + success.payload.getType())
+        }
+      }
+    }
+
+  }
+
+  def processCeritificateIssuanceResponse(myRequest: ProvisioningCmsObject, response: ProvisioningCmsObject) = {
+    communicator.validateParentResponse(response) match {
+      case failure: ProvisioningMessageValidationFailure => throw new CertificateAuthorityException(failure.reason)
+      case success: ProvisioningMessageValidationSuccess => {
+        success.payload match {
+          case issuanceResponse: CertificateIssuanceResponsePayload =>
+            val resourceClassName = issuanceResponse.getClassElement().getClassName()
+            val certificate = issuanceResponse.getClassElement().getCertificateElement().getCertificate()
+            val signerReceivedCertificate = SignerReceivedCertificate(id, resourceClassName, certificate)
+
+            val pcPerformedCommunication = ProvisioningCommunicatorPerformedParentExchange(id, ProvisioningParentExchange(myRequest, response))
+
+            applyEvents(List(signerReceivedCertificate, pcPerformedCommunication))
+          case _ => {
+            // TODO: Gracefully handle error response (other response types are more problematic though)
+            throw new CertificateAuthorityException("Expected resource certificate issuance response, but got: " + success.payload.getType())
+          }
+        }
+      }
+    }
+  }
 
 }
 
 object CertificateAuthority {
-  
+
   def rebuild(events: List[Event]): CertificateAuthority = events.head match {
     case created: CertificateAuthorityCreated => CertificateAuthority(id = created.aggregateId, name = created.name, events = List(created)).applyEvents(events.tail)
-    case event: Event => throw new IllegalArgumentException(s"First event MUST be creation of the TrustAnchor, was: ${event}")
+    case event: Event => throw new IllegalArgumentException(s"First event MUST be creation of the CertificateAuthority, was: ${event}")
   }
-  
+
   def create(id: UUID, name: String) = {
     val created = CertificateAuthorityCreated(aggregateId = id, name = name)
     val createdProvisioningCommunicator = ProvisioningCommunicator.create(id)
-    
+
     rebuild(List(created, createdProvisioningCommunicator))
   }
-
 }
+
+case class CertificateAuthorityException(msg: String) extends RuntimeException

@@ -33,7 +33,7 @@ class CertificateAuthorityTest extends FunSuite with Matchers {
     
     val ca = ChildInitial
     
-    val childIdXml = new ChildIdentitySerializer().serialize(ca.communicator.me.toChildIdentity)
+    val childIdXml = ca.communicator.me.toChildXml
     val childResources: IpResourceSet = "192.168.0.0/16" 
     val addChild = TrustAnchorAddChild(id = taInitial.id, childId = ca.id, childXml = childIdXml, childResources = childResources)
 

@@ -21,7 +21,7 @@ class MyIdentityTest extends FunSuite with Matchers {
   test("Should convert to rpki-commons ChildIdentity") {
     val id = UUID.randomUUID()
     val myIdentity = MyIdentity.create(id)
-    val childIdentity = myIdentity.toChildIdentity
+    val childIdentity = new ChildIdentitySerializer().deserialize(myIdentity.toChildXml)
     childIdentity.getIdentityCertificate() should equal (myIdentity.identityCertificate)
     childIdentity.getHandle() should equal (id.toString)
   }

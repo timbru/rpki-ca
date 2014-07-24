@@ -22,6 +22,10 @@ import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassLis
 import net.ripe.rpki.commons.provisioning.payload.common.GenericClassElementBuilder
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorPerformedChildExchange
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningChildExchange
+import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayload
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorPerformedChildExchange
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerSignedCertificate
+import net.ripe.rpki.commons.provisioning.payload.issue.response.CertificateIssuanceResponsePayloadBuilder
 
 /**
  * Root Certificate Authority for RPKI. Does not have a parent CA and has a self-signed certificate.
@@ -57,7 +61,7 @@ case class TrustAnchor(
    * Will return a new TA that has the response registered with the child
    */
   def processListQuery(childId: UUID, request: ProvisioningCmsObject) = {
-    communicator.validateMessage(childId, request) match {
+    communicator.validateChildRequest(childId, request) match {
       case failure: ProvisioningMessageValidationFailure => throw new TrustAnchorException(failure.reason)
       case success: ProvisioningMessageValidationSuccess => {
         success.payload match {
@@ -74,7 +78,52 @@ case class TrustAnchor(
         }
       }
     }
+  }
 
+  /**
+   * Will return a new TA that has the response registered with the child
+   */
+  def processResourceCertificateIssuanceRequest(childId: UUID, request: ProvisioningCmsObject) = {
+    communicator.validateChildRequest(childId, request) match {
+      case failure: ProvisioningMessageValidationFailure => throw new TrustAnchorException(failure.reason)
+      case success: ProvisioningMessageValidationSuccess => {
+        success.payload match {
+          case issuancePayload: CertificateIssuanceRequestPayload => {
+
+            val requestedResources = {
+              if (issuancePayload.getRequestElement().getAllocatedAsn() == null &&
+                  issuancePayload.getRequestElement().getAllocatedIpv4() == null &&
+                  issuancePayload.getRequestElement().getAllocatedIpv6() == null) {
+                None
+              } else {
+                val resources = new IpResourceSet()
+                resources.addAll(issuancePayload.getRequestElement().getAllocatedAsn())
+                resources.addAll(issuancePayload.getRequestElement().getAllocatedIpv4())
+                resources.addAll(issuancePayload.getRequestElement().getAllocatedIpv6())
+                Some(resources)
+              }
+            }
+
+            resourceClass.processChildCertificateRequest(childId, requestedResources, issuancePayload.getRequestElement().getCertificateRequest()) match {
+              case Right(failure) => throw new TrustAnchorException(failure.reason) // TODO: Return error response instead
+              case Left(events) => {
+                val signed = events.collect { case e: SignerSignedCertificate => e }.head
+                
+                val responsePayload = new CertificateIssuanceResponsePayloadBuilder()
+                  .withClassElement(resourceClass.buildCertificateIssuanceResponse(childId, signed.certificate))
+                  .build()
+                  
+                val response = communicator.signResponse(childId, responsePayload)
+                
+                applyEvents(events :+ ProvisioningCommunicatorPerformedChildExchange(id, ProvisioningChildExchange(childId, request, response)))
+              }
+            }
+
+          }
+          case _ => throw new TrustAnchorException("Expected a certificate issuance request")
+        }
+      }
+    }
   }
 
 }

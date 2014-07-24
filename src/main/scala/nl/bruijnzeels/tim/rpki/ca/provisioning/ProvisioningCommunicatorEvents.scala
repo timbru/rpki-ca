@@ -10,7 +10,8 @@ case class ProvisioningCommunicatorCreated(aggregateId: UUID, myIdentity: MyIden
 
 case class ProvisioningCommunicatorAddedChild(aggregateId: UUID, childIdentity: ChildIdentity) extends ProvisioningCommunicatorEvent
 case class ProvisioningCommunicatorPerformedChildExchange(aggregateId: UUID, exchange: ProvisioningChildExchange) extends ProvisioningCommunicatorEvent
+case class ProvisioningChildExchange(childId: UUID, request: ProvisioningCmsObject, response: ProvisioningCmsObject)
 
 case class ProvisioningCommunicatorAddedParent(aggregateId: UUID, parentIdentity: ParentIdentity) extends ProvisioningCommunicatorEvent
-
-case class ProvisioningChildExchange(childId: UUID, request: ProvisioningCmsObject, response: ProvisioningCmsObject)
+case class ProvisioningCommunicatorPerformedParentExchange(aggregateId: UUID, exchange: ProvisioningParentExchange) extends ProvisioningCommunicatorEvent
+case class ProvisioningParentExchange(request: ProvisioningCmsObject, response: ProvisioningCmsObject)

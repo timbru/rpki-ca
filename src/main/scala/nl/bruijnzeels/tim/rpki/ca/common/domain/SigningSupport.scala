@@ -30,7 +30,8 @@ import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObjectBuilder
 import net.ripe.rpki.commons.provisioning.x509.ProvisioningIdentityCertificate
 import net.ripe.rpki.commons.crypto.x509cert.X509CertificateBuilderHelper
 
-case class SigningMaterial(keyPair: KeyPair,
+case class SigningMaterial(
+  keyPair: KeyPair,
   currentCertificate: X509ResourceCertificate,
   certificateUri: URI,
   lastSerial: BigInteger,
@@ -39,6 +40,8 @@ case class SigningMaterial(keyPair: KeyPair,
   def crlPublicationUri = currentCertificate.getRepositoryUri().resolve(RpkiObjectNameSupport.deriveMftFileNameForKey(keyPair.getPublic()))
 
   def updateLastSerial(serial: BigInteger) = copy(lastSerial = serial)
+  
+  def updateCurrentCertificate(certificate: X509ResourceCertificate) = copy(currentCertificate = certificate)
 
   /**
    * Adds new revocation and purges expired revocations

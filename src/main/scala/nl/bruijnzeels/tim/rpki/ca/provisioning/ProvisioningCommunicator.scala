@@ -14,7 +14,12 @@ import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningSupport
  * Handles identities, communication messages, and validation between
  * this CA and its children
  */
-case class ProvisioningCommunicator(me: MyIdentity, parent: Option[ParentIdentity] = None, children: Map[UUID, ChildIdentity] = Map.empty, childExchanges: List[ProvisioningChildExchange] = List.empty) {
+case class ProvisioningCommunicator(
+    me: MyIdentity,
+    parent: Option[ParentIdentity] = None,
+    parentExchanges: List[ProvisioningParentExchange] = List.empty,
+    children: Map[UUID, ChildIdentity] = Map.empty,
+    childExchanges: List[ProvisioningChildExchange] = List.empty) {
 
   val UpDownUri = URI.create("http://invalid.com/") // TODO.. won't use http for now..
 
@@ -25,6 +30,7 @@ case class ProvisioningCommunicator(me: MyIdentity, parent: Option[ParentIdentit
     case childExchangePerformed: ProvisioningCommunicatorPerformedChildExchange => copy(childExchanges = childExchanges :+ childExchangePerformed.exchange)
     
     case parentAdded: ProvisioningCommunicatorAddedParent => copy(parent = Some(parentAdded.parentIdentity))
+    case parentExchangePerformed: ProvisioningCommunicatorPerformedParentExchange => copy(parentExchanges = parentExchanges :+ parentExchangePerformed.exchange)
   }
 
   private def validateChildDoesNotExist(childId: UUID) = if (children.isDefinedAt(childId)) { throw new IllegalArgumentException(s"Child with id $childId} should not exist") }
@@ -39,10 +45,12 @@ case class ProvisioningCommunicator(me: MyIdentity, parent: Option[ParentIdentit
   
   def addParent(aggregateId: UUID, parentXml: String) = ProvisioningCommunicatorAddedParent(aggregateId, ParentIdentity.fromXml(parentXml))
 
-  def validateMessage(childId: UUID, cmsObject: ProvisioningCmsObject) = children.get(childId) match {
+  def validateChildRequest(childId: UUID, cmsObject: ProvisioningCmsObject) = children.get(childId) match {
     case None => ProvisioningMessageValidationFailure("Unknown child")
     case Some(child) => child.validateMessage(cmsObject)
   }
+  
+  def validateParentResponse(cmsObject: ProvisioningCmsObject) = parent.get.validateMessage(cmsObject)
 
   def signRequest(payload: AbstractProvisioningPayload) = {
     SigningSupport.createProvisioningCms(

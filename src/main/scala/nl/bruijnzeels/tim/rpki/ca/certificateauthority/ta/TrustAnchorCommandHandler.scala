@@ -38,6 +38,7 @@ object TrustAnchorCommandDispatcher {
     }
 
     save(updatedTa)
+    updatedTa
   }
 }
 

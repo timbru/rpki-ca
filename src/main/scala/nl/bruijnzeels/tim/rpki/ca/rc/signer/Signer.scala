@@ -5,28 +5,33 @@ package signer
 
 import java.math.BigInteger
 import java.net.URI
+import java.security.KeyPair
 import java.util.UUID
 
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
-
 import org.joda.time.Period
-
-import net.ripe.ipresource.IpResourceSet
-import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
 
 import common.domain.ChildCertificateSignRequest
 import common.domain.KeyPairSupport
 import common.domain.Revocation
 import common.domain.SigningMaterial
 import common.domain.SigningSupport
+import javax.security.auth.x500.X500Principal
+import net.ripe.ipresource.IpResourceSet
+import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
+import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayload
+import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayloadBuilder
+import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestBuilder
+import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
 
 case class Signer(
   signingMaterial: SigningMaterial,
+  pendingCertificateRequest: Option[CertificateIssuanceRequestPayload] = None,
   publicationSet: Option[PublicationSet] = None,
   revocationList: List[Revocation] = List.empty) {
 
   import Signer._
-  
+
   def resources = signingMaterial.currentCertificate.getResources
 
   def applyEvents(events: List[SignerEvent]): Signer = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
@@ -34,6 +39,8 @@ case class Signer(
   def applyEvent(event: SignerEvent): Signer = event match {
     case created: SignerCreated => Signer(null) // 
     case signingMaterialCreated: SignerSigningMaterialCreated => copy(signingMaterial = signingMaterialCreated.signingMaterial)
+    case pendingRequestCreated: SignerCreatedPendingCertificateRequest => copy(pendingCertificateRequest = Some(pendingRequestCreated.request))
+    case certificateReceived: SignerReceivedCertificate => copy(pendingCertificateRequest = None, signingMaterial = signingMaterial.updateCurrentCertificate(certificateReceived.certificate))
     case published: SignerUpdatedPublicationSet => copy(publicationSet = Some(published.publicationSet))
     case signed: SignerSignedCertificate => copy(signingMaterial = signingMaterial.updateLastSerial(signed.certificate.getSerialNumber()))
     case revoked: SignerAddedRevocation => copy(revocationList = revocationList :+ revoked.revocation)
@@ -80,6 +87,36 @@ object Signer {
   val CrlNextUpdate = Period.hours(24)
   val MftNextUpdate = Period.days(1)
   val MftValidityTime = Period.days(7)
+
+  def createCertificateIssuanceRequest(className: String, repositoryUri: URI, mftUri: URI, subject: X500Principal, keyPair: KeyPair) = {
+    val pkcs10Request = new RpkiCaCertificateRequestBuilder()
+      .withCaRepositoryUri(repositoryUri)
+      .withManifestUri(mftUri)
+      .withSubject(subject)
+      .build(keyPair)
+
+    new CertificateIssuanceRequestPayloadBuilder().withClassName(className).withCertificateRequest(pkcs10Request).build()
+  }
+
+  def create(aggregateId: UUID, resourceClassName: String, publicationUri: URI) = {
+    val keyPair = KeyPairSupport.createRpkiKeyPair
+
+    val created = SignerCreated(aggregateId, resourceClassName)
+
+    val signingMaterialCreated = {
+      val signingMaterial = SigningMaterial(keyPair, null, publicationUri, BigInteger.ZERO)
+      SignerSigningMaterialCreated(aggregateId, resourceClassName, signingMaterial)
+    }
+
+    val pendingCeritifcateRequest = {
+      val mftUri = publicationUri.resolve(RpkiObjectNameSupport.deriveMftFileNameForKey(keyPair.getPublic()))
+      val preferredSubject = RpkiObjectNameSupport.deriveSubject(keyPair.getPublic()) // parent may override..
+      val request = createCertificateIssuanceRequest(resourceClassName, publicationUri, mftUri, preferredSubject, keyPair)
+      SignerCreatedPendingCertificateRequest(aggregateId, resourceClassName, request)
+    }
+
+    List(created, signingMaterialCreated, pendingCeritifcateRequest)
+  }
 
   def createSelfSigned(aggregateId: UUID, resourceClassName: String, name: String, resources: IpResourceSet, taCertificateUri: URI, publicationDir: URI): List[SignerEvent] = {
     val keyPair = KeyPairSupport.createRpkiKeyPair
