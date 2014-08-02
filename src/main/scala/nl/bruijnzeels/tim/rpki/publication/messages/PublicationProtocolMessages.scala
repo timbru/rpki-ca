@@ -13,7 +13,11 @@ import java.util.UUID
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
 import org.apache.commons.lang3.StringUtils
 
-case class Notification(sessionId: UUID, serial: BigInteger, snapshots: List[SnapshotReference], deltas: List[DeltaReference]) {
+sealed trait DeltaProtocolMessage {
+  def toXml: Elem
+}
+
+case class Notification(sessionId: UUID, serial: BigInteger, snapshots: List[SnapshotReference] = List.empty, deltas: List[DeltaReference] = List.empty) extends DeltaProtocolMessage {
 
   def toXml =
     <notification xmlns="http://www.ripe.net/rpki/rrdp" version="1" session_id={ sessionId.toString } serial={ serial.toString }>
@@ -44,7 +48,7 @@ object ReferenceHash {
   }
 }
 
-case class Snapshot(sessionId: UUID, serial: BigInteger, objects: List[Publish]) {
+case class Snapshot(sessionId: UUID, serial: BigInteger, objects: List[Publish]) extends DeltaProtocolMessage {
 
   def toXml =
     <snapshot xmlns="http://www.ripe.net/rpki/rrdp" version="1" session_id={ sessionId.toString } serial={ serial.toString }>
@@ -53,7 +57,7 @@ case class Snapshot(sessionId: UUID, serial: BigInteger, objects: List[Publish])
 
 }
 
-case class Deltas(sessionId: UUID, from: BigInteger, to: BigInteger, deltas: List[Delta]) {
+case class Deltas(sessionId: UUID, from: BigInteger, to: BigInteger, deltas: List[Delta]) extends DeltaProtocolMessage {
 
   def toXml =
     <deltas xmlns="http://www.ripe.net/rpki/rrdp" version="1" session_id={ sessionId.toString } from={ from.toString } to={ to.toString }>
@@ -62,7 +66,7 @@ case class Deltas(sessionId: UUID, from: BigInteger, to: BigInteger, deltas: Lis
 
 }
 
-case class Delta(serial: BigInteger, messages: List[PublicationProtocolMessage]) {
+case class Delta(serial: BigInteger, messages: List[PublicationProtocolMessage]) extends DeltaProtocolMessage {
 
   def toXml =
     <delta serial={ serial.toString }>
@@ -75,8 +79,12 @@ sealed trait PublicationProtocolMessage {
   def toXml: Elem
 }
 
-case class Publish(uri: URI, repositoryObject: CertificateRepositoryObject) extends PublicationProtocolMessage {
-  override def toXml = <publish uri={ uri.toString }>{ new BASE64Encoder().encode(repositoryObject.getEncoded()) }</publish>
+case class Publish(uri: URI, replaces: Option[ReferenceHash], repositoryObject: CertificateRepositoryObject) extends PublicationProtocolMessage {
+  override def toXml = replaces match {
+    case None => <publish uri={ uri.toString }>{ new BASE64Encoder().encode(repositoryObject.getEncoded()) }</publish>
+    case Some(hash) => <publish uri={ uri.toString } replaces={ hash.toString }>{ new BASE64Encoder().encode(repositoryObject.getEncoded()) }</publish>
+  }
+
 }
 
 object Publish {
@@ -90,17 +98,32 @@ object Publish {
       CertificateRepositoryObjectFactory.createCertificateRepositoryObject(bytes, result)
     }
 
-    Publish(uri, repositoryObject)
+    val replaces = {
+      val hash = (xml \ "@replaces").text
+      if (hash == null || hash.length == 0) {
+        None
+      } else {
+        Some(ReferenceHash(hash = hash))
+      }
+    }
+
+    Publish(uri, replaces, repositoryObject)
   }
 
   def fromXmlString(xmlString: String) = fromXml(XML.loadString(xmlString))
+
+  def forRepositoryObject(uri: URI, repositoryObject: CertificateRepositoryObject, oldObject: Option[CertificateRepositoryObject] = None) = {
+    val replaces = oldObject.map(cro => ReferenceHash.fromBytes(cro.getEncoded))
+    Publish(uri, replaces, repositoryObject)
+  }
 }
 
-case class Withdraw(uri: URI) extends PublicationProtocolMessage {
-  override def toXml = <withdraw uri={ uri.toString }/>
+case class Withdraw(uri: URI, hash: ReferenceHash) extends PublicationProtocolMessage {
+  override def toXml = <withdraw uri={ uri.toString } hash={ hash.toString }/>
 }
 
 object Withdraw {
-  def fromXml(xml: Elem) = Withdraw(uri = URI.create((xml \ "@uri").text))
+  def fromXml(xml: Elem) = Withdraw(uri = URI.create((xml \ "@uri").text), hash = ReferenceHash((xml \ "@hash").text))
   def fromXmlString(xmlString: String) = fromXml(XML.loadString(xmlString))
+  def forRepositoryObject(uri: URI, repositoryObject: CertificateRepositoryObject) = Withdraw(uri = uri, hash = ReferenceHash.fromBytes(repositoryObject.getEncoded))
 }

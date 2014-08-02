@@ -48,7 +48,7 @@ import TrustAnchorTest._
     val ta = TrustAnchorInitial.publish
 
     // Publishing is tested in more detail elsewhere, here I just want to verify that it's done
-    val set = ta.resourceClass.currentSigner.publicationSet.get
+    val set = ta.resourceClass.currentSigner.publicationSet
     set.number should equal(BigInteger.ONE)
 
     ta should equal(TrustAnchor.rebuild(ta.events))

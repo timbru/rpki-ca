@@ -66,8 +66,8 @@ class ResourceClassTest extends FunSuite with Matchers {
   test("Should publish certificate for child") {
     val rcAfterPublish = RcWithCertifiedChild.applyEvents(RcWithCertifiedChild.publish())
     
-    val set = rcAfterPublish.currentSigner.publicationSet.get
-    set.products should have size (1)
+    val set = rcAfterPublish.currentSigner.publicationSet
+    set.items should have size (3) // mft, crl, cer
   }
 
 }

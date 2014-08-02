@@ -19,15 +19,19 @@ import common.domain.SigningSupport
 import javax.security.auth.x500.X500Principal
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
+import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
+import net.ripe.rpki.commons.crypto.crl.X509Crl
 import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayload
 import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayloadBuilder
 import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestBuilder
+import nl.bruijnzeels.tim.rpki.ca.common.domain.CrlRequest
+import nl.bruijnzeels.tim.rpki.ca.common.domain.ManifestRequest
 import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
 
 case class Signer(
   signingMaterial: SigningMaterial,
   pendingCertificateRequest: Option[CertificateIssuanceRequestPayload] = None,
-  publicationSet: Option[PublicationSet] = None,
+  publicationSet: PublicationSet = PublicationSet(BigInteger.ZERO),
   revocationList: List[Revocation] = List.empty) {
 
   import Signer._
@@ -41,7 +45,7 @@ case class Signer(
     case signingMaterialCreated: SignerSigningMaterialCreated => copy(signingMaterial = signingMaterialCreated.signingMaterial)
     case pendingRequestCreated: SignerCreatedPendingCertificateRequest => copy(pendingCertificateRequest = Some(pendingRequestCreated.request))
     case certificateReceived: SignerReceivedCertificate => copy(pendingCertificateRequest = None, signingMaterial = signingMaterial.updateCurrentCertificate(certificateReceived.certificate))
-    case published: SignerUpdatedPublicationSet => copy(publicationSet = Some(published.publicationSet))
+    case published: SignerUpdatedPublicationSet => copy(publicationSet = publicationSet.applyEvent(published))
     case signed: SignerSignedCertificate => copy(signingMaterial = signingMaterial.updateLastSerial(signed.certificate.getSerialNumber()))
     case revoked: SignerAddedRevocation => copy(revocationList = revocationList :+ revoked.revocation)
   }
@@ -52,9 +56,55 @@ case class Signer(
    * Creates initial publication set for the first publication and will use existing publication set
    * so that mft and crl numbers can be tracked properly
    */
-  def publish(aggregateId: UUID, resourceClassName: String, products: List[CertificateRepositoryObject] = List.empty) = publicationSet match {
-    case None => PublicationSet.createFirst(aggregateId, resourceClassName, signingMaterial, products)
-    case Some(set) => set.publish(aggregateId, resourceClassName, signingMaterial, products)
+  def publish(aggregateId: UUID, resourceClassName: String, products: List[CertificateRepositoryObject] = List.empty) = {
+
+    // Validate that there was no attempt to publish an additional CRL or MFT 
+    products.foreach(p => p match {
+      case crl: X509Crl => throw new IllegalArgumentException("Do not publish CRL manually, will be created here")
+      case mft: ManifestCms => throw new IllegalArgumentException("Do not publish CRL manually, will be created here")
+      case _ => // Everything okay
+    })
+
+    val setNumber = publicationSet.number.add(BigInteger.ONE)
+
+    val mftRevocationOption = publicationSet.mft.map(mft => {
+      val mftRevocation = Revocation.forCertificate(mft.getCertificate)
+      SignerAddedRevocation(aggregateId, resourceClassName, mftRevocation)
+    })
+
+    val newCrl = {
+      val revocations = mftRevocationOption.map(_.revocation) match {
+        case None => signingMaterial.revocations
+        case Some(mftRevocation) => signingMaterial.revocations :+ mftRevocation
+      }
+
+      val crlRequest = CrlRequest(nextUpdateDuration = CrlNextUpdate, crlNumber = setNumber, revocations = revocations)
+      SigningSupport.createCrl(signingMaterial, crlRequest)
+    }
+
+    val newMft = {
+      val mftRequest = ManifestRequest(nextUpdateDuration = MftNextUpdate,
+        validityDuration = MftValidityTime,
+        manifestNumber = setNumber,
+        publishedObjects = products :+ newCrl,
+        certificateSerial = signingMaterial.lastSerial.add(BigInteger.ONE))
+      SigningSupport.createManifest(signingMaterial, mftRequest)
+    }
+    
+    val manifestSignedEvent = SignerSignedCertificate(aggregateId, resourceClassName, newMft.getCertificate())
+    
+    // aggregateId: UUID, resourceClassName: String, baseUri: URI, mft: ManifestCms, crl: X509Crl, products: List[CertificateRepositoryObject] = List.empty) = {
+    val publicationSetUpdatedEvent = publicationSet.publish(
+        aggregateId = aggregateId, resourceClassName = resourceClassName,
+        baseUri = signingMaterial.currentCertificate.getRepositoryUri,
+        mft = newMft,
+        crl = newCrl,
+        products = products)
+    
+    mftRevocationOption match {
+      case None => List(manifestSignedEvent, publicationSetUpdatedEvent)
+      case Some(revocationEvent) => List(revocationEvent, manifestSignedEvent, publicationSetUpdatedEvent)
+    }
   }
 
   /**

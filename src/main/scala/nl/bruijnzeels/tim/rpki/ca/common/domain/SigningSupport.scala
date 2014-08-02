@@ -37,10 +37,12 @@ case class SigningMaterial(
   lastSerial: BigInteger,
   revocations: List[Revocation] = List.empty) {
 
-  def crlPublicationUri = currentCertificate.getRepositoryUri().resolve(RpkiObjectNameSupport.deriveMftFileNameForKey(keyPair.getPublic()))
+  def crlPublicationUri = currentCertificate.getRepositoryUri().resolve(RpkiObjectNameSupport.deriveCrlFileNameForKey(keyPair.getPublic()))
+  def mftPublicationUri = currentCertificate.getRepositoryUri().resolve(RpkiObjectNameSupport.deriveMftFileNameForKey(keyPair.getPublic()))
+  def signedObjectUri(repositoryObject: CertificateRepositoryObject) = currentCertificate.getRepositoryUri().resolve(RpkiObjectNameSupport.deriveName(repositoryObject))
 
   def updateLastSerial(serial: BigInteger) = copy(lastSerial = serial)
-  
+
   def updateCurrentCertificate(certificate: X509ResourceCertificate) = copy(currentCertificate = certificate)
 
   /**

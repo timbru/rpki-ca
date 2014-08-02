@@ -4,69 +4,62 @@ package rc
 package signer
 
 import java.math.BigInteger
+import java.net.URI
 import java.util.UUID
 
-import org.joda.time.Period
+import scala.annotation.migration
 
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
 import net.ripe.rpki.commons.crypto.crl.X509Crl
+import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
+import nl.bruijnzeels.tim.rpki.publication.messages.Publish
+import nl.bruijnzeels.tim.rpki.publication.messages.ReferenceHash
+import nl.bruijnzeels.tim.rpki.publication.messages.Withdraw
 
-import common.domain.CrlRequest
-import common.domain.ManifestRequest
-import common.domain.Revocation
-import common.domain.SigningMaterial
-import common.domain.SigningSupport
-
-case class PublicationSet(number: BigInteger, mft: ManifestCms, crl: X509Crl, products: List[CertificateRepositoryObject] = List.empty) {
+case class PublicationSet(number: BigInteger, items: Map[ReferenceHash, CertificateRepositoryObject] = Map.empty, mft: Option[ManifestCms] = None, crl: Option[X509Crl] = None) {
 
   import PublicationSet._
 
-  def publish(caId: UUID, resourceClassName: String, signingMaterial: SigningMaterial, products: List[CertificateRepositoryObject] = List.empty) = {
-
-    val mftRevocation = Revocation.forCertificate(mft.getCertificate)
-    val signingMaterialWithMftRevocation = signingMaterial.withNewRevocation(mftRevocation)
-    val newSetNumber = number.add(BigInteger.ONE)
-
-    val newCrl = createCrl(signingMaterialWithMftRevocation, newSetNumber)
-    val newMft = createMft(signingMaterialWithMftRevocation, newSetNumber, products :+ newCrl)
-
-    List(
-      SignerAddedRevocation(caId, resourceClassName, mftRevocation),
-      SignerSignedCertificate(caId, resourceClassName, newMft.getCertificate()),
-      SignerUpdatedPublicationSet(caId, resourceClassName, PublicationSet(newSetNumber, newMft, newCrl, products)))
+  def applyEvent(event: SignerUpdatedPublicationSet) = {
+    val withdrawnHashes = event.withdraws.map(_.hash)
+    val remainingItems = items.filterKeys(k => !withdrawnHashes.contains(k))
+    val newOrUpdatedItems = convertToHashMap(event.publishes.map(_.repositoryObject))
+    
+    copy(number = event.number, items = remainingItems ++ newOrUpdatedItems, mft = Some(event.newMft), crl = Some(event.newCrl))
   }
 
-}
-
-object PublicationSet {
-
-  val CrlNextUpdate = Period.days(1)
-  val MftNextUpdate = Period.days(1)
-  val MftValidityTime = Period.days(7)
-
-  def createFirst(caId: UUID, resourceClassName: String, signingMaterial: SigningMaterial, products: List[CertificateRepositoryObject] = List.empty) = {
-    val setNumber = BigInteger.ONE
-    val crl = createCrl(signingMaterial, setNumber)
-    val mft = createMft(signingMaterial, setNumber, products :+ crl)
-
-    List(
-      SignerSignedCertificate(caId, resourceClassName, mft.getCertificate()),
-      SignerUpdatedPublicationSet(caId, resourceClassName, PublicationSet(setNumber, mft, crl, products)))
+  private def convertToHashMap(repositoryObjects: List[CertificateRepositoryObject]) = {
+    repositoryObjects.map { ro => (ReferenceHash.fromBytes(ro.getEncoded) -> ro) }.toMap
   }
 
-  def createCrl(signingMaterial: SigningMaterial, setNumber: BigInteger) = {
-    val crlRequest = CrlRequest(nextUpdateDuration = CrlNextUpdate, crlNumber = setNumber, revocations = signingMaterial.revocations)
-    SigningSupport.createCrl(signingMaterial, crlRequest)
-  }
+  def publish(aggregateId: UUID, resourceClassName: String, baseUri: URI, mft: ManifestCms, crl: X509Crl, products: List[CertificateRepositoryObject] = List.empty) = {
 
-  def createMft(signingMaterial: SigningMaterial, setNumber: BigInteger, publishedObjects: List[CertificateRepositoryObject]) = {
-    val mftRequest = ManifestRequest(nextUpdateDuration = MftNextUpdate,
-      validityDuration = MftValidityTime,
-      manifestNumber = setNumber,
-      publishedObjects = publishedObjects,
-      certificateSerial = signingMaterial.lastSerial.add(BigInteger.ONE))
-    SigningSupport.createManifest(signingMaterial, mftRequest)
+    def deriveUri(repositoryObject: CertificateRepositoryObject) = baseUri.resolve(RpkiObjectNameSupport.deriveName(repositoryObject))
+
+    // all current products
+    val newProducts = convertToHashMap(products :+ mft :+ crl)
+
+    def isUnchanged(entry: (ReferenceHash, CertificateRepositoryObject)) = {
+      items.get(entry._1) match {
+        case None => false
+        case Some(old) => old.equals(entry._2)
+      }
+    }
+
+    // publish all NEW products (i.e. minus unchanged)
+    val publishes = newProducts.filterNot(isUnchanged(_)).map { e =>
+      val hash = e._1
+      val newObject = e._2
+      val uri = deriveUri(newObject)
+      Publish.forRepositoryObject(uri, newObject, items.get(hash)) // Will include old object hash only if item exists for hash
+    }.toList
+
+    val withdrawals = items.filterNot(e => newProducts.isDefinedAt(e._1)).values.map { oldObject =>
+      Withdraw.forRepositoryObject(deriveUri(oldObject), oldObject)
+    }.toList
+
+    SignerUpdatedPublicationSet(aggregateId, resourceClassName, number.add(BigInteger.ONE), mft, crl, publishes, withdrawals)
   }
 
 }

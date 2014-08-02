@@ -60,42 +60,38 @@ class SignerTest extends FunSuite with Matchers {
   }
 
   test("should publish") {
-    SelfSignedSigner.publicationSet.isEmpty should be(true)
+    SelfSignedSigner.publicationSet.items should have size(0)
 
     val signerAfterFirstPublish = SelfSignedSigner.applyEvents(SelfSignedSigner.publish(AggregateId, ResourceClassName))
 
     signerAfterFirstPublish.signingMaterial.lastSerial should equal(BigInteger.valueOf(2)) // Manifest EE certificate should have been signed
 
-    signerAfterFirstPublish.publicationSet.isDefined should be(true)
-    val publicationSet = signerAfterFirstPublish.publicationSet.get
+    val publicationSet = signerAfterFirstPublish.publicationSet
     publicationSet.number should equal(BigInteger.ONE)
-    publicationSet.crl.getNumber() should equal(BigInteger.ONE)
-    publicationSet.mft.getNumber() should equal(BigInteger.ONE)
-    publicationSet.products should have size (0)
+    publicationSet.crl.get.getNumber() should equal(BigInteger.ONE)
+    publicationSet.mft.get.getNumber() should equal(BigInteger.ONE)
+    publicationSet.items should have size (2)
 
     signerAfterFirstPublish.revocationList should have size (0)
   }
 
   test("should RE-publish and revoke old manifest") {
-    SelfSignedSigner.publicationSet.isEmpty should be(true)
-
     val signerAfterFirstPublish = SelfSignedSigner.applyEvents(SelfSignedSigner.publish(AggregateId, ResourceClassName))
     val signerAfterSecondPublish = signerAfterFirstPublish.applyEvents(signerAfterFirstPublish.publish(AggregateId, ResourceClassName))
 
     signerAfterSecondPublish.signingMaterial.lastSerial should equal(BigInteger.valueOf(3)) // Manifest EE certificate should have been signed
 
-    signerAfterSecondPublish.publicationSet.isDefined should be(true)
-    val publicationSet = signerAfterSecondPublish.publicationSet.get
+    val publicationSet = signerAfterSecondPublish.publicationSet
     publicationSet.number should equal(BigInteger.valueOf(2))
-    publicationSet.crl.getNumber() should equal(BigInteger.valueOf(2))
-    publicationSet.mft.getNumber() should equal(BigInteger.valueOf(2))
-    publicationSet.products should have size (0)
+    publicationSet.crl.get.getNumber() should equal(BigInteger.valueOf(2))
+    publicationSet.mft.get.getNumber() should equal(BigInteger.valueOf(2))
+    publicationSet.items should have size (2)
 
     // should revoke mft EE for first publish
-    val firstPublishMft = signerAfterFirstPublish.publicationSet.get.mft
+    val firstPublishMft = signerAfterFirstPublish.publicationSet.mft.get
 
     signerAfterSecondPublish.revocationList should have size (1)
-    publicationSet.crl.isRevoked(firstPublishMft.getCertificate().getCertificate()) should be(true)
+    publicationSet.crl.get.isRevoked(firstPublishMft.getCertificate().getCertificate()) should be(true)
   }
 
   test("should publish objects") {
@@ -107,11 +103,11 @@ class SignerTest extends FunSuite with Matchers {
 
     val signerAfterPublish = signerAfterSigning.applyEvents(signerAfterSigning.publish(AggregateId, ResourceClassName, List(childCertificate)))
 
-    val set = signerAfterPublish.publicationSet.get
+    val set = signerAfterPublish.publicationSet
 
-    set.mft.getFileNames() should have size (2)
-    set.mft.containsFile(RpkiObjectNameSupport.deriveName(childCertificate)) should be(true)
-    set.products equals List(childCertificate)
+    set.mft.get.getFileNames() should have size (2)
+    set.mft.get.containsFile(RpkiObjectNameSupport.deriveName(childCertificate)) should be(true)
+    set.items.values should contain(childCertificate)
   }
 
 }

@@ -38,7 +38,6 @@ object RpkiObjectNameSupport {
   }
 
   def deriveCrlFileNameForKey(publicKey: PublicKey): String = hexEncodePubKey(publicKey) + ".crl"
-
   def deriveMftFileNameForKey(publicKey: PublicKey): String = hexEncodePubKey(publicKey) + ".mft"
 
   def deriveName(rpkiRepositoryObject: CertificateRepositoryObject): String = rpkiRepositoryObject match {
