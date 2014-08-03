@@ -12,6 +12,7 @@ import java.math.BigInteger
 import java.util.UUID
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
 import org.apache.commons.lang3.StringUtils
+import java.nio.charset.Charset
 
 sealed trait DeltaProtocolMessage {
   def toXml: Elem
@@ -20,18 +21,16 @@ sealed trait DeltaProtocolMessage {
 case class Notification(sessionId: UUID, serial: BigInteger, snapshots: List[SnapshotReference] = List.empty, deltas: List[DeltaReference] = List.empty) extends DeltaProtocolMessage {
 
   def toXml =
-    <notification xmlns="http://www.ripe.net/rpki/rrdp" version="1" session_id={ sessionId.toString } serial={ serial.toString }>
-      {
-        for (snapshot <- snapshots) yield {
-          <snapshot serial={ snapshot.serial.toString } uri={ snapshot.uri.toString } hash={ snapshot.hash.toString }/>
-        }
-      }
-      {
-        for (delta <- deltas) yield {
-          <delta from={ delta.from.toString } to={ delta.to.toString } uri={ delta.uri.toString } hash={ delta.hash.toString }/>
-        }
-      }
-    </notification>
+<notification xmlns="http://www.ripe.net/rpki/rrdp" version="1" session_id={ sessionId.toString } serial={ serial.toString }>
+{ for (snapshot <- snapshots) yield {
+      <snapshot serial={ snapshot.serial.toString } uri={ snapshot.uri.toString } hash={ snapshot.hash.toString }/>
+    }
+}
+{ for (delta <- deltas) yield {
+      <delta from={ delta.from.toString } to={ delta.to.toString } uri={ delta.uri.toString } hash={ delta.hash.toString }/>
+    }
+  }
+</notification>
 }
 
 case class SnapshotReference(uri: URI, serial: BigInteger, hash: ReferenceHash)
@@ -46,13 +45,18 @@ object ReferenceHash {
   def fromBytes(bytes: Array[Byte]) = {
     ReferenceHash(ManifestCms.hashContents(bytes).map("%02X" format _).mkString)
   }
+  
+  def fromXml(xml: Elem) = {
+    val bytes = xml.toString.getBytes(Charset.forName("UTF8"))
+    fromBytes(bytes)
+  }
 }
 
-case class Snapshot(sessionId: UUID, serial: BigInteger, objects: List[Publish]) extends DeltaProtocolMessage {
+case class Snapshot(sessionId: UUID, serial: BigInteger, publishes: List[Publish]) extends DeltaProtocolMessage {
 
   def toXml =
     <snapshot xmlns="http://www.ripe.net/rpki/rrdp" version="1" session_id={ sessionId.toString } serial={ serial.toString }>
-      { for (publish <- objects) yield { publish.toXml } }
+      { for (publish <- publishes) yield { publish.toXml } }
     </snapshot>
 
 }
