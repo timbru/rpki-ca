@@ -1,5 +1,4 @@
-package nl.bruijnzeels.tim.rpki.ca
-package certificateauthority.ca
+package nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca
 
 import java.util.UUID
 import scala.collection.JavaConverters._
@@ -39,16 +38,27 @@ case class CertificateAuthority(
   id: UUID,
   name: String,
   resourceClasses: Map[String, ResourceClass] = Map.empty,
-  communicator: ProvisioningCommunicator = null,
+  communicator: ProvisioningCommunicator = null, // will be set by communicator created event
   events: List[Event] = List.empty) {
 
   def applyEvents(events: List[Event]): CertificateAuthority = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
 
   def applyEvent(event: Event): CertificateAuthority = event match {
-    case communicatorCreated: ProvisioningCommunicatorCreated => copy(communicator = ProvisioningCommunicator(communicatorCreated.myIdentity), events = events :+ event)
-    case communicatorEvent: ProvisioningCommunicatorEvent => copy(communicator = communicator.applyEvent(communicatorEvent), events = events :+ event)
-    case resourceClassCreated: ResourceClassCreated => copy(resourceClasses = resourceClasses + (resourceClassCreated.resourceClassName -> ResourceClass.created(resourceClassCreated)), events = events :+ event)
-    case resourceClassEvent: ResourceClassEvent => copy(resourceClasses = processResourceClassEvent(resourceClassEvent), events = events :+ event)
+    case communicatorCreated: ProvisioningCommunicatorCreated =>
+      copy(communicator = ProvisioningCommunicator(communicatorCreated.myIdentity),
+        events = events :+ event)
+
+    case communicatorEvent: ProvisioningCommunicatorEvent =>
+      copy(communicator = communicator.applyEvent(communicatorEvent),
+        events = events :+ event)
+
+    case resourceClassCreated: ResourceClassCreated =>
+      copy(resourceClasses = resourceClasses + (resourceClassCreated.resourceClassName -> ResourceClass.created(resourceClassCreated)),
+        events = events :+ event)
+
+    case resourceClassEvent: ResourceClassEvent =>
+      copy(resourceClasses = processResourceClassEvent(resourceClassEvent),
+        events = events :+ event)
   }
 
   def processResourceClassEvent(event: ResourceClassEvent) = {
@@ -106,14 +116,16 @@ case class CertificateAuthority(
       }
     }
   }
-
 }
 
 object CertificateAuthority {
 
   def rebuild(events: List[Event]): CertificateAuthority = events.head match {
-    case created: CertificateAuthorityCreated => CertificateAuthority(id = created.aggregateId, name = created.name, events = List(created)).applyEvents(events.tail)
-    case event: Event => throw new IllegalArgumentException(s"First event MUST be creation of the CertificateAuthority, was: ${event}")
+    case created: CertificateAuthorityCreated =>
+      CertificateAuthority(id = created.aggregateId, name = created.name, events = List(created)).applyEvents(events.tail)
+
+    case event: Event =>
+      throw new IllegalArgumentException(s"First event MUST be creation of the CertificateAuthority, was: ${event}")
   }
 
   def create(id: UUID, name: String) = {
