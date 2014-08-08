@@ -6,3 +6,4 @@ target/
 .worksheet
 scratch.sc
 scalastyle-output.xml
+log
