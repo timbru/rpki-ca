@@ -32,6 +32,7 @@ class ChildParentResourceCertificateUpdateSagaTest extends FunSuite with Matcher
   val TrustAnchorResources = IpResourceSet.ALL_PRIVATE_USE_RESOURCES
 
   val ChildId = UUID.fromString("3a87a4b1-6e22-4a63-ad0f-06f83ad3ca16")
+  val ChildBaseUrl: URI = "rsync://host/repository/"
   val ChildName = "CA"
   val ChildIdentity = MyIdentity.create(ChildId)
   val ChildXml = ChildIdentity.toChildXml
@@ -48,7 +49,7 @@ class ChildParentResourceCertificateUpdateSagaTest extends FunSuite with Matcher
         taCertificateUri = TrustAnchorCertUri,
         publicationUri = TrustAnchorPubUri))
 
-    val initialCa = CertificateAuthorityCommandDispatcher.dispatch(CertificateAuthorityCreate(id = ChildId, name = ChildName))
+    val initialCa = CertificateAuthorityCommandDispatcher.dispatch(CertificateAuthorityCreate(id = ChildId, name = ChildName, baseUrl = ChildBaseUrl))
 
     val taWithChild = TrustAnchorCommandDispatcher.dispatch(
       TrustAnchorAddChild(
@@ -61,16 +62,16 @@ class ChildParentResourceCertificateUpdateSagaTest extends FunSuite with Matcher
       CertificateAuthorityAddParent(
         id = ChildId,
         parentXml = taWithChild.communicator.getParentXmlForChild(ChildId).get))
-        
-     ChildParentResourceCertificateUpdateSaga.updateCertificates(TrustAnchorId, ChildId)
-     
-     val caWithCertificate = CertificateAuthorityCommandDispatcher.load(ChildId).get
-     
-     caWithCertificate.resourceClasses should have size(1)
-     val caRcWithCertificate = caWithCertificate.resourceClasses.get(TrustAnchor.DefaultResourceClassName).get
-     val caCertificate = caRcWithCertificate.currentSigner.signingMaterial.currentCertificate
-     
-     caCertificate.getResources() should equal(ChildResources)
+
+    ChildParentResourceCertificateUpdateSaga.updateCertificates(TrustAnchorId, ChildId)
+
+    val caWithCertificate = CertificateAuthorityCommandDispatcher.load(ChildId).get
+
+    caWithCertificate.resourceClasses should have size (1)
+    val caRcWithCertificate = caWithCertificate.resourceClasses.get(TrustAnchor.DefaultResourceClassName).get
+    val caCertificate = caRcWithCertificate.currentSigner.signingMaterial.currentCertificate
+
+    caCertificate.getResources() should equal(ChildResources)
   }
 
 }

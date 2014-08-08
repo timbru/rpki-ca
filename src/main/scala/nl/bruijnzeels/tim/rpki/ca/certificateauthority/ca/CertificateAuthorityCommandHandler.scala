@@ -41,9 +41,8 @@ object CertificateAuthorityCommandDispatcher {
   }
 }
 
-
 object CertificateAuthorityCreateHandler {
-  def handle(create: CertificateAuthorityCreate) = CertificateAuthority.create(create.id, create.name)
+  def handle(create: CertificateAuthorityCreate) = CertificateAuthority.create(create.id, create.name, create.baseUrl)
 }
 
 trait CertificateAuthorityCommandHandler[C <: CertificateAuthorityCommand] {

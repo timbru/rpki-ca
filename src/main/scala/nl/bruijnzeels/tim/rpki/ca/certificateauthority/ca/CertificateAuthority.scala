@@ -37,6 +37,7 @@ import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
 case class CertificateAuthority(
   id: UUID,
   name: String,
+  baseUrl: URI,
   resourceClasses: Map[String, ResourceClass] = Map.empty,
   communicator: ProvisioningCommunicator = null, // will be set by communicator created event
   events: List[Event] = List.empty) {
@@ -81,7 +82,7 @@ case class CertificateAuthority(
                 ??? // won't do updates for now
               } else {
                 List(ResourceClassCreated(id, className)) ++
-                  Signer.create(id, className, URI.create(s"rsync://invalid.com/${id}/${className}/")) :+
+                  Signer.create(id, className, baseUrl.resolve(s"/${id}/${className}/")) :+
                   ProvisioningCommunicatorPerformedParentExchange(id, ProvisioningParentExchange(myRequest, response))
               }
             }.toList
@@ -122,14 +123,18 @@ object CertificateAuthority {
 
   def rebuild(events: List[Event]): CertificateAuthority = events.head match {
     case created: CertificateAuthorityCreated =>
-      CertificateAuthority(id = created.aggregateId, name = created.name, events = List(created)).applyEvents(events.tail)
+      CertificateAuthority(
+        id = created.aggregateId,
+        name = created.name,
+        baseUrl = created.baseUrl,
+        events = List(created)).applyEvents(events.tail)
 
     case event: Event =>
       throw new IllegalArgumentException(s"First event MUST be creation of the CertificateAuthority, was: ${event}")
   }
 
-  def create(id: UUID, name: String) = {
-    val created = CertificateAuthorityCreated(aggregateId = id, name = name)
+  def create(id: UUID, name: String, baseUrl: URI) = {
+    val created = CertificateAuthorityCreated(aggregateId = id, name = name, baseUrl = baseUrl)
     val createdProvisioningCommunicator = ProvisioningCommunicator.create(id)
 
     rebuild(List(created, createdProvisioningCommunicator))
