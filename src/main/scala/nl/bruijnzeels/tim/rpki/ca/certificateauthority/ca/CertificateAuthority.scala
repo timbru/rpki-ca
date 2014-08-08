@@ -38,6 +38,7 @@ case class CertificateAuthority(
   id: UUID,
   name: String,
   baseUrl: URI,
+  rrdpNotifyUrl: URI,
   resourceClasses: Map[String, ResourceClass] = Map.empty,
   communicator: ProvisioningCommunicator = null, // will be set by communicator created event
   events: List[Event] = List.empty) {
@@ -82,7 +83,7 @@ case class CertificateAuthority(
                 ??? // won't do updates for now
               } else {
                 List(ResourceClassCreated(id, className)) ++
-                  Signer.create(id, className, baseUrl.resolve(s"/${id}/${className}/")) :+
+                  Signer.create(id, className, baseUrl.resolve(s"/${id}/${className}/"), rrdpNotifyUrl) :+
                   ProvisioningCommunicatorPerformedParentExchange(id, ProvisioningParentExchange(myRequest, response))
               }
             }.toList
@@ -127,14 +128,15 @@ object CertificateAuthority {
         id = created.aggregateId,
         name = created.name,
         baseUrl = created.baseUrl,
+        rrdpNotifyUrl = created.rrdpNotifyUrl,
         events = List(created)).applyEvents(events.tail)
 
     case event: Event =>
       throw new IllegalArgumentException(s"First event MUST be creation of the CertificateAuthority, was: ${event}")
   }
 
-  def create(id: UUID, name: String, baseUrl: URI) = {
-    val created = CertificateAuthorityCreated(aggregateId = id, name = name, baseUrl = baseUrl)
+  def create(id: UUID, name: String, baseUrl: URI, rrdpNotifyUrl: URI) = {
+    val created = CertificateAuthorityCreated(aggregateId = id, name = name, baseUrl = baseUrl, rrdpNotifyUrl = rrdpNotifyUrl)
     val createdProvisioningCommunicator = ProvisioningCommunicator.create(id)
 
     rebuild(List(created, createdProvisioningCommunicator))

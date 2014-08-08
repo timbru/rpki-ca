@@ -25,7 +25,8 @@ import TrustAnchorTest._
       name = TrustAnchorName,
       resources = TrustAnchorResources,
       taCertificateUri = TrustAnchorCertUri,
-      publicationUri = TrustAnchorPubUri)
+      publicationUri = TrustAnchorPubUri,
+      rrdpNotifyUrl = RrdpNotifyUrl)
 
     val ta = TrustAnchorCreateCommandHandler.handle(create)
 
@@ -36,6 +37,7 @@ import TrustAnchorTest._
     signingMaterial.certificateUri should equal(TrustAnchorCertUri)
     certificate.getResources() should equal(TrustAnchorResources)
     certificate.getRepositoryUri() should equal(TrustAnchorPubUri)
+    certificate.getRrdpNotifyUri() should equal(RrdpNotifyUrl)
 
     ta.communicator should not be (None)
     ta.communicator.me.id should equal(TrustAnchorId)
@@ -102,6 +104,8 @@ import TrustAnchorTest._
 
 object TrustAnchorTest {
 
+  val RrdpNotifyUrl: URI = "rrdp://localhost:8080/rrdp/notify.xml"
+
   val TrustAnchorId = UUID.fromString("f3ec94ee-ae80-484a-8d58-a1e43bbbddd1")
   val TrustAnchorName = "TA"
   val TrustAnchorCertUri: URI = "http://host/ta/ta.cer"
@@ -120,6 +124,7 @@ object TrustAnchorTest {
         name = TrustAnchorName,
         resources = TrustAnchorResources,
         taCertificateUri = TrustAnchorCertUri,
-        publicationUri = TrustAnchorPubUri))
+        publicationUri = TrustAnchorPubUri,
+        rrdpNotifyUrl = RrdpNotifyUrl))
 
 }

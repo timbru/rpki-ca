@@ -1,15 +1,19 @@
 package nl.bruijnzeels.tim.rpki.ca
 package certificateauthority.ca
 
-import org.scalatest.Matchers
-import org.scalatest.FunSuite
+import java.net.URI
 import java.util.UUID
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorTest
+
+import net.ripe.ipresource.IpResourceSet
+
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorAddChild
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorAddChildCommandHandler
-import net.ripe.rpki.commons.provisioning.identity.ChildIdentitySerializer
-import net.ripe.ipresource.IpResourceSet
-import java.net.URI
+import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorTest
+import nl.bruijnzeels.tim.rpki.ca.stringToIpResourceSet
+import nl.bruijnzeels.tim.rpki.ca.stringToUri
+
+import org.scalatest.FunSuite
+import org.scalatest.Matchers
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class CertificateAuthorityTest extends FunSuite with Matchers {
@@ -17,7 +21,7 @@ class CertificateAuthorityTest extends FunSuite with Matchers {
   import CertificateAuthorityTest._
 
   test("Should create certificate authority with initialised provisioning communicator") {
-    val create = CertificateAuthorityCreate(id = CertificateAuthorityId, name = CertificateAuthorityName, baseUrl = CertificateAuthorityBaseUrl)
+    val create = CertificateAuthorityCreate(id = CertificateAuthorityId, name = CertificateAuthorityName, baseUrl = CertificateAuthorityBaseUrl, rrdpNotifyUrl = RrdpNotifyUrl)
 
     val ca = CertificateAuthorityCreateHandler.handle(create)
 
@@ -53,10 +57,12 @@ class CertificateAuthorityTest extends FunSuite with Matchers {
 
 object CertificateAuthorityTest {
 
+  val RrdpNotifyUrl: URI = "rrdp://localhost:8080/rrdp/notify.xml"
+
   val CertificateAuthorityId = UUID.fromString("9f750369-6c3d-482a-a9c9-733862778556")
   val CertificateAuthorityName = "Test CA"
   val CertificateAuthorityBaseUrl: URI = "rsync://invalid.com/foo"
 
-  val ChildInitial = CertificateAuthorityCreateHandler.handle(CertificateAuthorityCreate(id = CertificateAuthorityId, name = CertificateAuthorityName, baseUrl = CertificateAuthorityBaseUrl))
+  val ChildInitial = CertificateAuthorityCreateHandler.handle(CertificateAuthorityCreate(id = CertificateAuthorityId, name = CertificateAuthorityName, baseUrl = CertificateAuthorityBaseUrl, rrdpNotifyUrl = RrdpNotifyUrl))
 
 }

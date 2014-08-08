@@ -25,6 +25,8 @@ import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchor
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ChildParentResourceCertificateUpdateSagaTest extends FunSuite with Matchers {
 
+  val RrdpNotifyUrl: URI = "rrdp://localhost:8080/rrdp/notify.xml"
+
   val TrustAnchorId = UUID.fromString("f3ec94ee-ae80-484a-8d58-a1e43bbbddd1")
   val TrustAnchorName = "TA"
   val TrustAnchorCertUri: URI = "http://host/ta/ta.cer"
@@ -47,9 +49,10 @@ class ChildParentResourceCertificateUpdateSagaTest extends FunSuite with Matcher
         name = TrustAnchorName,
         resources = TrustAnchorResources,
         taCertificateUri = TrustAnchorCertUri,
-        publicationUri = TrustAnchorPubUri))
+        publicationUri = TrustAnchorPubUri,
+        rrdpNotifyUrl = RrdpNotifyUrl))
 
-    val initialCa = CertificateAuthorityCommandDispatcher.dispatch(CertificateAuthorityCreate(id = ChildId, name = ChildName, baseUrl = ChildBaseUrl))
+    val initialCa = CertificateAuthorityCommandDispatcher.dispatch(CertificateAuthorityCreate(id = ChildId, name = ChildName, baseUrl = ChildBaseUrl, rrdpNotifyUrl = RrdpNotifyUrl))
 
     val taWithChild = TrustAnchorCommandDispatcher.dispatch(
       TrustAnchorAddChild(

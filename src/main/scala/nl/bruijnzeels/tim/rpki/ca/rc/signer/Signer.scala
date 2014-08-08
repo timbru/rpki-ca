@@ -41,7 +41,7 @@ case class Signer(
   def applyEvents(events: List[SignerEvent]): Signer = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
 
   def applyEvent(event: SignerEvent): Signer = event match {
-    case created: SignerCreated => Signer(null) // 
+    case created: SignerCreated => Signer(null) //
     case signingMaterialCreated: SignerSigningMaterialCreated => copy(signingMaterial = signingMaterialCreated.signingMaterial)
     case pendingRequestCreated: SignerCreatedPendingCertificateRequest => copy(pendingCertificateRequest = Some(pendingRequestCreated.request))
     case certificateReceived: SignerReceivedCertificate => copy(pendingCertificateRequest = None, signingMaterial = signingMaterial.updateCurrentCertificate(certificateReceived.certificate))
@@ -58,7 +58,7 @@ case class Signer(
    */
   def publish(aggregateId: UUID, resourceClassName: String, products: List[CertificateRepositoryObject] = List.empty) = {
 
-    // Validate that there was no attempt to publish an additional CRL or MFT 
+    // Validate that there was no attempt to publish an additional CRL or MFT
     products.foreach(p => p match {
       case crl: X509Crl => throw new IllegalArgumentException("Do not publish CRL manually, will be created here")
       case mft: ManifestCms => throw new IllegalArgumentException("Do not publish CRL manually, will be created here")
@@ -90,9 +90,9 @@ case class Signer(
         certificateSerial = signingMaterial.lastSerial.add(BigInteger.ONE))
       SigningSupport.createManifest(signingMaterial, mftRequest)
     }
-    
+
     val manifestSignedEvent = SignerSignedCertificate(aggregateId, resourceClassName, newMft.getCertificate())
-    
+
     // aggregateId: UUID, resourceClassName: String, baseUri: URI, mft: ManifestCms, crl: X509Crl, products: List[CertificateRepositoryObject] = List.empty) = {
     val publicationSetUpdatedEvent = publicationSet.publish(
         aggregateId = aggregateId, resourceClassName = resourceClassName,
@@ -100,7 +100,7 @@ case class Signer(
         mft = newMft,
         crl = newCrl,
         products = products)
-    
+
     mftRevocationOption match {
       case None => List(manifestSignedEvent, publicationSetUpdatedEvent)
       case Some(revocationEvent) => List(revocationEvent, manifestSignedEvent, publicationSetUpdatedEvent)
@@ -148,13 +148,13 @@ object Signer {
     new CertificateIssuanceRequestPayloadBuilder().withClassName(className).withCertificateRequest(pkcs10Request).build()
   }
 
-  def create(aggregateId: UUID, resourceClassName: String, publicationUri: URI) = {
+  def create(aggregateId: UUID, resourceClassName: String, publicationUri: URI, rrdpNotifyUrl: URI) = {
     val keyPair = KeyPairSupport.createRpkiKeyPair
 
     val created = SignerCreated(aggregateId, resourceClassName)
 
     val signingMaterialCreated = {
-      val signingMaterial = SigningMaterial(keyPair, null, publicationUri, BigInteger.ZERO)
+      val signingMaterial = SigningMaterial(keyPair, null, publicationUri, rrdpNotifyUrl, BigInteger.ZERO)
       SignerSigningMaterialCreated(aggregateId, resourceClassName, signingMaterial)
     }
 
@@ -168,13 +168,20 @@ object Signer {
     List(created, signingMaterialCreated, pendingCeritifcateRequest)
   }
 
-  def createSelfSigned(aggregateId: UUID, resourceClassName: String, name: String, resources: IpResourceSet, taCertificateUri: URI, publicationDir: URI): List[SignerEvent] = {
+  def createSelfSigned(
+      aggregateId: UUID,
+      resourceClassName: String,
+      name: String,
+      resources: IpResourceSet,
+      taCertificateUri: URI,
+      publicationDir: URI,
+      rrdpNotifyUri: URI): List[SignerEvent] = {
     val keyPair = KeyPairSupport.createRpkiKeyPair
-    val certificate = SigningSupport.createRootCertificate(name, keyPair, resources, publicationDir, TrustAnchorLifeTime)
+    val certificate = SigningSupport.createRootCertificate(name, keyPair, resources, publicationDir, rrdpNotifyUri, TrustAnchorLifeTime)
 
     List(
       SignerCreated(aggregateId, resourceClassName),
-      SignerSigningMaterialCreated(aggregateId, resourceClassName, SigningMaterial(keyPair, certificate, taCertificateUri, BigInteger.ZERO)),
+      SignerSigningMaterialCreated(aggregateId, resourceClassName, SigningMaterial(keyPair, certificate, taCertificateUri, rrdpNotifyUri, BigInteger.ZERO)),
       SignerSignedCertificate(aggregateId, resourceClassName, certificate))
   }
 

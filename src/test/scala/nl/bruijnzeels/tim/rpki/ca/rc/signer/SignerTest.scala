@@ -4,25 +4,26 @@ package rc
 package signer
 
 import java.math.BigInteger
-import java.net.URI
-import java.util.UUID
 
+import net.ripe.ipresource.IpResourceSet
+
+import nl.bruijnzeels.tim.rpki.ca.stringToIpResourceSet
+
+import ResourceClassTest.AggregateId
+import ResourceClassTest.ChildPkcs10Request
+import ResourceClassTest.ResourceClassName
+import ResourceClassTest.SelfSignedSigner
+import ResourceClassTest.SignerResources
+import ResourceClassTest.SignerSubject
+import common.domain.RpkiObjectNameSupport
 import org.scalatest.FunSuite
 import org.scalatest.Matchers
 
-import common.domain.KeyPairSupport
-import common.domain.RpkiObjectNameSupport
-import javax.security.auth.x500.X500Principal
-import net.ripe.ipresource.IpResourceSet
-import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestBuilder
-import nl.bruijnzeels.tim.rpki.ca.stringToIpResourceSet
-import nl.bruijnzeels.tim.rpki.ca.stringToUri
-
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SignerTest extends FunSuite with Matchers {
-  
+
   import ResourceClassTest._
-  
+
   test("should create self-signed signer") {
 
     val signerCertificate = SelfSignedSigner.signingMaterial.currentCertificate
@@ -51,6 +52,13 @@ class SignerTest extends FunSuite with Matchers {
     updatedSigner.signingMaterial.revocations should have size (0)
   }
 
+  test("should include rrdp in SIA of signed certificate") {
+    val signingResponse = SelfSignedSigner.signChildCertificateRequest(AggregateId, ResourceClassName, "10.0.0.0/24", ChildPkcs10Request)
+    val childCertificate = signingResponse.left.get.certificate
+
+    childCertificate.getRrdpNotifyUri() should equal (RrdpNotifyUri)
+  }
+
   test("should reject overclaiming child certificate request") {
     val signingResponse = SelfSignedSigner.signChildCertificateRequest(AggregateId, ResourceClassName, "192.168.0.0/24", ChildPkcs10Request)
     signingResponse.isRight should be(true)
@@ -60,7 +68,7 @@ class SignerTest extends FunSuite with Matchers {
   }
 
   test("should publish") {
-    SelfSignedSigner.publicationSet.items should have size(0)
+    SelfSignedSigner.publicationSet.items should have size (0)
 
     val signerAfterFirstPublish = SelfSignedSigner.applyEvents(SelfSignedSigner.publish(AggregateId, ResourceClassName))
 

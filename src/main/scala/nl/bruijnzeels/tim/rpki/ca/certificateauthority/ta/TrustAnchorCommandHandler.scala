@@ -4,7 +4,7 @@ import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 import java.util.UUID
 
 object TrustAnchorCommandDispatcher {
-  
+
   def load(id: UUID): Option[TrustAnchor] = {
     val events = EventStore.retrieve(id)
     if (events.size == 0) {
@@ -43,7 +43,7 @@ object TrustAnchorCommandDispatcher {
 }
 
 object TrustAnchorCreateCommandHandler {
-  def handle(command: TrustAnchorCreate) = TrustAnchor.create(command.id, command.name, command.taCertificateUri, command.publicationUri, command.resources)
+  def handle(command: TrustAnchorCreate) = TrustAnchor.create(command.id, command.name, command.taCertificateUri, command.publicationUri, command.rrdpNotifyUrl, command.resources)
 }
 
 trait TrustAnchorCommandHandler[C <: TrustAnchorCommand] {

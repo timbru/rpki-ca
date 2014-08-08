@@ -34,6 +34,7 @@ case class SigningMaterial(
   keyPair: KeyPair,
   currentCertificate: X509ResourceCertificate,
   certificateUri: URI,
+  rrdpNotifyUrl: URI,
   lastSerial: BigInteger,
   revocations: List[Revocation] = List.empty) {
 
@@ -141,6 +142,7 @@ object SigningSupport {
     val builder = new RpkiCaCertificateBuilder
     builder.withCaRepositoryUri(reqParser.getCaRepositoryUri())
     builder.withManifestUri(reqParser.getManifestUri())
+    builder.withRrdpNotifyUri(reqParser.getRrdpNotifyUri())
     builder.withPublicKey(reqParser.getPublicKey())
     builder.withResources(childCaCertRequest.resources)
     builder.withSubjectDN(RpkiObjectNameSupport.deriveSubject(reqParser.getPublicKey()))
@@ -157,7 +159,7 @@ object SigningSupport {
     builder.build()
   }
 
-  def createRootCertificate(name: String, keyPair: KeyPair, resources: IpResourceSet, publicationDir: URI, validityDuration: Period) = {
+  def createRootCertificate(name: String, keyPair: KeyPair, resources: IpResourceSet, publicationDir: URI, rrdpNotifyUri: URI, validityDuration: Period) = {
     val now = new DateTime()
     val vp = new ValidityPeriod(now, now.plus(validityDuration))
 
@@ -176,8 +178,10 @@ object SigningSupport {
       .withSubjectDN(subjectDN)
       .withSubjectKeyIdentifier(true)
       .withIssuerDN(subjectDN)
-      .withSubjectInformationAccess(new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_CA_REPOSITORY, publicationDir),
-        new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_RPKI_MANIFEST, manifestUri))
+      .withSubjectInformationAccess(
+        new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_CA_REPOSITORY, publicationDir),
+        new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_RPKI_MANIFEST, manifestUri),
+        new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_RRDP_NOTIFY, rrdpNotifyUri))
       .build()
   }
 

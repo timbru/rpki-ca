@@ -9,5 +9,5 @@ sealed trait CertificateAuthorityCommand extends Command {
   def id: UUID
 }
 
-case class CertificateAuthorityCreate(id: UUID, name: String, baseUrl: URI) extends CertificateAuthorityCommand
+case class CertificateAuthorityCreate(id: UUID, name: String, baseUrl: URI, rrdpNotifyUrl: URI) extends CertificateAuthorityCommand
 case class CertificateAuthorityAddParent(id: UUID, parentXml: String) extends CertificateAuthorityCommand

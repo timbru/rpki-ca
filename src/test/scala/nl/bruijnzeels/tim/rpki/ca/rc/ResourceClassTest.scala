@@ -65,7 +65,7 @@ class ResourceClassTest extends FunSuite with Matchers {
 
   test("Should publish certificate for child") {
     val rcAfterPublish = RcWithCertifiedChild.applyEvents(RcWithCertifiedChild.publish())
-    
+
     val set = rcAfterPublish.currentSigner.publicationSet
     set.items should have size (3) // mft, crl, cer
   }
@@ -76,6 +76,8 @@ object ResourceClassTest {
 
   val AggregateId = UUID.fromString("3e13717b-da5b-4371-a8c1-45d390fd8dc7")
   val ResourceClassName = "test resource class"
+
+  val RrdpNotifyUri: URI = "rrdp://localhost:8080/rrdp/notify.xml"
 
   val SignerName = "test signer"
   val SignerSubject = new X500Principal("CN=" + SignerName)
@@ -95,10 +97,11 @@ object ResourceClassTest {
   val ChildPkcs10Request = new RpkiCaCertificateRequestBuilder()
     .withCaRepositoryUri(ChildPublicationUri)
     .withManifestUri(ChildPublicationMftUri)
+    .withRrdpNotifyUri(RrdpNotifyUri)
     .withSubject(ChildSubject)
     .build(ChildKeyPair)
 
-  val SelfSignedSignerCreatedEvents = Signer.createSelfSigned(AggregateId, ResourceClassName, SignerName, SignerResources, SignerCertificateUri, SignerPublicationDir)
+  val SelfSignedSignerCreatedEvents = Signer.createSelfSigned(AggregateId, ResourceClassName, SignerName, SignerResources, SignerCertificateUri, SignerPublicationDir, RrdpNotifyUri)
 
   val SelfSignedSigner = Signer.buildFromEvents(SelfSignedSignerCreatedEvents)
 

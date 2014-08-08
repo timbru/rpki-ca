@@ -149,10 +149,10 @@ object TrustAnchor {
     case event: Event => throw new IllegalArgumentException(s"First event MUST be creation of the TrustAnchor, was: ${event}")
   }
 
-  def create(aggregateId: UUID, name: String, taCertificateUri: URI, publicationDir: URI, resources: IpResourceSet): TrustAnchor = {
+  def create(aggregateId: UUID, name: String, taCertificateUri: URI, publicationDir: URI, rrdpUri: URI, resources: IpResourceSet): TrustAnchor = {
     val taCreated = TrustAnchorCreated(aggregateId, name)
     val resourceClassCreatedEvent = ResourceClassCreated(aggregateId, DefaultResourceClassName)
-    val createSignerEvents = Signer.createSelfSigned(aggregateId, DefaultResourceClassName, name, resources, taCertificateUri, publicationDir)
+    val createSignerEvents = Signer.createSelfSigned(aggregateId, DefaultResourceClassName, name, resources, taCertificateUri, publicationDir, rrdpUri)
     val createProvisioningCommunicatorEvent = ProvisioningCommunicator.create(aggregateId)
 
     rebuild(List(taCreated, resourceClassCreatedEvent) ++ createSignerEvents :+ createProvisioningCommunicatorEvent)
