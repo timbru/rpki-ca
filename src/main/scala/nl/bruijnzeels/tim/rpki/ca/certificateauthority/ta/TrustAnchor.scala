@@ -26,6 +26,7 @@ import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssua
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorPerformedChildExchange
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerSignedCertificate
 import net.ripe.rpki.commons.provisioning.payload.issue.response.CertificateIssuanceResponsePayloadBuilder
+import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil
 
 /**
  * Root Certificate Authority for RPKI. Does not have a parent CA and has a self-signed certificate.
@@ -55,6 +56,17 @@ case class TrustAnchor(
       case Left(created) => applyEvents(List(created, communicator.addChild(id, childId, childXml)))
       case Right(failed) => throw new TrustAnchorException(failed.reason)
     }
+  }
+
+  /**
+   * Creates a TAL for this Trust Anchor
+   */
+  def tal = {
+    val rootCertUri = resourceClass.currentSigner.signingMaterial.certificateUri
+    val rootCert = resourceClass.currentSigner.signingMaterial.currentCertificate.getCertificate
+    val rootCertFingerPrint = X509CertificateUtil.getEncodedSubjectPublicKeyInfo(rootCert)
+
+    s"${rootCertUri}\n\n${rootCertFingerPrint}"
   }
 
   /**
@@ -92,8 +104,8 @@ case class TrustAnchor(
 
             val requestedResources = {
               if (issuancePayload.getRequestElement().getAllocatedAsn() == null &&
-                  issuancePayload.getRequestElement().getAllocatedIpv4() == null &&
-                  issuancePayload.getRequestElement().getAllocatedIpv6() == null) {
+                issuancePayload.getRequestElement().getAllocatedIpv4() == null &&
+                issuancePayload.getRequestElement().getAllocatedIpv6() == null) {
                 None
               } else {
                 val resources = new IpResourceSet()
@@ -108,13 +120,13 @@ case class TrustAnchor(
               case Right(failure) => throw new TrustAnchorException(failure.reason) // TODO: Return error response instead
               case Left(events) => {
                 val signed = events.collect { case e: SignerSignedCertificate => e }.head
-                
+
                 val responsePayload = new CertificateIssuanceResponsePayloadBuilder()
                   .withClassElement(resourceClass.buildCertificateIssuanceResponse(childId, signed.certificate))
                   .build()
-                  
+
                 val response = communicator.signResponse(childId, responsePayload)
-                
+
                 applyEvents(events :+ ProvisioningCommunicatorPerformedChildExchange(id, ProvisioningChildExchange(childId, request, response)))
               }
             }

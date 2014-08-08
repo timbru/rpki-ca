@@ -27,7 +27,7 @@ class ChildParentResourceCertificateUpdateSagaTest extends FunSuite with Matcher
 
   val TrustAnchorId = UUID.fromString("f3ec94ee-ae80-484a-8d58-a1e43bbbddd1")
   val TrustAnchorName = "TA"
-  val TrustAnchorCertUri: URI = "rsync://host/ta/ta.cer"
+  val TrustAnchorCertUri: URI = "http://host/ta/ta.cer"
   val TrustAnchorPubUri: URI = "rsync://host/repository/"
   val TrustAnchorResources = IpResourceSet.ALL_PRIVATE_USE_RESOURCES
 

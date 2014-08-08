@@ -66,20 +66,20 @@ import TrustAnchorTest._
   test("Should process child resource class list query") {
     val addChild = TrustAnchorAddChild(id = TrustAnchorId, childId = ChildId, childXml = ChildXml, childResources = ChildResources)
     val taWithChild = TrustAnchorAddChildCommandHandler.handle(addChild, TrustAnchorInitial)
-    
+
     val request = SigningSupport.createProvisioningCms(
       sender = ChildId.toString,
       recipient = TrustAnchorId.toString,
       signingCertificate = ChildIdentity.identityCertificate,
       signingKeyPair = ChildIdentity.keyPair,
-      payload = new ResourceClassListQueryPayloadBuilder().build()) 
-    
+      payload = new ResourceClassListQueryPayloadBuilder().build())
+
     val command = TrustAnchorProcessResourceListQuery(TrustAnchorId, ChildId, request)
-    
+
     val taAfterResponse = TrustAnchorProcessResourceListQueryCommandHandler.handle(command, taWithChild)
-    
+
     val exchange = taAfterResponse.communicator.getExchangesForChild(ChildId)(0)
-    
+
     val responsePayload = exchange.response.getPayload().asInstanceOf[ResourceClassListResponsePayload]
     responsePayload.getSender should equal (TrustAnchorId.toString())
     responsePayload.getRecipient should equal (ChildId.toString())
@@ -92,13 +92,19 @@ import TrustAnchorTest._
     resourceClassInResponse.getResourceSetAsn() should equal(new IpResourceSet())
   }
 
+  test("Should publish TAL with http URI") {
+    val tal = TrustAnchorInitial.tal
+
+    tal should startWith ("http://")
+  }
+
 }
 
 object TrustAnchorTest {
 
   val TrustAnchorId = UUID.fromString("f3ec94ee-ae80-484a-8d58-a1e43bbbddd1")
   val TrustAnchorName = "TA"
-  val TrustAnchorCertUri: URI = "rsync://host/ta/ta.cer"
+  val TrustAnchorCertUri: URI = "http://host/ta/ta.cer"
   val TrustAnchorPubUri: URI = "rsync://host/repository/"
   val TrustAnchorResources = IpResourceSet.ALL_PRIVATE_USE_RESOURCES
 

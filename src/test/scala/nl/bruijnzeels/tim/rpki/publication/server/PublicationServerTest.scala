@@ -29,22 +29,22 @@ class PublicationServerTest extends FunSuite with Matchers {
 
     server.serial should equal(BigInteger.ONE)
   }
-  
+
   test("Should create snapshots and deltas") {
     val certificate = SelfSignedSigner.signingMaterial.currentCertificate
     val uri = SelfSignedSigner.signingMaterial.certificateUri
     val server = PublicationServer.create(PublicationServerId).publish(List(Publish.forRepositoryObject(uri, certificate)))
-    
-    server.snapshot.publishes should have size(1)
-    server.deltas should have size(1)
-    
+
+    server.snapshot.publishes should have size (1)
+    server.deltas should have size (1)
+
     val serverAfterWithdraw = server.publish(List(Withdraw.forRepositoryObject(uri, certificate)))
-    
-    serverAfterWithdraw.snapshot.publishes should have size(0)
-    serverAfterWithdraw.deltas should have size(2)
+
+    serverAfterWithdraw.snapshot.publishes should have size (0)
+    serverAfterWithdraw.deltas should have size (2)
   }
-  
-    test("Should create notification file") {
+
+  test("Should create notification file") {
     val certificate = SelfSignedSigner.signingMaterial.currentCertificate
     val uri = SelfSignedSigner.signingMaterial.certificateUri
     val server = PublicationServer.create(PublicationServerId).publish(List(Publish.forRepositoryObject(uri, certificate)))
@@ -53,8 +53,8 @@ class PublicationServerTest extends FunSuite with Matchers {
 
     notification.serial should equal(server.serial)
     notification.sessionId should equal(server.sessionId)
-    notification.snapshots should have size(1)
-    notification.deltas should have size(1)
+    notification.snapshots should have size (1)
+    notification.deltas should have size (1)
   }
-  
+
 }
