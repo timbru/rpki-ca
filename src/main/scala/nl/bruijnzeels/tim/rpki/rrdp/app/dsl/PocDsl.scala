@@ -39,6 +39,7 @@ object PocDsl {
 
   val TrustAnchorCertUri: URI = "http://localhost:8080/ta/ta.cer"
   val RrdpNotifyUrl: URI = "rrdp://localhost:8080/rrdp/notify.xml"
+  val RrdpBaseUrl: URI = "rrdp://localhost:8080/rrdp/"
   val RsyncBaseUrl: URI = "rsync://localhost:10873/repository/"
 
   val PublicationServerId = UUID.fromString("8cb580ef-de6d-4435-94fd-ceaaddff3b99")
@@ -71,7 +72,7 @@ object PocDsl {
         baseUrl = RsyncBaseUrl,
         rrdpNotifyUrl = RrdpNotifyUrl))
 
-    def publicationServer() = PublicationServerCommandDispatcher.dispatch(PublicationServerCreate(PublicationServerId))
+    def publicationServer() = PublicationServerCommandDispatcher.dispatch(PublicationServerCreate(PublicationServerId, RrdpBaseUrl))
 
   }
 
@@ -126,7 +127,7 @@ object PocDsl {
     def listen() = EventStore.subscribe(new PublicationServerUpdateListener(PublicationServerId))
 
     def notificationFile() = {
-      current publicationServer() notificationFile
+      current publicationServer () notificationFile
     }
   }
 

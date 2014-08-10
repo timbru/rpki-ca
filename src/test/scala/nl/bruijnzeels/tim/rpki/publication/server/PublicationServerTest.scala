@@ -7,14 +7,16 @@ import nl.bruijnzeels.tim.rpki.publication.messages.Publish
 import org.scalatest.FunSuite
 import org.scalatest.Matchers
 import nl.bruijnzeels.tim.rpki.publication.messages.Withdraw
+import java.net.URI
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class PublicationServerTest extends FunSuite with Matchers {
 
   val PublicationServerId = UUID.fromString("170cd869-f729-47e7-9415-38b21da67ac1")
+  val RrdpBaseUrl = URI.create("http://localhost:8080/rrdp/")
 
   test("Should initialise") {
-    val server = PublicationServer.create(PublicationServerId)
+    val server = PublicationServer.create(PublicationServerId, RrdpBaseUrl)
 
     server.id should equal(PublicationServerId)
     server.sessionId should not be (null)
@@ -25,7 +27,7 @@ class PublicationServerTest extends FunSuite with Matchers {
     val certificate = SelfSignedSigner.signingMaterial.currentCertificate
     val uri = SelfSignedSigner.signingMaterial.certificateUri
 
-    val server = PublicationServer.create(PublicationServerId).publish(List(Publish.forRepositoryObject(uri, certificate)))
+    val server = PublicationServer.create(PublicationServerId, RrdpBaseUrl).publish(List(Publish.forRepositoryObject(uri, certificate)))
 
     server.serial should equal(BigInteger.ONE)
   }
@@ -33,7 +35,7 @@ class PublicationServerTest extends FunSuite with Matchers {
   test("Should create snapshots and deltas") {
     val certificate = SelfSignedSigner.signingMaterial.currentCertificate
     val uri = SelfSignedSigner.signingMaterial.certificateUri
-    val server = PublicationServer.create(PublicationServerId).publish(List(Publish.forRepositoryObject(uri, certificate)))
+    val server = PublicationServer.create(PublicationServerId, RrdpBaseUrl).publish(List(Publish.forRepositoryObject(uri, certificate)))
 
     server.snapshot.publishes should have size (1)
     server.deltas should have size (1)
@@ -47,7 +49,7 @@ class PublicationServerTest extends FunSuite with Matchers {
   test("Should create notification file") {
     val certificate = SelfSignedSigner.signingMaterial.currentCertificate
     val uri = SelfSignedSigner.signingMaterial.certificateUri
-    val server = PublicationServer.create(PublicationServerId).publish(List(Publish.forRepositoryObject(uri, certificate)))
+    val server = PublicationServer.create(PublicationServerId, RrdpBaseUrl).publish(List(Publish.forRepositoryObject(uri, certificate)))
 
     val notification = server.notificationFile
 

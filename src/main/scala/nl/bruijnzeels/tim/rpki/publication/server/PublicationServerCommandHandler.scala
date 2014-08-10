@@ -40,7 +40,7 @@ object PublicationServerCommandDispatcher {
 }
 
 object PublicationServerCreateHandler {
-  def handle(create: PublicationServerCreate) = PublicationServer.create(create.id)
+  def handle(create: PublicationServerCreate) = PublicationServer.create(create.id, create.rrdpBaseUri)
 }
 
 sealed trait PublicationServerCommandHandler[C <: PublicationServerCommand] {

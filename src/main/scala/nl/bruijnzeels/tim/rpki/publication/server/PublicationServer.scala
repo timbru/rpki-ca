@@ -22,12 +22,12 @@ import nl.bruijnzeels.tim.rpki.publication.messages.Withdraw
 case class PublicationServer(
   id: UUID,
   sessionId: UUID,
+  rrdpBaseUri: URI,
   serial: BigInteger,
   snapshot: Snapshot,
   deltas: List[Deltas] = List.empty,
   events: List[Event] = List.empty) extends AggregateRoot {
 
-  private val BaseUri = URI.create("http://localhost:8080/rrdp/")
   private val MaxDeltas = 100
 
   override def applyEvents(events: List[Event]): PublicationServer = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
@@ -37,6 +37,7 @@ case class PublicationServer(
     case created: PublicationServerCreated =>
       copy(id = created.aggregateId,
         sessionId = created.sessionId,
+        rrdpBaseUri = created.rrdpBaseUri,
         serial = BigInteger.ZERO,
         snapshot = Snapshot(created.sessionId, BigInteger.ZERO, List.empty),
         events = events :+ event)
@@ -75,12 +76,12 @@ case class PublicationServer(
     Notification(sessionId, serial, List(snapshotReference), deltasReferences)
   }
 
-  private def snapshotUrl = BaseUri.resolve(s"${sessionId}/snapshot/snapshot-${serial}.xml")
-  private def deltaUrl(from: BigInteger, to: BigInteger) = BaseUri.resolve(s"${sessionId}/deltas/delta-${from}-${to}.xml")
+  private def snapshotUrl = rrdpBaseUri.resolve(s"${sessionId}/snapshot/snapshot-${serial}.xml")
+  private def deltaUrl(from: BigInteger, to: BigInteger) = rrdpBaseUri.resolve(s"${sessionId}/deltas/delta-${from}-${to}.xml")
 
 }
 
 object PublicationServer {
-  def create(aggregateId: UUID) = PublicationServer(null, null, null, null).applyEvent(PublicationServerCreated(aggregateId, UUID.randomUUID()))
-  def rebuild(events: List[Event]) = PublicationServer(null, null, null, null).applyEvents(events)
+  def create(aggregateId: UUID, baseUri: URI) = PublicationServer(null, null, null, null, null).applyEvent(PublicationServerCreated(aggregateId, UUID.randomUUID(), baseUri))
+  def rebuild(events: List[Event]) = PublicationServer(null, null, null, null, null).applyEvents(events)
 }
