@@ -1,27 +1,28 @@
 package nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca
 
+import scala.collection.JavaConverters.asScalaBufferConverter
+
+import java.net.URI
 import java.util.UUID
-import scala.collection.JavaConverters._
+
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
+import net.ripe.rpki.commons.provisioning.payload.issue.response.CertificateIssuanceResponsePayload
 import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassListResponsePayload
+
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.AggregateRoot
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicator
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorCreated
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorEvent
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorPerformedParentExchange
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningMessageValidationFailure
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningMessageValidationSuccess
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningParentExchange
 import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClass
 import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassCreated
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
-import java.net.URI
-import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayloadBuilder
 import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassEvent
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorPerformedParentExchange
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningParentExchange
-import net.ripe.rpki.commons.provisioning.payload.AbstractProvisioningPayload
-import net.ripe.rpki.commons.provisioning.payload.issue.response.CertificateIssuanceResponsePayload
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerReceivedCertificate
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerReceivedCertificate
 
 /**
  *  A Certificate Authority in RPKI. Needs to have a parent which can be either
@@ -41,9 +42,10 @@ case class CertificateAuthority(
   rrdpNotifyUrl: URI,
   resourceClasses: Map[String, ResourceClass] = Map.empty,
   communicator: ProvisioningCommunicator = null, // will be set by communicator created event
-  events: List[Event] = List.empty) {
+  events: List[Event] = List.empty) extends AggregateRoot {
 
-  def applyEvents(events: List[Event]): CertificateAuthority = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
+  override def applyEvents(events: List[Event]): CertificateAuthority = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
+  override def clearEventList(): CertificateAuthority = copy(events = List.empty)
 
   def applyEvent(event: Event): CertificateAuthority = event match {
     case communicatorCreated: ProvisioningCommunicatorCreated =>
@@ -67,8 +69,6 @@ case class CertificateAuthority(
     val rc = resourceClasses.getOrElse(event.resourceClassName, throw new IllegalArgumentException("Got event for unknown resource class"))
     resourceClasses + (rc.resourceClassName -> rc.applyEvent(event))
   }
-
-  def clearEventList() = copy(events = List.empty)
 
   def addParent(parentXml: String) = applyEvent(communicator.addParent(id, parentXml))
 

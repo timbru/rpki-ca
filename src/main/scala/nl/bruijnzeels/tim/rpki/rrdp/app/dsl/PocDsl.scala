@@ -1,12 +1,9 @@
 package nl.bruijnzeels.tim.rpki.rrdp.app.dsl
 
 import scala.language.implicitConversions
-
 import java.net.URI
 import java.util.UUID
-
 import net.ripe.ipresource.IpResourceSet
-
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ChildParentResourceCertificateUpdateSaga
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca.CertificateAuthority
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca.CertificateAuthorityAddParent
@@ -19,9 +16,11 @@ import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorCommandDisp
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorCreate
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorPublish
 import nl.bruijnzeels.tim.rpki.ca.provisioning.MyIdentity
+import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCommandDispatcher
+import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCreate
 
 /**
- * A DSL to support the proof of concept set up
+ * A DSL to support the proof of concept (PoC) set up
  * with a TA and child CA, publishing regularly,
  * and whatever else may be relevant for this..
  */
@@ -35,6 +34,8 @@ object PocDsl {
   val TrustAnchorCertUri: URI = "http://localhost:8080/ta/ta.cer"
   val RrdpNotifyUrl: URI = "rrdp://localhost:8080/rrdp/notify.xml"
   val RsyncBaseUrl: URI = "rsync://localhost:10873/repository/"
+
+  val PublicationServerId = UUID.fromString("8cb580ef-de6d-4435-94fd-ceaaddff3b99")
 
   val TrustAnchorId = UUID.fromString("f3ec94ee-ae80-484a-8d58-a1e43bbbddd1")
   val TrustAnchorName = "TA"
@@ -63,6 +64,8 @@ object PocDsl {
         name = ChildName,
         baseUrl = RsyncBaseUrl,
         rrdpNotifyUrl = RrdpNotifyUrl))
+
+    def publicationServer() = PublicationServerCommandDispatcher.dispatch(PublicationServerCreate(PublicationServerId))
 
   }
 

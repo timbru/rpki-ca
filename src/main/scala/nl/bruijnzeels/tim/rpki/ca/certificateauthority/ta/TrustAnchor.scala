@@ -1,32 +1,30 @@
 package nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta
 
+import java.net.URI
+import java.util.UUID
+
+import net.ripe.ipresource.IpResourceSet
+import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil
+import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
+import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayload
+import net.ripe.rpki.commons.provisioning.payload.issue.response.CertificateIssuanceResponsePayloadBuilder
+import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayload
+import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassListResponsePayloadBuilder
+
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.AggregateRoot
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.UnknownEventException
-import net.ripe.ipresource.IpResourceSet
-import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClass
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
-import java.util.UUID
-import java.net.URI
-import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassCreated
-import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassCreated
-import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassEvent
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningChildExchange
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicator
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorCreated
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorEvent
-import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
+import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorPerformedChildExchange
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningMessageValidationFailure
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningMessageValidationSuccess
-import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayload
-import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassListResponsePayloadBuilder
-import net.ripe.rpki.commons.provisioning.payload.common.GenericClassElementBuilder
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorPerformedChildExchange
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningChildExchange
-import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayload
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorPerformedChildExchange
+import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClass
+import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassCreated
+import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassEvent
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerSignedCertificate
-import net.ripe.rpki.commons.provisioning.payload.issue.response.CertificateIssuanceResponsePayloadBuilder
-import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil
 
 /**
  * Root Certificate Authority for RPKI. Does not have a parent CA and has a self-signed certificate.
@@ -38,7 +36,8 @@ case class TrustAnchor(
   communicator: ProvisioningCommunicator = null,
   events: List[Event] = List.empty) extends AggregateRoot {
 
-  def applyEvents(events: List[Event]): TrustAnchor = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
+  override def applyEvents(events: List[Event]): TrustAnchor = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
+  override def clearEventList() = copy(events = List.empty)
 
   def applyEvent(event: Event): TrustAnchor = event match {
     case resourceClassCreated: ResourceClassCreated => copy(resourceClass = ResourceClass.created(resourceClassCreated), events = events :+ event)
@@ -46,8 +45,6 @@ case class TrustAnchor(
     case communicatorCreated: ProvisioningCommunicatorCreated => copy(communicator = ProvisioningCommunicator(communicatorCreated.myIdentity), events = events :+ event)
     case comminicatorEvent: ProvisioningCommunicatorEvent => copy(communicator = communicator.applyEvent(comminicatorEvent), events = events :+ event)
   }
-
-  def clearEventList() = copy(events = List.empty)
 
   def publish(): TrustAnchor = applyEvents(resourceClass.publish)
 

@@ -37,11 +37,14 @@ class Main { main =>
 
   val logger = Logger[this.type]
 
-  setUpTestCas()
-  publishTestCas()
+  setUpPublicationServer()
+  setUpCas()
+  publishCas()
   startWebServer()
 
-  def setUpTestCas() = {
+  def setUpPublicationServer() = create publicationServer
+
+  def setUpCas() = {
     create ta
 
     create ca ChildId
@@ -50,7 +53,7 @@ class Main { main =>
     ca withId ChildId update
   }
 
-  def publishTestCas() = {
+  def publishCas() = {
     ta publish
 
     ca withId ChildId publish
