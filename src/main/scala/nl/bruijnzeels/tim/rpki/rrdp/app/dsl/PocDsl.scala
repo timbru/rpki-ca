@@ -1,9 +1,13 @@
 package nl.bruijnzeels.tim.rpki.rrdp.app.dsl
 
 import scala.language.implicitConversions
+import scala.language.postfixOps
+
 import java.net.URI
 import java.util.UUID
+
 import net.ripe.ipresource.IpResourceSet
+
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ChildParentResourceCertificateUpdateSaga
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca.CertificateAuthority
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca.CertificateAuthorityAddParent
@@ -15,9 +19,11 @@ import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorAddChild
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorCommandDispatcher
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorCreate
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorPublish
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 import nl.bruijnzeels.tim.rpki.ca.provisioning.MyIdentity
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCommandDispatcher
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCreate
+import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerUpdateListener
 
 /**
  * A DSL to support the proof of concept (PoC) set up
@@ -49,7 +55,7 @@ object PocDsl {
 
   object create {
 
-    def ta() = TrustAnchorCommandDispatcher.dispatch(
+    def trustAnchor() = TrustAnchorCommandDispatcher.dispatch(
       TrustAnchorCreate(
         id = TrustAnchorId,
         name = TrustAnchorName,
@@ -58,7 +64,7 @@ object PocDsl {
         publicationUri = RsyncBaseUrl,
         rrdpNotifyUrl = RrdpNotifyUrl))
 
-    def ca(id: UUID) = CertificateAuthorityCommandDispatcher.dispatch(
+    def certificateAuthority(id: UUID) = CertificateAuthorityCommandDispatcher.dispatch(
       CertificateAuthorityCreate(
         id = id,
         name = ChildName,
@@ -70,11 +76,12 @@ object PocDsl {
   }
 
   object current {
-    def ta = TrustAnchorCommandDispatcher.load(TrustAnchorId).get
-    def ca(id: UUID) = CertificateAuthorityCommandDispatcher.load(id).get
+    def trustAnchor() = TrustAnchorCommandDispatcher.load(TrustAnchorId).get
+    def certificateAuthority(id: UUID) = CertificateAuthorityCommandDispatcher.load(id).get
+    def publicationServer() = PublicationServerCommandDispatcher.load(PublicationServerId).get
   }
 
-  object ta {
+  object trustAnchor {
 
     class taAddingChild(child: CertificateAuthority) {
       def withResources(resources: IpResourceSet) = {
@@ -93,7 +100,7 @@ object PocDsl {
 
   }
 
-  class ca(me: CertificateAuthority) {
+  class certificateAuthority(me: CertificateAuthority) {
 
     def addTa(parent: TrustAnchor) = {
       CertificateAuthorityCommandDispatcher.dispatch(
@@ -111,8 +118,16 @@ object PocDsl {
 
   }
 
-  object ca {
-    def withId(id: UUID) = new ca(me = (current ca id))
+  object certificateAuthority {
+    def withId(id: UUID) = new certificateAuthority(me = (current certificateAuthority id))
+  }
+
+  object publicationServer {
+    def listen() = EventStore.subscribe(new PublicationServerUpdateListener(PublicationServerId))
+
+    def notificationFile() = {
+      current publicationServer() notificationFile
+    }
   }
 
 }

@@ -6,14 +6,16 @@ import java.util.EnumSet
 
 import javax.servlet.DispatcherType
 
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 import nl.bruijnzeels.tim.rpki.rrdp.app.web.WebFilter
 
 import dsl.PocDsl.ChildId
 import dsl.PocDsl.ChildResources
-import dsl.PocDsl.ca
+import dsl.PocDsl.certificateAuthority
 import dsl.PocDsl.create
 import dsl.PocDsl.current
-import dsl.PocDsl.ta
+import dsl.PocDsl.publicationServer
+import dsl.PocDsl.trustAnchor
 import grizzled.slf4j.Logger
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.DefaultServlet
@@ -37,28 +39,31 @@ class Main { main =>
 
   val logger = Logger[this.type]
 
+  EventStore.clear // EventStore is not thread safe, and it's keeping stuff in memory, so need to clear this when running this multiple times in the same JVM (like from an IDE..)
+
   setUpPublicationServer()
   setUpCas()
   publishCas()
   startWebServer()
 
-  def setUpPublicationServer() = create publicationServer
+  def setUpPublicationServer() = {
+    create publicationServer
+
+    publicationServer listen
+  }
 
   def setUpCas() = {
-    create ta
-
-    create ca ChildId
-    ta addChild (current ca ChildId) withResources ChildResources
-    ca withId ChildId addTa (current ta)
-    ca withId ChildId update
+    create trustAnchor()
+    create certificateAuthority ChildId
+    trustAnchor addChild (current certificateAuthority ChildId) withResources ChildResources
+    certificateAuthority withId ChildId addTa (current trustAnchor)
+    certificateAuthority withId ChildId update
   }
 
   def publishCas() = {
-    ta publish
-
-    ca withId ChildId publish
+    trustAnchor publish ()
+    certificateAuthority withId ChildId publish
   }
-
 
   def startWebServer() = {
     val server = new Server(8080)

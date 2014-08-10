@@ -31,6 +31,7 @@ object PublicationServerCommandDispatcher {
 
     val updatedCa = command match {
       case create: PublicationServerCreate => PublicationServerCreateHandler.handle(create)
+      case publish: PublicationServerPublish => PublicationServerPublishHandler.handle(publish, existingServer.get)
     }
 
     save(updatedCa)
@@ -44,5 +45,9 @@ object PublicationServerCreateHandler {
 
 sealed trait PublicationServerCommandHandler[C <: PublicationServerCommand] {
   def handle(command: C, server: PublicationServer): PublicationServer
+}
+
+object PublicationServerPublishHandler extends PublicationServerCommandHandler[PublicationServerPublish] {
+  def handle(command: PublicationServerPublish, server: PublicationServer) = server.publish(command.messages)
 }
 
