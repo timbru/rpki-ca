@@ -34,6 +34,7 @@ object CertificateAuthorityCommandDispatcher {
     val updatedCa = command match {
       case create: CertificateAuthorityCreate => CertificateAuthorityCreateHandler.handle(create)
       case addParent: CertificateAuthorityAddParent => CertificateAuthorityAddParentHandler.handle(addParent, existingCa.get)
+      case publish: CertificateAuthorityPublish => CertificateAuthorityPublishHandler.handle(publish, existingCa.get)
     }
 
     save(updatedCa)
@@ -51,4 +52,8 @@ trait CertificateAuthorityCommandHandler[C <: CertificateAuthorityCommand] {
 
 object CertificateAuthorityAddParentHandler extends CertificateAuthorityCommandHandler[CertificateAuthorityAddParent] {
   override def handle(command: CertificateAuthorityAddParent, ca: CertificateAuthority) = ca.addParent(command.parentXml)
+}
+
+object CertificateAuthorityPublishHandler extends CertificateAuthorityCommandHandler[CertificateAuthorityPublish] {
+  override def handle(command: CertificateAuthorityPublish, ca: CertificateAuthority) = ca.publish
 }

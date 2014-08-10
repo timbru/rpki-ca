@@ -1,11 +1,19 @@
 package nl.bruijnzeels.tim.rpki.rrdp.app
 
+import scala.language.postfixOps
+
 import java.util.EnumSet
 
 import javax.servlet.DispatcherType
 
 import nl.bruijnzeels.tim.rpki.rrdp.app.web.WebFilter
 
+import dsl.PocDsl.ChildId
+import dsl.PocDsl.ChildResources
+import dsl.PocDsl.ca
+import dsl.PocDsl.create
+import dsl.PocDsl.current
+import dsl.PocDsl.ta
 import grizzled.slf4j.Logger
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.DefaultServlet
@@ -24,9 +32,30 @@ object Main {
 
 class Main { main =>
 
+  import Main._
+  import dsl.PocDsl._
+
   val logger = Logger[this.type]
 
+  setUpTestCas()
+  publishTestCas()
   startWebServer()
+
+  def setUpTestCas() = {
+    create ta
+
+    create ca ChildId
+    ta addChild (current ca ChildId) withResources ChildResources
+    ca withId ChildId addTa (current ta)
+    ca withId ChildId update
+  }
+
+  def publishTestCas() = {
+    ta publish
+
+    ca withId ChildId publish
+  }
+
 
   def startWebServer() = {
     val server = new Server(8080)
@@ -49,4 +78,5 @@ class Main { main =>
     server.start()
     logger.info("Welcome to the RPKI RRDP proof of concept server, now available on port 8080. Hit CTRL+C to terminate.")
   }
+
 }

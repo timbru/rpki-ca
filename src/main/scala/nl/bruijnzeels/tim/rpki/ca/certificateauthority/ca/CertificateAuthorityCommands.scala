@@ -11,3 +11,4 @@ sealed trait CertificateAuthorityCommand extends Command {
 
 case class CertificateAuthorityCreate(id: UUID, name: String, baseUrl: URI, rrdpNotifyUrl: URI) extends CertificateAuthorityCommand
 case class CertificateAuthorityAddParent(id: UUID, parentXml: String) extends CertificateAuthorityCommand
+case class CertificateAuthorityPublish(id: UUID) extends CertificateAuthorityCommand

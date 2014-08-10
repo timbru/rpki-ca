@@ -72,6 +72,11 @@ case class CertificateAuthority(
 
   def addParent(parentXml: String) = applyEvent(communicator.addParent(id, parentXml))
 
+  def publish(): CertificateAuthority = {
+    applyEvents(resourceClasses.values.toList.flatMap(rc => rc.publish))
+  }
+
+
   def processResourceClassListResponse(myRequest: ProvisioningCmsObject, response: ProvisioningCmsObject) = {
     communicator.validateParentResponse(response) match {
       case failure: ProvisioningMessageValidationFailure => throw new CertificateAuthorityException(failure.reason)
