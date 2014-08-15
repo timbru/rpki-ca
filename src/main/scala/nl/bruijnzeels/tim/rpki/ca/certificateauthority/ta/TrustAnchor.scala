@@ -61,7 +61,7 @@ case class TrustAnchor(
   def tal = {
     val rootCertUri = resourceClass.currentSigner.signingMaterial.certificateUri
     val rootCert = resourceClass.currentSigner.signingMaterial.currentCertificate.getCertificate
-    val rootCertFingerPrint = X509CertificateUtil.getEncodedSubjectPublicKeyInfo(rootCert)
+    val rootCertFingerPrint = X509CertificateUtil.getEncodedSubjectPublicKeyInfo(rootCert).grouped(60).mkString("\n")
 
     s"${rootCertUri}\n\n${rootCertFingerPrint}"
   }
