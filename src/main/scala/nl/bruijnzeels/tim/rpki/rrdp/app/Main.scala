@@ -36,6 +36,7 @@ class Main { main =>
 
   import Main._
   import dsl.PocDsl._
+  import ApplicationOptions._
 
   val logger = Logger[this.type]
 
@@ -66,7 +67,7 @@ class Main { main =>
   }
 
   def startWebServer() = {
-    val server = new Server(8080)
+    val server = new Server(httpPort)
     val webFilter = new WebFilter {}
 
     val root = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS)
@@ -84,7 +85,7 @@ class Main { main =>
       logger.info("Terminating...")
     })
     server.start()
-    logger.info("Welcome to the RPKI RRDP proof of concept server, now available on port 8080. Hit CTRL+C to terminate.")
+    logger.info(s"Welcome to the RPKI RRDP proof of concept server, now available on port ${httpPort}. Hit CTRL+C to terminate.")
   }
 
 }
