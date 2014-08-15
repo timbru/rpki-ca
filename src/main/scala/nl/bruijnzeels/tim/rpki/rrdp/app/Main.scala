@@ -27,7 +27,6 @@ import org.eclipse.jetty.servlet.ServletHolder
 object Main {
 
   def main(args: Array[String]): Unit = {
-    System.setProperty("RRDP_SERVER_LOG_FILE", "log/server.log")
     new Main()
   }
 

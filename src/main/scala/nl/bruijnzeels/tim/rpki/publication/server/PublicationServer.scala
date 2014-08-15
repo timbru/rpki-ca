@@ -1,11 +1,9 @@
 package nl.bruijnzeels.tim.rpki.publication.server
 
 import scala.Option.option2Iterable
-
 import java.math.BigInteger
 import java.net.URI
 import java.util.UUID
-
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.AggregateRoot
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
 import nl.bruijnzeels.tim.rpki.publication.messages.Delta
@@ -18,6 +16,7 @@ import nl.bruijnzeels.tim.rpki.publication.messages.ReferenceHash
 import nl.bruijnzeels.tim.rpki.publication.messages.Snapshot
 import nl.bruijnzeels.tim.rpki.publication.messages.SnapshotReference
 import nl.bruijnzeels.tim.rpki.publication.messages.Withdraw
+import nl.bruijnzeels.tim.rpki.publication.messages.DeltaProtocolMessage
 
 case class PublicationServer(
   id: UUID,
@@ -41,43 +40,48 @@ case class PublicationServer(
         serial = BigInteger.ZERO,
         snapshot = Snapshot(created.sessionId, BigInteger.ZERO, List.empty),
         events = events :+ event)
-    case receivedDelta: PublicationServerReceivedDelta => applyDelta(receivedDelta)
+    case receivedDeltas: PublicationServerReceivedDeltas => copy(deltas = (List(receivedDeltas.deltas) ++ deltas).take(MaxDeltas), events = events :+ receivedDeltas)
+    case receivedSnapshot: PublicationServerReceivedSnapshot => copy(serial = receivedSnapshot.snapshot.serial, snapshot = receivedSnapshot.snapshot, events = events :+ receivedSnapshot)
   }
 
-  def applyDelta(receivedDelta: PublicationServerReceivedDelta) = {
-    val delta = receivedDelta.delta
-    val publishes = delta.messages.collect { case p: Publish => p }
+  def publish(messages: List[PublicationProtocolMessage]) = {
 
-    val withdrawnHashes = delta.messages.collect { case w: Withdraw => w }.map { _.hash }
-    val updatedHashes = publishes.flatMap(_.replaces)
-    val hashesToRemove = withdrawnHashes ++ updatedHashes
+    val deltasReceivedEvent = {
+      val delta = Delta(serial = serial.add(BigInteger.ONE), messages = messages)
+      val newDeltas = Deltas(sessionId = sessionId, from = serial, to = delta.serial, deltas = List(delta))
+      PublicationServerReceivedDeltas(id, newDeltas)
+    }
 
-    val remainingPublishes = snapshot.publishes.filterNot(o => hashesToRemove.contains(ReferenceHash.fromBytes(o.repositoryObject.getEncoded)))
+    val snapshotReceivedEvent = {
+      val publishes = messages.collect { case p: Publish => p }
 
-    val newSnapshot = Snapshot(sessionId, delta.serial, remainingPublishes ++ publishes)
+      val withdrawnHashes = messages.collect { case w: Withdraw => w }.map { _.hash }
+      val updatedHashes = publishes.flatMap(_.replaces)
+      val hashesToRemove = withdrawnHashes ++ updatedHashes
 
-    val newDeltas = Deltas(sessionId = sessionId, from = serial, to = delta.serial, deltas = List(delta))
+      val remainingPublishes = snapshot.publishes.filterNot(o => hashesToRemove.contains(ReferenceHash.fromBytes(o.repositoryObject.getEncoded)))
 
-    copy(serial = delta.serial, snapshot = newSnapshot, deltas = (List(newDeltas) ++ deltas).take(MaxDeltas), events = events :+ receivedDelta)
+      val newSnapshot = Snapshot(sessionId, serial.add(BigInteger.ONE), remainingPublishes ++ publishes)
+      PublicationServerReceivedSnapshot(id, newSnapshot)
+    }
+
+    applyEvents(List(deltasReceivedEvent, snapshotReceivedEvent))
   }
-
-  def publish(messages: List[PublicationProtocolMessage]) = applyEvent(PublicationServerReceivedDelta(id, Delta(serial = serial.add(BigInteger.ONE), messages = messages)))
 
   /**
    * Create a notification file for the current version, with pointers to full dumps and deltas
    */
   def notificationFile: Notification = {
 
-    val snapshotReference = SnapshotReference(uri = snapshotUrl, serial = serial, hash = ReferenceHash.fromXml(snapshot.toXml))
+    val snapshotReference = SnapshotReference(uri = fileUrl(snapshot), serial = serial, hash = ReferenceHash.fromXml(snapshot.toXml))
     val deltasReferences = deltas.map { d =>
-      DeltaReference(uri = deltaUrl(d.from, d.to), from = d.from, to = d.to, hash = ReferenceHash.fromXml(d.toXml))
+      DeltaReference(uri = fileUrl(d), from = d.from, to = d.to, hash = ReferenceHash.fromXml(d.toXml))
     }
 
     Notification(sessionId, serial, List(snapshotReference), deltasReferences)
   }
 
-  private def snapshotUrl = rrdpBaseUri.resolve(s"${sessionId}/snapshot/snapshot-${serial}.xml")
-  private def deltaUrl(from: BigInteger, to: BigInteger) = rrdpBaseUri.resolve(s"${sessionId}/deltas/delta-${from}-${to}.xml")
+  private def fileUrl(file: DeltaProtocolMessage) = rrdpBaseUri.resolve(s"${ReferenceHash.fromXml(file.toXml)}.xml")
 
 }
 

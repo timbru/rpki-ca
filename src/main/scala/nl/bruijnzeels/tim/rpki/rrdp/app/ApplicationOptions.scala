@@ -2,6 +2,7 @@ package nl.bruijnzeels.tim.rpki.rrdp.app
 
 import com.typesafe.config.{ ConfigFactory, Config }
 import java.net.URI
+import java.io.File
 
 object ApplicationOptions {
 
@@ -12,5 +13,7 @@ object ApplicationOptions {
   def rrdpBasePath: String = config.getString("rrdp.base.path")
 
   def rrdpBaseUri: URI = URI.create(s"http://${rrdpHost}:${rrdpPort}/${rrdpBasePath}")
+
+  def rrdpFilesStore =  new File(config.getString("rrdp.data.dir"))
 
 }

@@ -7,3 +7,4 @@ target/
 scratch.sc
 scalastyle-output.xml
 log
+data

@@ -22,6 +22,8 @@ import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCommandDispat
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCreate
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerUpdateListener
 import nl.bruijnzeels.tim.rpki.rrdp.app.ApplicationOptions
+import nl.bruijnzeels.tim.rpki.publication.server.store.RrdpFilesStore
+import nl.bruijnzeels.tim.rpki.publication.server.store.RrdpFilesDataSources
 
 /**
  * A DSL to support the proof of concept (PoC) set up
@@ -37,8 +39,8 @@ object PocDsl {
   implicit def stringToIpResourceSet(s: String): IpResourceSet = IpResourceSet.parse(s)
 
   val TrustAnchorCertUri: URI = rrdpBaseUri.resolve("ta/ta.cer")
-  val RrdpBaseUrl: URI = rrdpBaseUri.resolve("rrdp/")
-  val RrdpNotifyUrl: URI = rrdpBaseUri.resolve("rrdp/notify.xml")
+  val RrdpBaseUrl: URI = rrdpBaseUri.resolve("deltas/")
+  val RrdpNotifyUrl: URI = rrdpBaseUri.resolve("notify/notify.xml")
 
   val RsyncBaseUrl: URI = "rsync://localhost:10873/repository/"
 
@@ -80,6 +82,9 @@ object PocDsl {
     def trustAnchor() = TrustAnchorCommandDispatcher.load(TrustAnchorId).get
     def certificateAuthority(id: UUID) = CertificateAuthorityCommandDispatcher.load(id).get
     def publicationServer() = PublicationServerCommandDispatcher.load(PublicationServerId).get
+    val rrdpFileStore = new RrdpFilesStore(RrdpFilesDataSources.DurableDataSource)
+
+    EventStore.subscribe(rrdpFileStore)
   }
 
   object trustAnchor {
