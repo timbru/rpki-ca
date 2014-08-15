@@ -67,7 +67,7 @@ class Main { main =>
   }
 
   def startWebServer() = {
-    val server = new Server(httpPort)
+    val server = new Server(rrdpPort)
     val webFilter = new WebFilter {}
 
     val root = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS)
@@ -85,7 +85,7 @@ class Main { main =>
       logger.info("Terminating...")
     })
     server.start()
-    logger.info(s"Welcome to the RPKI RRDP proof of concept server, now available on port ${httpPort}. Hit CTRL+C to terminate.")
+    logger.info(s"Welcome to the RPKI RRDP proof of concept server, now available on port ${rrdpPort}. Hit CTRL+C to terminate.")
   }
 
 }

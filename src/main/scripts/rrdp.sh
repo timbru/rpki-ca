@@ -93,7 +93,7 @@ function parse_jvm_options {
     fi
 }
 
-parse_config_line "ui.http.port" HTTP_PORT_VALUE
+parse_config_line "rrdp.http.port" HTTP_PORT_VALUE
 
 parse_config_line "locations.libdir" LIB_DIR
 parse_config_line "locations.pidfile" PID_FILE

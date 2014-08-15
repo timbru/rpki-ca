@@ -2,12 +2,9 @@ package nl.bruijnzeels.tim.rpki.rrdp.app.dsl
 
 import scala.language.implicitConversions
 import scala.language.postfixOps
-
 import java.net.URI
 import java.util.UUID
-
 import net.ripe.ipresource.IpResourceSet
-
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ChildParentResourceCertificateUpdateSaga
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca.CertificateAuthority
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca.CertificateAuthorityAddParent
@@ -24,6 +21,7 @@ import nl.bruijnzeels.tim.rpki.ca.provisioning.MyIdentity
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCommandDispatcher
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCreate
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerUpdateListener
+import nl.bruijnzeels.tim.rpki.rrdp.app.ApplicationOptions
 
 /**
  * A DSL to support the proof of concept (PoC) set up
@@ -33,13 +31,15 @@ import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerUpdateListene
 object PocDsl {
 
   import scala.language.implicitConversions
+  import ApplicationOptions.rrdpBaseUri
 
   implicit def stringToUri(s: String): URI = URI.create(s)
   implicit def stringToIpResourceSet(s: String): IpResourceSet = IpResourceSet.parse(s)
 
-  val TrustAnchorCertUri: URI = "http://localhost:8080/ta/ta.cer"
-  val RrdpNotifyUrl: URI = "rrdp://localhost:8080/rrdp/notify.xml"
-  val RrdpBaseUrl: URI = "rrdp://localhost:8080/rrdp/"
+  val TrustAnchorCertUri: URI = rrdpBaseUri.resolve("ta/ta.cer")
+  val RrdpBaseUrl: URI = rrdpBaseUri.resolve("rrdp/")
+  val RrdpNotifyUrl: URI = rrdpBaseUri.resolve("rrdp/notify.xml")
+
   val RsyncBaseUrl: URI = "rsync://localhost:10873/repository/"
 
   val PublicationServerId = UUID.fromString("8cb580ef-de6d-4435-94fd-ceaaddff3b99")
