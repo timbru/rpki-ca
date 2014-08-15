@@ -9,6 +9,7 @@ import javax.servlet.DispatcherType
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 import nl.bruijnzeels.tim.rpki.rrdp.app.web.WebFilter
 
+import ApplicationOptions.rrdpPort
 import dsl.PocDsl.ChildId
 import dsl.PocDsl.ChildResources
 import dsl.PocDsl.certificateAuthority
@@ -35,8 +36,14 @@ object Main {
 class Main { main =>
 
   import Main._
+
   import dsl.PocDsl._
   import ApplicationOptions._
+
+  import scala.concurrent.duration._
+  import actorSystem.dispatcher
+
+  implicit val actorSystem = akka.actor.ActorSystem()
 
   val logger = Logger[this.type]
 
@@ -44,17 +51,18 @@ class Main { main =>
 
   setUpPublicationServer()
   setUpCas()
-  publishCas()
+  actorSystem.scheduler.schedule(initialDelay = 0.seconds, interval = 10.seconds) { publishCas() }
   startWebServer()
 
   def setUpPublicationServer() = {
-    create publicationServer
-
+    logger.info("Setting up publication server")
+    create publicationServer()
     publicationServer listen
   }
 
   def setUpCas() = {
-    create trustAnchor()
+    logger.info("Setting up TA and CA")
+    create trustAnchor ()
     create certificateAuthority ChildId
     trustAnchor addChild (current certificateAuthority ChildId) withResources ChildResources
     certificateAuthority withId ChildId addTa (current trustAnchor)
@@ -62,6 +70,7 @@ class Main { main =>
   }
 
   def publishCas() = {
+    logger.info("Publishing TA and CA")
     trustAnchor publish ()
     certificateAuthority withId ChildId publish
   }
