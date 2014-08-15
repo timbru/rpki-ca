@@ -1,0 +1,37 @@
+<assembly>
+    <id>dist</id>
+    <formats>
+        <format>tar.gz</format>
+    </formats>
+  
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>lib</outputDirectory>
+        </dependencySet>
+    </dependencySets>
+    
+    <files>
+        <file>
+            <source>src/main/resources/application.conf</source>
+            <outputDirectory>conf</outputDirectory>
+            <destName>rrdp.conf</destName>
+        </file>
+    </files>
+    
+    <fileSets>
+        <fileSet>
+            <!-- Workaround to create an empty 'log' directory-->
+            <directory>src/main/assembly</directory>
+            <outputDirectory>log</outputDirectory>
+            <excludes>
+                <exclude>*</exclude>
+            </excludes>
+        </fileSet>
+
+        <fileSet>
+            <directory>src/main/scripts</directory>
+            <outputDirectory/>
+            <fileMode>0755</fileMode>
+        </fileSet>
+    </fileSets>
+</assembly>
