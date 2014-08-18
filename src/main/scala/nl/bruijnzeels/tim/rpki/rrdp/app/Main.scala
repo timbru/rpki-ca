@@ -50,7 +50,7 @@ class Main { main =>
 
   setUpPublicationServer()
   setUpCas()
-  actorSystem.scheduler.schedule(initialDelay = 0.seconds, interval = 10.seconds) { publishCas() }
+  actorSystem.scheduler.schedule(initialDelay = 0.seconds, interval = 10.minutes) { publishCas() }
   startWebServer()
 
   def setUpPublicationServer() = {
