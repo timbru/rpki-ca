@@ -45,7 +45,7 @@ object ReferenceHash {
   def fromBytes(bytes: Array[Byte]) = {
     ReferenceHash(ManifestCms.hashContents(bytes).map("%02X" format _).mkString)
   }
-  
+
   def fromXml(xml: Elem) = {
     val bytes = xml.toString.getBytes(Charset.forName("UTF8"))
     fromBytes(bytes)
@@ -56,7 +56,7 @@ case class Snapshot(sessionId: UUID, serial: BigInteger, publishes: List[Publish
 
   def toXml =
     <snapshot xmlns="http://www.ripe.net/rpki/rrdp" version="1" session_id={ sessionId.toString } serial={ serial.toString }>
-      { for (publish <- publishes) yield { publish.toXml } }
+      { for (publish <- publishes) yield { publish.toXmlWithoutHash } }
     </snapshot>
 
 }
@@ -85,9 +85,14 @@ sealed trait PublicationProtocolMessage {
 
 case class Publish(uri: URI, replaces: Option[ReferenceHash], repositoryObject: CertificateRepositoryObject) extends PublicationProtocolMessage {
   override def toXml = replaces match {
-    case None => <publish uri={ uri.toString }>{ new BASE64Encoder().encode(repositoryObject.getEncoded()) }</publish>
-    case Some(hash) => <publish uri={ uri.toString } replaces={ hash.toString }>{ new BASE64Encoder().encode(repositoryObject.getEncoded()) }</publish>
+    case None => toXmlWithoutHash
+    case Some(hash) => <publish uri={ uri.toString } hash={ hash.toString }>{ new BASE64Encoder().encode(repositoryObject.getEncoded()) }</publish>
   }
+
+  /**
+   * In shapshot XML files we do not want to include the old object hashes
+   */
+  def toXmlWithoutHash = <publish uri={ uri.toString }>{ new BASE64Encoder().encode(repositoryObject.getEncoded()) }</publish>
 
 }
 
@@ -103,7 +108,7 @@ object Publish {
     }
 
     val replaces = {
-      val hash = (xml \ "@replaces").text
+      val hash = (xml \ "@hash").text
       if (hash == null || hash.length == 0) {
         None
       } else {
