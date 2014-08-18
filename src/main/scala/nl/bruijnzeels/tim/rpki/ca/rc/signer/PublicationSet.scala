@@ -17,20 +17,16 @@ import nl.bruijnzeels.tim.rpki.publication.messages.Publish
 import nl.bruijnzeels.tim.rpki.publication.messages.ReferenceHash
 import nl.bruijnzeels.tim.rpki.publication.messages.Withdraw
 
-case class PublicationSet(number: BigInteger, items: Map[ReferenceHash, CertificateRepositoryObject] = Map.empty, mft: Option[ManifestCms] = None, crl: Option[X509Crl] = None) {
+case class PublicationSet(number: BigInteger, items: Map[URI, CertificateRepositoryObject] = Map.empty, mft: Option[ManifestCms] = None, crl: Option[X509Crl] = None) {
 
   import PublicationSet._
 
   def applyEvent(event: SignerUpdatedPublicationSet) = {
     val withdrawnHashes = event.withdraws.map(_.hash)
     val remainingItems = items.filterKeys(k => !withdrawnHashes.contains(k))
-    val newOrUpdatedItems = convertToHashMap(event.publishes.map(_.repositoryObject))
-    
-    copy(number = event.number, items = remainingItems ++ newOrUpdatedItems, mft = Some(event.newMft), crl = Some(event.newCrl))
-  }
+    val newOrUpdatedItems = event.publishes.map(p => p.uri -> p.repositoryObject)
 
-  private def convertToHashMap(repositoryObjects: List[CertificateRepositoryObject]) = {
-    repositoryObjects.map { ro => (ReferenceHash.fromBytes(ro.getEncoded) -> ro) }.toMap
+    copy(number = event.number, items = remainingItems ++ newOrUpdatedItems, mft = Some(event.newMft), crl = Some(event.newCrl))
   }
 
   def publish(aggregateId: UUID, resourceClassName: String, baseUri: URI, mft: ManifestCms, crl: X509Crl, products: List[CertificateRepositoryObject] = List.empty) = {
@@ -38,24 +34,20 @@ case class PublicationSet(number: BigInteger, items: Map[ReferenceHash, Certific
     def deriveUri(repositoryObject: CertificateRepositoryObject) = baseUri.resolve(RpkiObjectNameSupport.deriveName(repositoryObject))
 
     // all current products
-    val newProducts = convertToHashMap(products :+ mft :+ crl)
+    val newProducts = products :+ mft :+ crl
+    val existingProducts = items.values.toList
 
-    def isUnchanged(entry: (ReferenceHash, CertificateRepositoryObject)) = {
-      items.get(entry._1) match {
-        case None => false
-        case Some(old) => old.equals(entry._2)
-      }
-    }
+    def isUnchanged(repoObject: CertificateRepositoryObject) = existingProducts.contains(repoObject)
 
     // publish all NEW products (i.e. minus unchanged)
-    val publishes = newProducts.filterNot(isUnchanged(_)).map { e =>
-      val hash = e._1
-      val newObject = e._2
-      val uri = deriveUri(newObject)
-      Publish.forRepositoryObject(uri, newObject, items.get(hash)) // Will include old object hash only if item exists for hash
+    val publishes = newProducts.filterNot(isUnchanged(_)).map { p =>
+      val hash = ReferenceHash.fromBytes(p.getEncoded)
+      val uri = deriveUri(p)
+      Publish.forRepositoryObject(uri, p, items.get(uri)) // Will include old object hash only if item exists for hash
     }.toList
 
-    val withdrawals = items.filterNot(e => newProducts.isDefinedAt(e._1)).values.map { oldObject =>
+    val remainingUris = newProducts.map(deriveUri(_))
+    val withdrawals = items.filterNot(e => remainingUris.contains(e._1)).values.map { oldObject =>
       Withdraw.forRepositoryObject(deriveUri(oldObject), oldObject)
     }.toList
 
