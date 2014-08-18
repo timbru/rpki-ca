@@ -21,9 +21,9 @@ import nl.bruijnzeels.tim.rpki.ca.provisioning.MyIdentity
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCommandDispatcher
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCreate
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerUpdateListener
-import nl.bruijnzeels.tim.rpki.rrdp.app.ApplicationOptions
-import nl.bruijnzeels.tim.rpki.publication.server.store.RrdpFilesStore
 import nl.bruijnzeels.tim.rpki.publication.server.store.RrdpFilesDataSources
+import nl.bruijnzeels.tim.rpki.publication.server.store.RrdpFilesStore
+import nl.bruijnzeels.tim.rpki.rrdp.app.ApplicationOptions
 
 /**
  * A DSL to support the proof of concept (PoC) set up
@@ -33,16 +33,15 @@ import nl.bruijnzeels.tim.rpki.publication.server.store.RrdpFilesDataSources
 object PocDsl {
 
   import scala.language.implicitConversions
-  import ApplicationOptions.rrdpBaseUri
 
   implicit def stringToUri(s: String): URI = URI.create(s)
   implicit def stringToIpResourceSet(s: String): IpResourceSet = IpResourceSet.parse(s)
 
-  val TrustAnchorCertUri: URI = rrdpBaseUri.resolve("ta/ta.cer")
-  val RrdpBaseUrl: URI = rrdpBaseUri.resolve("deltas/")
-  val RrdpNotifyUrl: URI = rrdpBaseUri.resolve("notify/notify.xml")
+  val TrustAnchorCertUri: URI = ApplicationOptions.rrdpBaseUri.resolve("ta/ta.cer")
+  val RrdpBaseUrl: URI = ApplicationOptions.rrdpBaseUri.resolve("rrdp/")
+  val RrdpNotifyUrl: URI = ApplicationOptions.rrdpBaseUri.resolve("notify/notify.xml")
 
-  val RsyncBaseUrl: URI = "rsync://localhost:10873/repository/"
+  val RsyncBaseUrl: URI = ApplicationOptions.rsyncBaseUri
 
   val PublicationServerId = UUID.fromString("8cb580ef-de6d-4435-94fd-ceaaddff3b99")
 

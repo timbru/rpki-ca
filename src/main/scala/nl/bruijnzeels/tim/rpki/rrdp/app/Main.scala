@@ -78,7 +78,7 @@ class Main { main =>
     val server = new Server(rrdpPort)
     val webFilter = new WebFilter {}
 
-    val root = new ServletContextHandler(server, "/", ServletContextHandler.SESSIONS)
+    val root = new ServletContextHandler(server, "/rpki-ca", ServletContextHandler.SESSIONS)
     root.setResourceBase(getClass.getResource("/public").toString)
 
     val defaultServletHolder = new ServletHolder(new DefaultServlet())

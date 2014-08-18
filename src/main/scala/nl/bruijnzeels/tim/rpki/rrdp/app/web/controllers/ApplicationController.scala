@@ -1,6 +1,7 @@
 package nl.bruijnzeels.tim.rpki.rrdp.app.web.controllers
 
 import nl.bruijnzeels.tim.rpki.rrdp.app.web.views.HomeView
+
 import org.scalatra.FlashMapSupport
 import org.scalatra.ScalatraBase
 import nl.bruijnzeels.tim.rpki.rrdp.app.ApplicationOptions
@@ -11,19 +12,19 @@ import nl.bruijnzeels.tim.rpki.publication.messages.ReferenceHash
 
 trait ApplicationController extends ScalatraBase with FlashMapSupport {
 
-  import ApplicationOptions.rrdpBasePath
-
   def currentTa = TrustAnchorCommandDispatcher.load(PocDsl.TrustAnchorId).get
   def currentPublicationServer = PublicationServerCommandDispatcher.load(PocDsl.PublicationServerId).get
   val rrdpFileStore = PocDsl.current.rrdpFileStore
 
-  def baseContext = "/" + rrdpBasePath
+  val TrustAnchorCertificatePath = "ta/ta.cer"
+  val RrdpNotitifyPath = "notify/notify.xml"
+  val RrdpFilesPath = "rrpd/"
 
-  get(baseContext) {
+  get("/") {
     new HomeView(currentTa, currentPublicationServer)
   }
 
-  get(PocDsl.TrustAnchorCertUri.getPath()) {
+  get("/ta/ta.cer") {
 
     contentType = "application/octet-stream"
     response.addHeader("Pragma", "public")
@@ -32,7 +33,7 @@ trait ApplicationController extends ScalatraBase with FlashMapSupport {
     response.getOutputStream().write(currentTa.resourceClass.currentSigner.signingMaterial.currentCertificate.getEncoded())
   }
 
-  get(PocDsl.RrdpNotifyUrl.getPath()) {
+  get("/notify/notify.xml") {
 
     contentType = "application/xml"
     response.addHeader("Pragma", "public")
@@ -41,7 +42,7 @@ trait ApplicationController extends ScalatraBase with FlashMapSupport {
     response.getWriter().write(currentPublicationServer.notificationFile.toXml.toString)
   }
 
-  get(PocDsl.RrdpBaseUrl.getPath() + ":fileName") {
+  get("/rrdp/:fileName") {
 
     val fileName = (params("fileName"))
 
@@ -58,7 +59,6 @@ trait ApplicationController extends ScalatraBase with FlashMapSupport {
       }
       case None => halt(404)
     }
-
   }
-
 }
+

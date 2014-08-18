@@ -19,14 +19,14 @@ object Layouts {
       <head>
         <meta charset="utf-8"/>
         <title>RRDP - { view.title }</title>
-        <link rel="stylesheet" href="/stylesheets/bootstrap/1.3.0/bootstrap.css"/>
-        <link rel="stylesheet" href="/stylesheets/application.css"/>
-        <script src="/javascript/datatables/1.8.2/jquery.js"/>
-        <script src="/javascript/datatables/1.8.2/jquery.dataTables.min.js"/>
-        <script src="/javascript/bootstrap/1.3.0/bootstrap-alerts.js"/>
-        <script src="/javascript/bootstrap/1.3.0/bootstrap-twipsy.js"/>
-        <script src="/javascript/bootstrap/1.3.0/bootstrap-popover.js"/>
-        <script src="/javascript/bootstrap/1.4.0/bootstrap-dropdown.js"/>
+        <link rel="stylesheet" href="/rpki-ca/stylesheets/bootstrap/1.3.0/bootstrap.css"/>
+        <link rel="stylesheet" href="/rpki-ca/stylesheets/application.css"/>
+        <script src="/rpki-ca/javascript/datatables/1.8.2/jquery.js"/>
+        <script src="/rpki-ca/javascript/datatables/1.8.2/jquery.dataTables.min.js"/>
+        <script src="/rpki-ca/javascript/bootstrap/1.3.0/bootstrap-alerts.js"/>
+        <script src="/rpki-ca/javascript/bootstrap/1.3.0/bootstrap-twipsy.js"/>
+        <script src="/rpki-ca/javascript/bootstrap/1.3.0/bootstrap-popover.js"/>
+        <script src="/rpki-ca/javascript/bootstrap/1.4.0/bootstrap-dropdown.js"/>
       </head>
       <body>
         <div class="topbar">
@@ -50,7 +50,7 @@ object Layouts {
           { view.body }
           <footer>
             <div class="copyright">
-              <img src="/images/ncc-logo.png" align="middle"/>
+              <img src="/rpki-ca/images/ncc-logo.png" align="middle"/>
               &nbsp;
               Copyright &copy; 2014 the Réseaux IP Européens Network Coordination Centre RIPE NCC. All rights restricted. Version 0.1
             </div>

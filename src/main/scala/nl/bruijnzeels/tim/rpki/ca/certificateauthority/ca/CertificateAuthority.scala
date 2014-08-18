@@ -88,7 +88,7 @@ case class CertificateAuthority(
                 ??? // won't do updates for now
               } else {
                 List(ResourceClassCreated(id, className)) ++
-                  Signer.create(id, className, baseUrl.resolve(s"/${id}/${className}/"), rrdpNotifyUrl) :+
+                  Signer.create(id, className, baseUrl.resolve(s"${id}/${className}/"), rrdpNotifyUrl) :+
                   ProvisioningCommunicatorPerformedParentExchange(id, ProvisioningParentExchange(myRequest, response))
               }
             }.toList
