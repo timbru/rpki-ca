@@ -8,6 +8,7 @@ import org.scalatest.FunSuite
 import org.scalatest.Matchers
 import nl.bruijnzeels.tim.rpki.publication.messages.Withdraw
 import java.net.URI
+import nl.bruijnzeels.tim.rpki.publication.messages.ReferenceHash
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class PublicationServerTest extends FunSuite with Matchers {
@@ -55,8 +56,9 @@ class PublicationServerTest extends FunSuite with Matchers {
 
     notification.serial should equal(server.serial)
     notification.sessionId should equal(server.sessionId)
-    notification.snapshots should have size (1)
+    notification.snapshot.hash should equal(ReferenceHash.fromXml(server.snapshot.toXml))
     notification.deltas should have size (1)
+    notification.deltas.head.hash should equal(ReferenceHash.fromXml(server.deltas.head.toXml))
   }
 
 }

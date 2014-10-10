@@ -73,12 +73,12 @@ case class PublicationServer(
    */
   def notificationFile: Notification = {
 
-    val snapshotReference = SnapshotReference(uri = fileUrl(snapshot), serial = serial, hash = ReferenceHash.fromXml(snapshot.toXml))
+    val snapshotReference = SnapshotReference(uri = fileUrl(snapshot), hash = ReferenceHash.fromXml(snapshot.toXml))
     val deltasReferences = deltas.map { d =>
       DeltaReference(uri = fileUrl(d), from = d.from, to = d.to, hash = ReferenceHash.fromXml(d.toXml))
     }
 
-    Notification(sessionId, serial, List(snapshotReference), deltasReferences)
+    Notification(sessionId, serial, snapshotReference, deltasReferences)
   }
 
   private def fileUrl(file: DeltaProtocolMessage) = rrdpBaseUri.resolve(s"${ReferenceHash.fromXml(file.toXml)}.xml")

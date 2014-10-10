@@ -18,22 +18,20 @@ sealed trait DeltaProtocolMessage {
   def toXml: Elem
 }
 
-case class Notification(sessionId: UUID, serial: BigInteger, snapshots: List[SnapshotReference] = List.empty, deltas: List[DeltaReference] = List.empty) extends DeltaProtocolMessage {
+case class Notification(sessionId: UUID, serial: BigInteger, snapshot: SnapshotReference, deltas: List[DeltaReference] = List.empty) extends DeltaProtocolMessage {
 
   def toXml =
-<notification xmlns="http://www.ripe.net/rpki/rrdp" version="1" session_id={ sessionId.toString } serial={ serial.toString }>
-{ for (snapshot <- snapshots) yield {
-      <snapshot serial={ snapshot.serial.toString } uri={ snapshot.uri.toString } hash={ snapshot.hash.toString }/>
-    }
-}
-{ for (delta <- deltas) yield {
-      <delta from={ delta.from.toString } to={ delta.to.toString } uri={ delta.uri.toString } hash={ delta.hash.toString }/>
-    }
-  }
-</notification>
+    <notification xmlns="http://www.ripe.net/rpki/rrdp" version="1" session_id={ sessionId.toString } serial={ serial.toString }>
+      <snapshot uri={ snapshot.uri.toString } hash={ snapshot.hash.toString }/>
+      {
+        for (delta <- deltas) yield {
+          <delta from={ delta.from.toString } to={ delta.to.toString } uri={ delta.uri.toString } hash={ delta.hash.toString }/>
+        }
+      }
+    </notification>
 }
 
-case class SnapshotReference(uri: URI, serial: BigInteger, hash: ReferenceHash)
+case class SnapshotReference(uri: URI, hash: ReferenceHash)
 case class DeltaReference(uri: URI, from: BigInteger, to: BigInteger, hash: ReferenceHash)
 
 case class ReferenceHash(hash: String) {
