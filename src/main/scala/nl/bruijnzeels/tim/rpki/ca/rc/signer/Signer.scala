@@ -138,30 +138,31 @@ object Signer {
   val MftNextUpdate = Period.days(1)
   val MftValidityTime = Period.days(7)
 
-  def createCertificateIssuanceRequest(className: String, repositoryUri: URI, mftUri: URI, subject: X500Principal, keyPair: KeyPair) = {
+  def createCertificateIssuanceRequest(className: String, repositoryUri: URI, mftUri: URI, rrdpNotifyUri: URI, subject: X500Principal, keyPair: KeyPair) = {
     val pkcs10Request = new RpkiCaCertificateRequestBuilder()
       .withCaRepositoryUri(repositoryUri)
       .withManifestUri(mftUri)
+      .withRrdpNotifyUri(rrdpNotifyUri)
       .withSubject(subject)
       .build(keyPair)
 
     new CertificateIssuanceRequestPayloadBuilder().withClassName(className).withCertificateRequest(pkcs10Request).build()
   }
 
-  def create(aggregateId: UUID, resourceClassName: String, publicationUri: URI, rrdpNotifyUrl: URI) = {
+  def create(aggregateId: UUID, resourceClassName: String, publicationUri: URI, rrdpNotifyUri: URI) = {
     val keyPair = KeyPairSupport.createRpkiKeyPair
 
     val created = SignerCreated(aggregateId, resourceClassName)
 
     val signingMaterialCreated = {
-      val signingMaterial = SigningMaterial(keyPair, null, publicationUri, rrdpNotifyUrl, BigInteger.ZERO)
+      val signingMaterial = SigningMaterial(keyPair, null, publicationUri, rrdpNotifyUri, BigInteger.ZERO)
       SignerSigningMaterialCreated(aggregateId, resourceClassName, signingMaterial)
     }
 
     val pendingCeritifcateRequest = {
       val mftUri = publicationUri.resolve(RpkiObjectNameSupport.deriveMftFileNameForKey(keyPair.getPublic()))
       val preferredSubject = RpkiObjectNameSupport.deriveSubject(keyPair.getPublic()) // parent may override..
-      val request = createCertificateIssuanceRequest(resourceClassName, publicationUri, mftUri, preferredSubject, keyPair)
+      val request = createCertificateIssuanceRequest(resourceClassName, publicationUri, mftUri, rrdpNotifyUri, preferredSubject, keyPair)
       SignerCreatedPendingCertificateRequest(aggregateId, resourceClassName, request)
     }
 
