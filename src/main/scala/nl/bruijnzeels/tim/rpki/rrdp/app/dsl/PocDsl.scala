@@ -24,6 +24,9 @@ import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerUpdateListene
 import nl.bruijnzeels.tim.rpki.publication.server.store.RrdpFilesDataSources
 import nl.bruijnzeels.tim.rpki.publication.server.store.RrdpFilesStore
 import nl.bruijnzeels.tim.rpki.rrdp.app.ApplicationOptions
+import nl.bruijnzeels.tim.rpki.publication.disk.ObjectDiskWriter
+import java.io.File
+import org.h2.store.fs.FileUtils
 
 /**
  * A DSL to support the proof of concept (PoC) set up
@@ -42,6 +45,7 @@ object PocDsl {
   val RrdpNotifyUrl: URI = ApplicationOptions.rrdpBaseUri.resolve("notify/notify.xml")
 
   val RsyncBaseUrl: URI = ApplicationOptions.rsyncBaseUri
+  val RsyncBaseDir: File = ApplicationOptions.rsyncBaseDir
 
   val PublicationServerId = UUID.fromString("8cb580ef-de6d-4435-94fd-ceaaddff3b99")
 
@@ -74,6 +78,8 @@ object PocDsl {
         rrdpNotifyUrl = RrdpNotifyUrl))
 
     def publicationServer() = PublicationServerCommandDispatcher.dispatch(PublicationServerCreate(PublicationServerId, RrdpBaseUrl))
+    
+    
 
   }
 
@@ -134,5 +140,16 @@ object PocDsl {
       current publicationServer () notificationFile
     }
   }
+  
+  object diskWriter {
+    val writer = ObjectDiskWriter(RsyncBaseUrl, RsyncBaseDir)
+    
+    if (!RsyncBaseDir.exists()) {
+      FileUtils.createDirectories(RsyncBaseDir.getPath())
+    }
+    
+    def listen() = writer.listen
+  }
+  
 
 }

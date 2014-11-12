@@ -56,7 +56,8 @@ class Main { main =>
   def setUpPublicationServer() = {
     logger.info("Setting up publication server")
     create publicationServer()
-    publicationServer listen
+    publicationServer listen()
+    diskWriter listen()
   }
 
   def setUpCas() = {
