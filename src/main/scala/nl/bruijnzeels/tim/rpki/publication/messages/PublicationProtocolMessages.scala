@@ -19,20 +19,20 @@ sealed trait DeltaProtocolMessage {
 }
 
 case class Notification(sessionId: UUID, serial: BigInteger, snapshot: SnapshotReference, deltas: List[DeltaReference] = List.empty) extends DeltaProtocolMessage {
-
   def toXml =
     <notification xmlns="http://www.ripe.net/rpki/rrdp" version="1" session_id={ sessionId.toString } serial={ serial.toString }>
-      <snapshot uri={ snapshot.uri.toString } hash={ snapshot.hash.toString }/>
-      {
-        for (delta <- deltas) yield {
-          <delta from={ delta.from.toString } to={ delta.to.toString } uri={ delta.uri.toString } hash={ delta.hash.toString }/>
-        }
-      }
+      { snapshot.toXml }
+      { deltas.map(_.toXml) }
     </notification>
 }
 
-case class SnapshotReference(uri: URI, hash: ReferenceHash)
-case class DeltaReference(uri: URI, from: BigInteger, to: BigInteger, hash: ReferenceHash)
+case class SnapshotReference(uri: URI, hash: ReferenceHash) {
+  def toXml = <snapshot uri={ uri.toString } hash={ hash.toString }/>
+}
+
+case class DeltaReference(uri: URI, serial: BigInteger, hash: ReferenceHash) {
+  def toXml = <delta serial={ serial.toString } uri={ uri.toString } hash={ hash.toString }/>
+}
 
 case class ReferenceHash(hash: String) {
   def matches(other: Array[Byte]): Boolean = StringUtils.equals(hash, ReferenceHash.fromBytes(other).hash)
@@ -59,19 +59,10 @@ case class Snapshot(sessionId: UUID, serial: BigInteger, publishes: List[Publish
 
 }
 
-case class Deltas(sessionId: UUID, from: BigInteger, to: BigInteger, deltas: List[Delta]) extends DeltaProtocolMessage {
+case class Delta(sessionId: UUID, serial: BigInteger, messages: List[PublicationProtocolMessage]) extends DeltaProtocolMessage {
 
   def toXml =
-    <deltas xmlns="http://www.ripe.net/rpki/rrdp" version="1" session_id={ sessionId.toString } from={ from.toString } to={ to.toString }>
-      { for (delta <- deltas) yield { delta.toXml } }
-    </deltas>
-
-}
-
-case class Delta(serial: BigInteger, messages: List[PublicationProtocolMessage]) extends DeltaProtocolMessage {
-
-  def toXml =
-    <delta serial={ serial.toString }>
+    <delta xmlns="http://www.ripe.net/rpki/rrdp" version="1" session_id={ sessionId.toString } serial={ serial.toString }>
       { for (message <- messages) yield { message.toXml } }
     </delta>
 

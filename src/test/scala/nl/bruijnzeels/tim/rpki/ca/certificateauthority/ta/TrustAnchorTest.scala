@@ -104,7 +104,7 @@ import TrustAnchorTest._
 
 object TrustAnchorTest {
 
-  val RrdpNotifyUrl: URI = "rrdp://localhost:8080/rrdp/notify.xml"
+  val RrdpNotifyUrl: URI = "http://localhost:8080/rrdp/notify.xml"
 
   val TrustAnchorId = UUID.fromString("f3ec94ee-ae80-484a-8d58-a1e43bbbddd1")
   val TrustAnchorName = "TA"

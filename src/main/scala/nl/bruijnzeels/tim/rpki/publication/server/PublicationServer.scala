@@ -8,7 +8,6 @@ import nl.bruijnzeels.tim.rpki.ca.common.cqrs.AggregateRoot
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
 import nl.bruijnzeels.tim.rpki.publication.messages.Delta
 import nl.bruijnzeels.tim.rpki.publication.messages.DeltaReference
-import nl.bruijnzeels.tim.rpki.publication.messages.Deltas
 import nl.bruijnzeels.tim.rpki.publication.messages.Notification
 import nl.bruijnzeels.tim.rpki.publication.messages.PublicationProtocolMessage
 import nl.bruijnzeels.tim.rpki.publication.messages.Publish
@@ -24,7 +23,7 @@ case class PublicationServer(
   rrdpBaseUri: URI,
   serial: BigInteger,
   snapshot: Snapshot,
-  deltas: List[Deltas] = List.empty,
+  deltas: List[Delta] = List.empty,
   events: List[Event] = List.empty) extends AggregateRoot {
 
   private val MaxDeltas = 100
@@ -40,16 +39,14 @@ case class PublicationServer(
         serial = BigInteger.ZERO,
         snapshot = Snapshot(created.sessionId, BigInteger.ZERO, List.empty),
         events = events :+ event)
-    case receivedDeltas: PublicationServerReceivedDeltas => copy(deltas = (List(receivedDeltas.deltas) ++ deltas).take(MaxDeltas), events = events :+ receivedDeltas)
+    case receivedDelta: PublicationServerReceivedDelta => copy(deltas = (List(receivedDelta.delta) ++ deltas).take(MaxDeltas), events = events :+ receivedDelta)
     case receivedSnapshot: PublicationServerReceivedSnapshot => copy(serial = receivedSnapshot.snapshot.serial, snapshot = receivedSnapshot.snapshot, events = events :+ receivedSnapshot)
   }
 
   def publish(messages: List[PublicationProtocolMessage]) = {
 
-    val deltasReceivedEvent = {
-      val delta = Delta(serial = serial.add(BigInteger.ONE), messages = messages)
-      val newDeltas = Deltas(sessionId = sessionId, from = serial, to = delta.serial, deltas = List(delta))
-      PublicationServerReceivedDeltas(id, newDeltas)
+    val deltaReceivedEvent = {
+      PublicationServerReceivedDelta(id, Delta(sessionId = sessionId, serial = serial.add(BigInteger.ONE), messages = messages))
     }
 
     val snapshotReceivedEvent = {
@@ -65,7 +62,7 @@ case class PublicationServer(
       PublicationServerReceivedSnapshot(id, newSnapshot)
     }
 
-    applyEvents(List(deltasReceivedEvent, snapshotReceivedEvent))
+    applyEvents(List(deltaReceivedEvent, snapshotReceivedEvent))
   }
 
   /**
@@ -75,7 +72,7 @@ case class PublicationServer(
 
     val snapshotReference = SnapshotReference(uri = fileUrl(snapshot), hash = ReferenceHash.fromXml(snapshot.toXml))
     val deltasReferences = deltas.map { d =>
-      DeltaReference(uri = fileUrl(d), from = d.from, to = d.to, hash = ReferenceHash.fromXml(d.toXml))
+      DeltaReference(uri = fileUrl(d), serial = d.serial, hash = ReferenceHash.fromXml(d.toXml))
     }
 
     Notification(sessionId, serial, snapshotReference, deltasReferences)

@@ -14,7 +14,7 @@ import java.sql.ResultSet
 import com.google.common.io.BaseEncoding
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventListener
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
-import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerReceivedDeltas
+import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerReceivedDelta
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerReceivedSnapshot
 import nl.bruijnzeels.tim.rpki.publication.messages.DeltaProtocolMessage
 import nl.bruijnzeels.tim.rpki.rrdp.app.ApplicationOptions
@@ -27,7 +27,7 @@ class RrdpFilesStore(dataSource: BasicDataSource) extends EventListener {
   override def handle(events: List[Event]) = {
 
     events.foreach(event => event match {
-      case deltaReceived: PublicationServerReceivedDeltas => storeProtocolFile(deltaReceived.deltas)
+      case deltaReceived: PublicationServerReceivedDelta => storeProtocolFile(deltaReceived.delta)
       case snapshotReceived: PublicationServerReceivedSnapshot => storeProtocolFile(snapshotReceived.snapshot)
       case _ => // These are not the droids we're looking for
     })

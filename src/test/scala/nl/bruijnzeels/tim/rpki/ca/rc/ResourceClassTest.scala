@@ -77,7 +77,7 @@ object ResourceClassTest {
   val AggregateId = UUID.fromString("3e13717b-da5b-4371-a8c1-45d390fd8dc7")
   val ResourceClassName = "test resource class"
 
-  val RrdpNotifyUri: URI = "rrdp://localhost:8080/rrdp/notify.xml"
+  val RrdpNotifyUri: URI = "http://localhost:8080/rrdp/notify.xml"
 
   val SignerName = "test signer"
   val SignerSubject = new X500Principal("CN=" + SignerName)
