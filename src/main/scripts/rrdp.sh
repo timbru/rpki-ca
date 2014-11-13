@@ -116,7 +116,7 @@ fi
 
 
 case ${FIRST_ARG} in
-    start|run)
+    start)
         if [ ${RUNNING} == "true" ]; then
             error_exit "${APP_NAME} is already running"
         fi
@@ -128,15 +128,12 @@ case ${FIRST_ARG} in
         CLASSPATH=:"$LIB_DIR/*"
         MEM_OPTIONS="-Xms$JVM_XMS -Xmx$JVM_XMX"
 
-        [ ${FIRST_ARG} == "start" ] && BG='&'
-
-        eval '${JAVA_CMD} ${JVM_OPTIONS} ${MEM_OPTIONS} ${JAVA_OPTS} \
-                "-Dapp.name=${APP_NAME} -Dconfig.file=$CONFIG_FILE " \
-                -classpath ${CLASSPATH} \
-                nl.bruijnzeels.tim.rpki.rrdp.app.Main ${BG}'
+        nohup ${JAVA_CMD} ${JVM_OPTIONS} ${MEM_OPTIONS} ${JAVA_OPTS} \
+             "-Dapp.name=${APP_NAME} -Dconfig.file=$CONFIG_FILE " \
+              -classpath ${CLASSPATH} \
+              nl.bruijnzeels.tim.rpki.rrdp.app.Main >/dev/null 2>&1 &
         RETCODE=$?
 
-        [ ${FIRST_ARG} == "run" ] && exit ${RETCODE}
 
         PID=$!
         echo $PID > $PID_FILE
