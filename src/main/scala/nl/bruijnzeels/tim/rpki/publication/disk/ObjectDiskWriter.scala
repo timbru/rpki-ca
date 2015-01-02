@@ -23,24 +23,27 @@ case class ObjectDiskWriter(baseUri: URI, baseDir: File) extends EventListener {
     events.collect { case e: PublicationServerReceivedSnapshot => e }.lastOption match {
       case None => 
       case Some(snapshotReceived) => {
-        val tmpDir = Files.createTempDir()
+        
+        val newDir = baseDir.toPath().resolve("new/").toFile()
         
         snapshotReceived.snapshot.publishes.foreach { p =>
           getRelativeFilePath(p.uri) match { 
             case None => // 
             case Some(file) => {
-              val fullFile = tmpDir.toPath().resolve(file.toPath()).toFile()
+              val fullFile = newDir.toPath().resolve(file.toPath()).toFile()
               Files.createParentDirs(fullFile)
               Files.write(p.repositoryObject.getEncoded, fullFile)
             }
           }
         }
         
-        val oldDirTarget = Files.createTempDir()
+        val currentDir = baseDir.toPath().resolve("current/").toFile()
         
-        baseDir.renameTo(oldDirTarget)
-        tmpDir.renameTo(baseDir)
-        FileUtils.deleteRecursive(oldDirTarget.getAbsolutePath(), false)
+        val oldDir = baseDir.toPath().resolve("old/").toFile()
+        
+        Files.move(currentDir, oldDir)
+        Files.move(newDir, currentDir)
+        FileUtils.deleteRecursive(oldDir.getAbsolutePath(), false)
       }
     }
   }
