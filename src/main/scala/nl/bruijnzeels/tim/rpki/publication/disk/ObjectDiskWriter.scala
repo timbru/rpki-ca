@@ -42,9 +42,11 @@ case class ObjectDiskWriter(baseUri: URI, baseDir: File) extends EventListener {
         
         val oldDir = baseDir.toPath().resolve("old/").toFile()
         
-        Files.move(currentDir, oldDir)
+        if (currentDir.exists()) { Files.move(currentDir, oldDir) }
+        
         Files.move(newDir, currentDir)
-        FileUtils.deleteRecursive(oldDir.getAbsolutePath(), false)
+        
+        if (oldDir.exists()) { FileUtils.deleteRecursive(oldDir.getAbsolutePath(), false) }
       }
     }
   }
