@@ -12,15 +12,16 @@ import java.nio.file.Paths
 import org.h2.store.fs.FileUtils
 import org.h2.util.IOUtils
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.StoredEvent
 
 /**
  * Writes/removes objects to/from disk so they can be exposed over rsync, or http for that matter.. 
  */
 case class ObjectDiskWriter(baseUri: URI, baseDir: File) extends EventListener {
   
-  override def handle(events: List[Event]) = {
+  override def handle(events: List[StoredEvent]) = {
     
-    events.collect { case e: PublicationServerReceivedSnapshot => e }.lastOption match {
+    events.map(_.event).collect { case e: PublicationServerReceivedSnapshot => e }.lastOption match {
       case None => 
       case Some(snapshotReceived) => {
         

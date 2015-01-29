@@ -19,7 +19,7 @@ class PublicationServerTest extends FunSuite with Matchers {
   test("Should initialise") {
     val server = PublicationServer.create(PublicationServerId, RrdpBaseUrl)
 
-    server.id should equal(PublicationServerId)
+    server.versionedId.id should equal(PublicationServerId)
     server.sessionId should not be (null)
     server.serial should equal(BigInteger.ZERO)
   }

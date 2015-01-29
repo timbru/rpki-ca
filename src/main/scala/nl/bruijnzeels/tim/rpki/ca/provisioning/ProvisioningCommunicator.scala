@@ -36,14 +36,14 @@ case class ProvisioningCommunicator(
   private def validateChildDoesNotExist(childId: UUID) = if (children.isDefinedAt(childId)) { throw new IllegalArgumentException(s"Child with id $childId} should not exist") }
   private def getChild(childId: UUID) = children.get(childId).get
 
-  def addChild(aggregateId: UUID, childId: UUID, childXml: String) = {
+  def addChild(childId: UUID, childXml: String) = {
     validateChildDoesNotExist(childId)
     val childCert = new ChildIdentitySerializer().deserialize(childXml).getIdentityCertificate()
     val childIdentity = ChildIdentity(childId, childCert)
-    ProvisioningCommunicatorAddedChild(aggregateId, childIdentity)
+    ProvisioningCommunicatorAddedChild(childIdentity)
   }
   
-  def addParent(aggregateId: UUID, parentXml: String) = ProvisioningCommunicatorAddedParent(aggregateId, ParentIdentity.fromXml(parentXml))
+  def addParent(parentXml: String) = ProvisioningCommunicatorAddedParent(ParentIdentity.fromXml(parentXml))
 
   def validateChildRequest(childId: UUID, cmsObject: ProvisioningCmsObject) = children.get(childId) match {
     case None => ProvisioningMessageValidationFailure("Unknown child")
@@ -86,5 +86,5 @@ case class ProvisioningCommunicator(
 }
 
 object ProvisioningCommunicator {
-  def create(aggregateId: UUID) = ProvisioningCommunicatorCreated(aggregateId, MyIdentity.create(aggregateId))
+  def create(aggregateId: UUID) = ProvisioningCommunicatorCreated(MyIdentity.create(aggregateId))
 }

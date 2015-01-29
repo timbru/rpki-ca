@@ -10,9 +10,9 @@ import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssua
 import net.ripe.rpki.commons.provisioning.payload.issue.response.CertificateIssuanceResponsePayloadBuilder
 import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayload
 import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassListResponsePayloadBuilder
-
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.AggregateRoot
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningChildExchange
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicator
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorCreated
@@ -30,7 +30,7 @@ import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerSignedCertificate
  * Root Certificate Authority for RPKI. Does not have a parent CA and has a self-signed certificate.
  */
 case class TrustAnchor(
-  id: UUID,
+  versionedId: VersionedId,
   name: String,
   resourceClass: ResourceClass = null,
   communicator: ProvisioningCommunicator = null,
@@ -50,7 +50,7 @@ case class TrustAnchor(
 
   def addChild(childId: UUID, childXml: String, childResources: IpResourceSet): TrustAnchor = {
     resourceClass.addChild(childId, childResources) match {
-      case Left(created) => applyEvents(List(created, communicator.addChild(id, childId, childXml)))
+      case Left(created) => applyEvents(List(created, communicator.addChild(childId, childXml)))
       case Right(failed) => throw new TrustAnchorException(failed.reason)
     }
   }
@@ -81,7 +81,7 @@ case class TrustAnchor(
 
             val response = communicator.signResponse(childId, responsePayload)
 
-            applyEvent(ProvisioningCommunicatorPerformedChildExchange(id, ProvisioningChildExchange(childId, request, response)))
+            applyEvent(ProvisioningCommunicatorPerformedChildExchange(ProvisioningChildExchange(childId, request, response)))
           }
           case _ => throw new TrustAnchorException("Expected resource class list query")
         }
@@ -124,7 +124,7 @@ case class TrustAnchor(
 
                 val response = communicator.signResponse(childId, responsePayload)
 
-                applyEvents(events :+ ProvisioningCommunicatorPerformedChildExchange(id, ProvisioningChildExchange(childId, request, response)))
+                applyEvents(events :+ ProvisioningCommunicatorPerformedChildExchange(ProvisioningChildExchange(childId, request, response)))
               }
             }
 
@@ -142,14 +142,14 @@ object TrustAnchor {
   val DefaultResourceClassName = "default"
 
   def rebuild(events: List[Event]): TrustAnchor = events.head match {
-    case created: TrustAnchorCreated => TrustAnchor(id = created.aggregateId, name = created.name, events = List(created)).applyEvents(events.tail)
+    case created: TrustAnchorCreated => TrustAnchor(versionedId = VersionedId(created.aggregateId), name = created.name, events = List(created)).applyEvents(events.tail)
     case event: Event => throw new IllegalArgumentException(s"First event MUST be creation of the TrustAnchor, was: ${event}")
   }
 
   def create(aggregateId: UUID, name: String, taCertificateUri: URI, publicationDir: URI, rrdpUri: URI, resources: IpResourceSet): TrustAnchor = {
     val taCreated = TrustAnchorCreated(aggregateId, name)
-    val resourceClassCreatedEvent = ResourceClassCreated(aggregateId, DefaultResourceClassName)
-    val createSignerEvents = Signer.createSelfSigned(aggregateId, DefaultResourceClassName, name, resources, taCertificateUri, publicationDir, rrdpUri)
+    val resourceClassCreatedEvent = ResourceClassCreated(DefaultResourceClassName)
+    val createSignerEvents = Signer.createSelfSigned(DefaultResourceClassName, name, resources, taCertificateUri, publicationDir, rrdpUri)
     val createProvisioningCommunicatorEvent = ProvisioningCommunicator.create(aggregateId)
 
     rebuild(List(taCreated, resourceClassCreatedEvent) ++ createSignerEvents :+ createProvisioningCommunicatorEvent)

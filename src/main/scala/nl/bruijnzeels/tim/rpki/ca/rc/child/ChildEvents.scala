@@ -13,8 +13,7 @@ sealed trait ChildEvent extends ResourceClassEvent {
   def childId: UUID
 }
 
-case class ChildCreated(aggregateId: UUID, resourceClassName: String, childId: UUID, entitledResources: IpResourceSet) extends ChildEvent
-
-case class ChildUpdatedResourceEntitlements(aggregateId: UUID, resourceClassName: String, childId: UUID, entitledResources: IpResourceSet) extends ChildEvent
-case class ChildReceivedCertificate(aggregateId: UUID, resourceClassName: String, childId: UUID, certificate: X509ResourceCertificate) extends ChildEvent
+case class ChildCreated(resourceClassName: String, childId: UUID, entitledResources: IpResourceSet) extends ChildEvent
+case class ChildUpdatedResourceEntitlements(resourceClassName: String, childId: UUID, entitledResources: IpResourceSet) extends ChildEvent
+case class ChildReceivedCertificate(resourceClassName: String, childId: UUID, certificate: X509ResourceCertificate) extends ChildEvent
 

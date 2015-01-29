@@ -2,6 +2,7 @@ package nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta
 
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 import java.util.UUID
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
 
 object TrustAnchorCommandDispatcher {
 
@@ -15,19 +16,20 @@ object TrustAnchorCommandDispatcher {
   }
 
   def save(ta: TrustAnchor) = {
-    EventStore.store(ta.events)
+    EventStore.store(ta.events, ta.versionedId.next)
   }
 
 
   def dispatch(command: TrustAnchorCommand) = {
-    val existingTa = load(command.id)
+    val taId = command.versionedId.id
+    val existingTa = load(taId)
 
     if (existingTa.isDefined && command.isInstanceOf[TrustAnchorCreate]) {
-      throw new IllegalArgumentException("Can't create new TA with id " + command.id + ", TA with same id exists")
+      throw new IllegalArgumentException(s"Can't create new TA with id ${taId}, TA with same id exists")
     }
 
     if (!existingTa.isDefined && !command.isInstanceOf[TrustAnchorCreate]) {
-      throw new IllegalArgumentException("Can't find exisiting TA with id " + command.id + " for command")
+      throw new IllegalArgumentException(s"Can't find exisiting TA with id ${taId} for command")
     }
 
     val updatedTa = command match {
@@ -43,7 +45,7 @@ object TrustAnchorCommandDispatcher {
 }
 
 object TrustAnchorCreateCommandHandler {
-  def handle(command: TrustAnchorCreate) = TrustAnchor.create(command.id, command.name, command.taCertificateUri, command.publicationUri, command.rrdpNotifyUrl, command.resources)
+  def handle(command: TrustAnchorCreate) = TrustAnchor.create(command.aggregateId, command.name, command.taCertificateUri, command.publicationUri, command.rrdpNotifyUrl, command.resources)
 }
 
 trait TrustAnchorCommandHandler[C <: TrustAnchorCommand] {

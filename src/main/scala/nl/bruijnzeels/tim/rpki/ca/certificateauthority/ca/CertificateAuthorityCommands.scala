@@ -4,11 +4,12 @@ package certificateauthority.ca
 import common.cqrs.Command
 import java.util.UUID
 import java.net.URI
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
 
-sealed trait CertificateAuthorityCommand extends Command {
-  def id: UUID
+sealed trait CertificateAuthorityCommand extends Command
+
+case class CertificateAuthorityCreate(aggregateId: UUID, name: String, baseUrl: URI, rrdpNotifyUrl: URI) extends CertificateAuthorityCommand {
+  def versionedId = VersionedId(aggregateId)
 }
-
-case class CertificateAuthorityCreate(id: UUID, name: String, baseUrl: URI, rrdpNotifyUrl: URI) extends CertificateAuthorityCommand
-case class CertificateAuthorityAddParent(id: UUID, parentXml: String) extends CertificateAuthorityCommand
-case class CertificateAuthorityPublish(id: UUID) extends CertificateAuthorityCommand
+case class CertificateAuthorityAddParent(versionedId: VersionedId, parentXml: String) extends CertificateAuthorityCommand
+case class CertificateAuthorityPublish(versionedId: VersionedId) extends CertificateAuthorityCommand

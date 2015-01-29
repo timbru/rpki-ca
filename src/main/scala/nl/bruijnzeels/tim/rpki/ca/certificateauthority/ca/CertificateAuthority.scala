@@ -1,14 +1,11 @@
 package nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca
 
 import scala.collection.JavaConverters.asScalaBufferConverter
-
 import java.net.URI
 import java.util.UUID
-
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
 import net.ripe.rpki.commons.provisioning.payload.issue.response.CertificateIssuanceResponsePayload
 import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassListResponsePayload
-
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.AggregateRoot
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
 import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicator
@@ -23,6 +20,7 @@ import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassCreated
 import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassEvent
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerReceivedCertificate
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
 
 /**
  *  A Certificate Authority in RPKI. Needs to have a parent which can be either
@@ -36,7 +34,7 @@ import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerReceivedCertificate
  *  course ROAs..
  */
 case class CertificateAuthority(
-  id: UUID,
+  versionedId: VersionedId,
   name: String,
   baseUrl: URI,
   rrdpNotifyUrl: URI,
@@ -70,7 +68,7 @@ case class CertificateAuthority(
     resourceClasses + (rc.resourceClassName -> rc.applyEvent(event))
   }
 
-  def addParent(parentXml: String) = applyEvent(communicator.addParent(id, parentXml))
+  def addParent(parentXml: String) = applyEvent(communicator.addParent(parentXml))
 
   def publish(): CertificateAuthority = {
     applyEvents(resourceClasses.values.toList.flatMap(rc => rc.publish))
@@ -87,9 +85,9 @@ case class CertificateAuthority(
               if (resourceClasses.contains(className)) {
                 ??? // won't do updates for now
               } else {
-                List(ResourceClassCreated(id, className)) ++
-                  Signer.create(id, className, baseUrl.resolve(s"${id}/${className}/"), rrdpNotifyUrl) :+
-                  ProvisioningCommunicatorPerformedParentExchange(id, ProvisioningParentExchange(myRequest, response))
+                List(ResourceClassCreated(className)) ++
+                  Signer.create(className, baseUrl.resolve(s"${versionedId.id}/${className}/"), rrdpNotifyUrl) :+
+                  ProvisioningCommunicatorPerformedParentExchange(ProvisioningParentExchange(myRequest, response))
               }
             }.toList
             applyEvents(resourceClassEvents)
@@ -110,9 +108,9 @@ case class CertificateAuthority(
           case issuanceResponse: CertificateIssuanceResponsePayload =>
             val resourceClassName = issuanceResponse.getClassElement().getClassName()
             val certificate = issuanceResponse.getClassElement().getCertificateElement().getCertificate()
-            val signerReceivedCertificate = SignerReceivedCertificate(id, resourceClassName, certificate)
+            val signerReceivedCertificate = SignerReceivedCertificate(resourceClassName, certificate)
 
-            val pcPerformedCommunication = ProvisioningCommunicatorPerformedParentExchange(id, ProvisioningParentExchange(myRequest, response))
+            val pcPerformedCommunication = ProvisioningCommunicatorPerformedParentExchange(ProvisioningParentExchange(myRequest, response))
 
             applyEvents(List(signerReceivedCertificate, pcPerformedCommunication))
           case _ => {
@@ -130,7 +128,7 @@ object CertificateAuthority {
   def rebuild(events: List[Event]): CertificateAuthority = events.head match {
     case created: CertificateAuthorityCreated =>
       CertificateAuthority(
-        id = created.aggregateId,
+        versionedId = VersionedId(created.aggregateId),
         name = created.name,
         baseUrl = created.baseUrl,
         rrdpNotifyUrl = created.rrdpNotifyUrl,

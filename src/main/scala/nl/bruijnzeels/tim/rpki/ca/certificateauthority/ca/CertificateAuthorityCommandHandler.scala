@@ -1,9 +1,9 @@
 package nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca
 
 import java.util.UUID
-
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorCommand
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
 
 object CertificateAuthorityCommandDispatcher {
 
@@ -17,18 +17,19 @@ object CertificateAuthorityCommandDispatcher {
   }
 
   def save(ca: CertificateAuthority) = {
-    EventStore.store(ca.events)
+    EventStore.store(ca.events, ca.versionedId.next)
   }
 
   def dispatch(command: CertificateAuthorityCommand) = {
-    val existingCa = load(command.id)
+    val caId = command.versionedId.id
+    val existingCa = load(caId)
 
     if (existingCa.isDefined && command.isInstanceOf[CertificateAuthorityCreate]) {
-      throw new IllegalArgumentException("Can't create new CA with id " + command.id + ", TA with same id exists")
+      throw new IllegalArgumentException(s"Can't create new CA with id ${caId} CA with same id exists")
     }
 
     if (!existingCa.isDefined && !command.isInstanceOf[CertificateAuthorityCreate]) {
-      throw new IllegalArgumentException("Can't find exisiting CA with id " + command.id + " for command")
+      throw new IllegalArgumentException(s"Can't find exisiting CA with id ${caId} for command")
     }
 
     val updatedCa = command match {
@@ -43,7 +44,7 @@ object CertificateAuthorityCommandDispatcher {
 }
 
 object CertificateAuthorityCreateHandler {
-  def handle(create: CertificateAuthorityCreate) = CertificateAuthority.create(create.id, create.name, create.baseUrl, create.rrdpNotifyUrl)
+  def handle(create: CertificateAuthorityCreate) = CertificateAuthority.create(create.aggregateId, create.name, create.baseUrl, create.rrdpNotifyUrl)
 }
 
 trait CertificateAuthorityCommandHandler[C <: CertificateAuthorityCommand] {

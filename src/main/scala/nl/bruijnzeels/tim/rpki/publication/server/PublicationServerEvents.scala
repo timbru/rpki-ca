@@ -10,5 +10,5 @@ import nl.bruijnzeels.tim.rpki.publication.messages.Snapshot
 sealed trait PublicationServerEvent extends Event
 
 case class PublicationServerCreated(aggregateId: UUID, sessionId: UUID, rrdpBaseUri: URI) extends PublicationServerEvent
-case class PublicationServerReceivedSnapshot(aggregateId: UUID, snapshot: Snapshot) extends PublicationServerEvent
-case class PublicationServerReceivedDelta(aggregateId: UUID, delta: Delta) extends PublicationServerEvent
+case class PublicationServerReceivedSnapshot(snapshot: Snapshot) extends PublicationServerEvent
+case class PublicationServerReceivedDelta(delta: Delta) extends PublicationServerEvent

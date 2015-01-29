@@ -22,7 +22,7 @@ class ProvisioningCommunicatorTest extends FunSuite with Matchers {
     val childXml = childId.toChildXml
     
     val pc = ProvisioningCommunicator(ProvisioningCommunicator.create(UUID.randomUUID()).myIdentity)
-    val parentXml = pc.applyEvent(pc.addChild(pc.me.id, childId.id, childXml)).getParentXmlForChild(childId.id)
+    val parentXml = pc.applyEvent(pc.addChild(childId.id, childXml)).getParentXmlForChild(childId.id)
     
     val parentId = new ParentIdentitySerializer().deserialize(parentXml.get)
     
@@ -38,9 +38,9 @@ class ProvisioningCommunicatorTest extends FunSuite with Matchers {
     val childXml = childPc.me.toChildXml
     
     val parentPc = ProvisioningCommunicator(ProvisioningCommunicator.create(UUID.randomUUID()).myIdentity)
-    val parentXml = parentPc.applyEvent(parentPc.addChild(parentPc.me.id, childPc.me.id, childXml)).getParentXmlForChild(childPc.me.id).get
+    val parentXml = parentPc.applyEvent(parentPc.addChild(childPc.me.id, childXml)).getParentXmlForChild(childPc.me.id).get
     
-    val childWithParent = childPc.applyEvent(childPc.addParent(childPc.me.id, parentXml))
+    val childWithParent = childPc.applyEvent(childPc.addParent(parentXml))
     
     childWithParent.parent should equal(Some(ParentIdentity.fromXml(parentXml)))
     

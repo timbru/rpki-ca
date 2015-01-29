@@ -3,17 +3,15 @@ package certificateauthority.ca
 
 import java.net.URI
 import java.util.UUID
-
 import net.ripe.ipresource.IpResourceSet
-
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorAddChild
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorAddChildCommandHandler
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorTest
 import nl.bruijnzeels.tim.rpki.ca.stringToIpResourceSet
 import nl.bruijnzeels.tim.rpki.ca.stringToUri
-
 import org.scalatest.FunSuite
 import org.scalatest.Matchers
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class CertificateAuthorityTest extends FunSuite with Matchers {
@@ -21,7 +19,7 @@ class CertificateAuthorityTest extends FunSuite with Matchers {
   import CertificateAuthorityTest._
 
   test("Should create certificate authority with initialised provisioning communicator") {
-    val create = CertificateAuthorityCreate(id = CertificateAuthorityId, name = CertificateAuthorityName, baseUrl = CertificateAuthorityBaseUrl, rrdpNotifyUrl = RrdpNotifyUrl)
+    val create = CertificateAuthorityCreate(aggregateId = CertificateAuthorityId, name = CertificateAuthorityName, baseUrl = CertificateAuthorityBaseUrl, rrdpNotifyUrl = RrdpNotifyUrl)
 
     val ca = CertificateAuthorityCreateHandler.handle(create)
 
@@ -40,12 +38,12 @@ class CertificateAuthorityTest extends FunSuite with Matchers {
 
     val childIdXml = ca.communicator.me.toChildXml
     val childResources: IpResourceSet = "192.168.0.0/16"
-    val addChild = TrustAnchorAddChild(id = taInitial.id, childId = ca.id, childXml = childIdXml, childResources = childResources)
+    val addChild = TrustAnchorAddChild(versionedId = taInitial.versionedId, childId = ca.versionedId.id, childXml = childIdXml, childResources = childResources)
 
     val taWithChild = TrustAnchorAddChildCommandHandler.handle(addChild, taInitial)
 
-    val parentXml = taWithChild.communicator.getParentXmlForChild(ca.id).get
-    val addParent = CertificateAuthorityAddParent(ca.id, parentXml)
+    val parentXml = taWithChild.communicator.getParentXmlForChild(ca.versionedId.id).get
+    val addParent = CertificateAuthorityAddParent(ca.versionedId, parentXml)
 
     val caWithParent = CertificateAuthorityAddParentHandler.handle(addParent, ca)
 
@@ -63,6 +61,6 @@ object CertificateAuthorityTest {
   val CertificateAuthorityName = "Test CA"
   val CertificateAuthorityBaseUrl: URI = "rsync://invalid.com/foo"
 
-  val ChildInitial = CertificateAuthorityCreateHandler.handle(CertificateAuthorityCreate(id = CertificateAuthorityId, name = CertificateAuthorityName, baseUrl = CertificateAuthorityBaseUrl, rrdpNotifyUrl = RrdpNotifyUrl))
+  val ChildInitial = CertificateAuthorityCreateHandler.handle(CertificateAuthorityCreate(CertificateAuthorityId, name = CertificateAuthorityName, baseUrl = CertificateAuthorityBaseUrl, rrdpNotifyUrl = RrdpNotifyUrl))
 
 }

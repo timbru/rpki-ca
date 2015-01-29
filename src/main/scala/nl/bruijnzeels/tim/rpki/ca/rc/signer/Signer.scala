@@ -56,7 +56,7 @@ case class Signer(
    * Creates initial publication set for the first publication and will use existing publication set
    * so that mft and crl numbers can be tracked properly
    */
-  def publish(aggregateId: UUID, resourceClassName: String, products: List[CertificateRepositoryObject] = List.empty) = {
+  def publish(resourceClassName: String, products: List[CertificateRepositoryObject] = List.empty) = {
 
     // Validate that there was no attempt to publish an additional CRL or MFT
     products.foreach(p => p match {
@@ -69,7 +69,7 @@ case class Signer(
 
     val mftRevocationOption = publicationSet.mft.map(mft => {
       val mftRevocation = Revocation.forCertificate(mft.getCertificate)
-      SignerAddedRevocation(aggregateId, resourceClassName, mftRevocation)
+      SignerAddedRevocation(resourceClassName, mftRevocation)
     })
 
     val newCrl = {
@@ -91,11 +91,10 @@ case class Signer(
       SigningSupport.createManifest(signingMaterial, mftRequest)
     }
 
-    val manifestSignedEvent = SignerSignedCertificate(aggregateId, resourceClassName, newMft.getCertificate())
+    val manifestSignedEvent = SignerSignedCertificate(resourceClassName, newMft.getCertificate())
 
-    // aggregateId: UUID, resourceClassName: String, baseUri: URI, mft: ManifestCms, crl: X509Crl, products: List[CertificateRepositoryObject] = List.empty) = {
     val publicationSetUpdatedEvent = publicationSet.publish(
-        aggregateId = aggregateId, resourceClassName = resourceClassName,
+        resourceClassName = resourceClassName,
         baseUri = signingMaterial.currentCertificate.getRepositoryUri,
         mft = newMft,
         crl = newCrl,
@@ -110,7 +109,7 @@ case class Signer(
   /**
    * Sign a child certificate request
    */
-  def signChildCertificateRequest(aggregateId: UUID, resourceClassName: String, resources: IpResourceSet, pkcs10Request: PKCS10CertificationRequest): Either[SignerSignedCertificate, RejectedCertificate] = {
+  def signChildCertificateRequest(resourceClassName: String, resources: IpResourceSet, pkcs10Request: PKCS10CertificationRequest): Either[SignerSignedCertificate, RejectedCertificate] = {
     val childCaRequest = ChildCertificateSignRequest(
       pkcs10Request = pkcs10Request,
       resources = resources,
@@ -121,7 +120,7 @@ case class Signer(
     overclaimingResources.removeAll(signingMaterial.currentCertificate.getResources())
 
     if (overclaimingResources.isEmpty()) {
-      Left(SignerSignedCertificate(aggregateId, resourceClassName, SigningSupport.createChildCaCertificate(signingMaterial, childCaRequest)))
+      Left(SignerSignedCertificate(resourceClassName, SigningSupport.createChildCaCertificate(signingMaterial, childCaRequest)))
     } else {
       Right(RejectedCertificate(s"Child certificate request includes resources not included in parent certificate: ${overclaimingResources}"))
     }
@@ -149,28 +148,27 @@ object Signer {
     new CertificateIssuanceRequestPayloadBuilder().withClassName(className).withCertificateRequest(pkcs10Request).build()
   }
 
-  def create(aggregateId: UUID, resourceClassName: String, publicationUri: URI, rrdpNotifyUri: URI) = {
+  def create(resourceClassName: String, publicationUri: URI, rrdpNotifyUri: URI) = {
     val keyPair = KeyPairSupport.createRpkiKeyPair
 
-    val created = SignerCreated(aggregateId, resourceClassName)
+    val created = SignerCreated(resourceClassName)
 
     val signingMaterialCreated = {
       val signingMaterial = SigningMaterial(keyPair, null, publicationUri, rrdpNotifyUri, BigInteger.ZERO)
-      SignerSigningMaterialCreated(aggregateId, resourceClassName, signingMaterial)
+      SignerSigningMaterialCreated(resourceClassName, signingMaterial)
     }
 
     val pendingCeritifcateRequest = {
       val mftUri = publicationUri.resolve(RpkiObjectNameSupport.deriveMftFileNameForKey(keyPair.getPublic()))
       val preferredSubject = RpkiObjectNameSupport.deriveSubject(keyPair.getPublic()) // parent may override..
       val request = createCertificateIssuanceRequest(resourceClassName, publicationUri, mftUri, rrdpNotifyUri, preferredSubject, keyPair)
-      SignerCreatedPendingCertificateRequest(aggregateId, resourceClassName, request)
+      SignerCreatedPendingCertificateRequest(resourceClassName, request)
     }
 
     List(created, signingMaterialCreated, pendingCeritifcateRequest)
   }
 
   def createSelfSigned(
-      aggregateId: UUID,
       resourceClassName: String,
       name: String,
       resources: IpResourceSet,
@@ -181,9 +179,9 @@ object Signer {
     val certificate = SigningSupport.createRootCertificate(name, keyPair, resources, publicationDir, rrdpNotifyUri, TrustAnchorLifeTime)
 
     List(
-      SignerCreated(aggregateId, resourceClassName),
-      SignerSigningMaterialCreated(aggregateId, resourceClassName, SigningMaterial(keyPair, certificate, taCertificateUri, rrdpNotifyUri, BigInteger.ZERO)),
-      SignerSignedCertificate(aggregateId, resourceClassName, certificate))
+      SignerCreated(resourceClassName),
+      SignerSigningMaterialCreated(resourceClassName, SigningMaterial(keyPair, certificate, taCertificateUri, rrdpNotifyUri, BigInteger.ZERO)),
+      SignerSignedCertificate(resourceClassName, certificate))
   }
 
   def buildFromEvents(events: List[SignerEvent]): Signer = Signer(null).applyEvents(events)

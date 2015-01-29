@@ -29,7 +29,7 @@ case class PublicationSet(number: BigInteger, items: Map[URI, CertificateReposit
     copy(number = event.number, items = remainingItems ++ newOrUpdatedItems, mft = Some(event.newMft), crl = Some(event.newCrl))
   }
 
-  def publish(aggregateId: UUID, resourceClassName: String, baseUri: URI, mft: ManifestCms, crl: X509Crl, products: List[CertificateRepositoryObject] = List.empty) = {
+  def publish(resourceClassName: String, baseUri: URI, mft: ManifestCms, crl: X509Crl, products: List[CertificateRepositoryObject] = List.empty) = {
 
     def deriveUri(repositoryObject: CertificateRepositoryObject) = baseUri.resolve(RpkiObjectNameSupport.deriveName(repositoryObject))
 
@@ -51,7 +51,7 @@ case class PublicationSet(number: BigInteger, items: Map[URI, CertificateReposit
       Withdraw.forRepositoryObject(deriveUri(oldObject), oldObject)
     }.toList
 
-    SignerUpdatedPublicationSet(aggregateId, resourceClassName, number.add(BigInteger.ONE), mft, crl, publishes, withdrawals)
+    SignerUpdatedPublicationSet(resourceClassName, number.add(BigInteger.ONE), mft, crl, publishes, withdrawals)
   }
 
 }

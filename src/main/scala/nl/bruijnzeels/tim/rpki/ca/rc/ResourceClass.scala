@@ -29,7 +29,6 @@ import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
  *
  */
 case class ResourceClass(
-  aggregateId: UUID,
   resourceClassName: String,
   currentSigner: Signer,
   children: Map[UUID, Child] = Map.empty) {
@@ -99,7 +98,7 @@ case class ResourceClass(
 
   def addChild(childId: UUID, entitledResources: IpResourceSet): Either[ChildCreated, ResourceClassError] = {
     if (!isOverclaiming(entitledResources)) {
-      Left(ChildCreated(aggregateId = aggregateId, resourceClassName = resourceClassName, childId = childId, entitledResources = entitledResources))
+      Left(ChildCreated(resourceClassName = resourceClassName, childId = childId, entitledResources = entitledResources))
     } else {
       Right(CannotAddChildWithOverclaimingResources)
     }
@@ -123,9 +122,9 @@ case class ResourceClass(
       if (!child.entitledResources.contains(resources)) {
         Right(ChildDoesNotHaveAllResources(resources))
       } else {
-        currentSigner.signChildCertificateRequest(aggregateId, resourceClassName, resources, pkcs10Request) match {
+        currentSigner.signChildCertificateRequest(resourceClassName, resources, pkcs10Request) match {
           case Left(signed) =>
-            Left(List(signed, ChildReceivedCertificate(aggregateId, resourceClassName, childId, signed.certificate)))
+            Left(List(signed, ChildReceivedCertificate(resourceClassName, childId, signed.certificate)))
           case Right(error) => Right(error)
         }
       }
@@ -137,10 +136,10 @@ case class ResourceClass(
    */
   def publish() = {
     val certificates = children.values.flatMap(c => c.currentCertificates).toList
-    currentSigner.publish(aggregateId, resourceClassName, certificates)
+    currentSigner.publish(resourceClassName, certificates)
   }
 }
 
 object ResourceClass {
-  def created(created: ResourceClassCreated) = ResourceClass(aggregateId = created.aggregateId, resourceClassName = created.resourceClassName, currentSigner = null)
+  def created(created: ResourceClassCreated) = ResourceClass(resourceClassName = created.resourceClassName, currentSigner = null)
 }

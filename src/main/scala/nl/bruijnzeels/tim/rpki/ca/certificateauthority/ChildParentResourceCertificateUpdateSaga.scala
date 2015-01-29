@@ -30,8 +30,8 @@ object ChildParentResourceCertificateUpdateSaga {
       
       val request = ca.communicator.signRequest(rc.currentSigner.pendingCertificateRequest.get)
         
-      val taAfterIssuanceResponse = ta.processResourceCertificateIssuanceRequest(ca.id, request)
-      val caAfterIssuanceResponse = ca.processCeritificateIssuanceResponse(request, taAfterIssuanceResponse.communicator.getExchangesForChild(ca.id).last.response)
+      val taAfterIssuanceResponse = ta.processResourceCertificateIssuanceRequest(ca.versionedId.id, request)
+      val caAfterIssuanceResponse = ca.processCeritificateIssuanceResponse(request, taAfterIssuanceResponse.communicator.getExchangesForChild(ca.versionedId.id).last.response)
         
       (caAfterIssuanceResponse, taAfterIssuanceResponse)
     }

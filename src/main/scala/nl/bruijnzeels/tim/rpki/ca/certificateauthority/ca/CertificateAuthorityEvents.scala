@@ -8,5 +8,5 @@ import java.net.URI
 sealed trait CertificateAuthorityEvent extends Event
 
 case class CertificateAuthorityCreated(aggregateId: UUID, name: String, baseUrl: URI, rrdpNotifyUrl: URI) extends CertificateAuthorityEvent
-case class CertificateAuthorityAddedParent(aggregateId: UUID) extends CertificateAuthorityEvent
+//case class CertificateAuthorityAddedParent(aggregateId: UUID) extends CertificateAuthorityEvent
 

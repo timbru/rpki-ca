@@ -35,7 +35,6 @@ class ResourceClassTest extends FunSuite with Matchers {
   test("Should add child") {
     RcWithSelfSignedSigner.addChild(ChildId, ChildResources) match {
       case Left(createEvent) => {
-        createEvent.aggregateId should equal(RcWithSelfSignedSigner.aggregateId)
         createEvent.childId should equal(ChildId)
         createEvent.entitledResources should equal(ChildResources)
         createEvent.resourceClassName should equal(ResourceClassName)
@@ -92,7 +91,7 @@ object ResourceClassTest {
   val ChildSubject = RpkiObjectNameSupport.deriveSubject(ChildKeyPair.getPublic())
   val ChildResources: IpResourceSet = "10.0.0.0/24"
 
-  val ChildCreatedEvent = ChildCreated(aggregateId = AggregateId, resourceClassName = ResourceClassName, childId = ChildId, entitledResources = ChildResources)
+  val ChildCreatedEvent = ChildCreated(resourceClassName = ResourceClassName, childId = ChildId, entitledResources = ChildResources)
 
   val ChildPkcs10Request = new RpkiCaCertificateRequestBuilder()
     .withCaRepositoryUri(ChildPublicationUri)
@@ -101,11 +100,11 @@ object ResourceClassTest {
     .withSubject(ChildSubject)
     .build(ChildKeyPair)
 
-  val SelfSignedSignerCreatedEvents = Signer.createSelfSigned(AggregateId, ResourceClassName, SignerName, SignerResources, SignerCertificateUri, SignerPublicationDir, RrdpNotifyUri)
+  val SelfSignedSignerCreatedEvents = Signer.createSelfSigned(ResourceClassName, SignerName, SignerResources, SignerCertificateUri, SignerPublicationDir, RrdpNotifyUri)
 
   val SelfSignedSigner = Signer.buildFromEvents(SelfSignedSignerCreatedEvents)
 
-  val RcCreatedEvent = ResourceClassCreated(aggregateId = AggregateId, resourceClassName = ResourceClassName)
+  val RcCreatedEvent = ResourceClassCreated(ResourceClassName)
 
   val RcWithSelfSignedSigner = ResourceClass.created(RcCreatedEvent).applyEvents(SelfSignedSignerCreatedEvents)
 

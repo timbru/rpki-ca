@@ -16,9 +16,10 @@ import nl.bruijnzeels.tim.rpki.publication.messages.Snapshot
 import nl.bruijnzeels.tim.rpki.publication.messages.SnapshotReference
 import nl.bruijnzeels.tim.rpki.publication.messages.Withdraw
 import nl.bruijnzeels.tim.rpki.publication.messages.DeltaProtocolMessage
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
 
 case class PublicationServer(
-  id: UUID,
+  versionedId: VersionedId,
   sessionId: UUID,
   rrdpBaseUri: URI,
   serial: BigInteger,
@@ -33,7 +34,7 @@ case class PublicationServer(
 
   def applyEvent(event: Event): PublicationServer = event match {
     case created: PublicationServerCreated =>
-      copy(id = created.aggregateId,
+      copy(versionedId = VersionedId(created.aggregateId),
         sessionId = created.sessionId,
         rrdpBaseUri = created.rrdpBaseUri,
         serial = BigInteger.ZERO,
@@ -46,7 +47,7 @@ case class PublicationServer(
   def publish(messages: List[PublicationProtocolMessage]) = {
 
     val deltaReceivedEvent = {
-      PublicationServerReceivedDelta(id, Delta(sessionId = sessionId, serial = serial.add(BigInteger.ONE), messages = messages))
+      PublicationServerReceivedDelta(Delta(sessionId = sessionId, serial = serial.add(BigInteger.ONE), messages = messages))
     }
 
     val snapshotReceivedEvent = {
@@ -59,7 +60,7 @@ case class PublicationServer(
       val remainingPublishes = snapshot.publishes.filterNot(o => hashesToRemove.contains(ReferenceHash.fromBytes(o.repositoryObject.getEncoded)))
 
       val newSnapshot = Snapshot(sessionId, serial.add(BigInteger.ONE), remainingPublishes ++ publishes)
-      PublicationServerReceivedSnapshot(id, newSnapshot)
+      PublicationServerReceivedSnapshot(newSnapshot)
     }
 
     applyEvents(List(deltaReceivedEvent, snapshotReceivedEvent))

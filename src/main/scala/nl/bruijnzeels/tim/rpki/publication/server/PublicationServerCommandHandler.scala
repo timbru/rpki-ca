@@ -2,6 +2,7 @@ package nl.bruijnzeels.tim.rpki.publication.server
 
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 import java.util.UUID
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
 
 object PublicationServerCommandDispatcher {
 
@@ -15,18 +16,19 @@ object PublicationServerCommandDispatcher {
   }
 
   def save(server: PublicationServer) = {
-    EventStore.store(server.events)
+    EventStore.store(server.events, server.versionedId.next)
   }
 
   def dispatch(command: PublicationServerCommand) = {
-    val existingServer = load(command.id)
+    val serverId = command.versionedId.id
+    val existingServer = load(serverId)
 
     if (existingServer.isDefined && command.isInstanceOf[PublicationServerCreate]) {
-      throw new IllegalArgumentException("Can't create new CA with id " + command.id + ", TA with same id exists")
+      throw new IllegalArgumentException(s"Can't create new CA with id ${serverId}, TA with same id exists")
     }
 
     if (!existingServer.isDefined && !command.isInstanceOf[PublicationServerCreate]) {
-      throw new IllegalArgumentException("Can't find exisiting CA with id " + command.id + " for command")
+      throw new IllegalArgumentException(s"Can't find exisiting CA with id ${serverId} for command")
     }
 
     val updatedCa = command match {
@@ -40,7 +42,7 @@ object PublicationServerCommandDispatcher {
 }
 
 object PublicationServerCreateHandler {
-  def handle(create: PublicationServerCreate) = PublicationServer.create(create.id, create.rrdpBaseUri)
+  def handle(create: PublicationServerCreate) = PublicationServer.create(create.aggregateId, create.rrdpBaseUri)
 }
 
 sealed trait PublicationServerCommandHandler[C <: PublicationServerCommand] {

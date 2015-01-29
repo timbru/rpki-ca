@@ -11,15 +11,19 @@ class EventStoreTest extends FunSuite with Matchers {
 
   test("Should let listener subscribe to new events") {
 
-    case class TestEvent(aggregateId: UUID) extends Event
-    val events = List(TestEvent(UUID.randomUUID()))
+    case object TestEvent extends Event
+    
+    val events = List(TestEvent)
+    val newVersionedId = VersionedId(UUID.randomUUID())
+    
+    val expectedStored = events.map(StoredEvent(newVersionedId, _))
 
     val listener = new EventListener {
-      override def handle(events: List[Event]) = { events should equal (events) }
+      override def handle(events: List[StoredEvent]) = { events should equal (expectedStored) }
     }
     EventStore.subscribe(listener)
 
-    EventStore.store(events);
+    EventStore.store(events, newVersionedId);
   }
 
 }

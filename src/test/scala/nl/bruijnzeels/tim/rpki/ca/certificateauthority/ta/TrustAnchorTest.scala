@@ -21,7 +21,7 @@ import TrustAnchorTest._
   test("Should create TA with selfsigned signer and provisioning communicator") {
 
     val create = TrustAnchorCreate(
-      id = TrustAnchorId,
+      aggregateId = TrustAnchorId,
       name = TrustAnchorName,
       resources = TrustAnchorResources,
       taCertificateUri = TrustAnchorCertUri,
@@ -57,7 +57,7 @@ import TrustAnchorTest._
   }
 
   test("Should add child") {
-    val addChild = TrustAnchorAddChild(id = TrustAnchorId, childId = ChildId, childXml = ChildXml, childResources = ChildResources)
+    val addChild = TrustAnchorAddChild(versionedId = TrustAnchorInitial.versionedId, childId = ChildId, childXml = ChildXml, childResources = ChildResources)
 
     val taWithChild = TrustAnchorAddChildCommandHandler.handle(addChild, TrustAnchorInitial)
 
@@ -66,7 +66,7 @@ import TrustAnchorTest._
   }
 
   test("Should process child resource class list query") {
-    val addChild = TrustAnchorAddChild(id = TrustAnchorId, childId = ChildId, childXml = ChildXml, childResources = ChildResources)
+    val addChild = TrustAnchorAddChild(versionedId = TrustAnchorInitial.versionedId, childId = ChildId, childXml = ChildXml, childResources = ChildResources)
     val taWithChild = TrustAnchorAddChildCommandHandler.handle(addChild, TrustAnchorInitial)
 
     val request = SigningSupport.createProvisioningCms(
@@ -76,7 +76,7 @@ import TrustAnchorTest._
       signingKeyPair = ChildIdentity.keyPair,
       payload = new ResourceClassListQueryPayloadBuilder().build())
 
-    val command = TrustAnchorProcessResourceListQuery(TrustAnchorId, ChildId, request)
+    val command = TrustAnchorProcessResourceListQuery(taWithChild.versionedId, ChildId, request)
 
     val taAfterResponse = TrustAnchorProcessResourceListQueryCommandHandler.handle(command, taWithChild)
 
@@ -120,7 +120,7 @@ object TrustAnchorTest {
   val TrustAnchorInitial =
     TrustAnchorCreateCommandHandler.handle(
       TrustAnchorCreate(
-        id = TrustAnchorId,
+        aggregateId = TrustAnchorId,
         name = TrustAnchorName,
         resources = TrustAnchorResources,
         taCertificateUri = TrustAnchorCertUri,

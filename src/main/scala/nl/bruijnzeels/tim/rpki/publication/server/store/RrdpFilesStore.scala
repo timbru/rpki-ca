@@ -18,15 +18,16 @@ import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerReceivedDelta
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerReceivedSnapshot
 import nl.bruijnzeels.tim.rpki.publication.messages.DeltaProtocolMessage
 import nl.bruijnzeels.tim.rpki.rrdp.app.ApplicationOptions
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.StoredEvent
 
 class RrdpFilesStore(dataSource: BasicDataSource) extends EventListener {
 
   val template: JdbcTemplate = new JdbcTemplate(dataSource)
   val base64 = BaseEncoding.base64()
 
-  override def handle(events: List[Event]) = {
+  override def handle(storedEvents: List[StoredEvent]) = {
 
-    events.foreach(event => event match {
+    storedEvents.map(_.event).foreach(event => event match {
       case deltaReceived: PublicationServerReceivedDelta => storeProtocolFile(deltaReceived.delta)
       case snapshotReceived: PublicationServerReceivedSnapshot => storeProtocolFile(snapshotReceived.snapshot)
       case _ => // These are not the droids we're looking for

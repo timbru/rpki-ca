@@ -63,7 +63,7 @@ object PocDsl {
 
     def trustAnchor() = TrustAnchorCommandDispatcher.dispatch(
       TrustAnchorCreate(
-        id = TrustAnchorId,
+        aggregateId = TrustAnchorId,
         name = TrustAnchorName,
         resources = TrustAnchorResources,
         taCertificateUri = TrustAnchorCertUri,
@@ -72,7 +72,7 @@ object PocDsl {
 
     def certificateAuthority(id: UUID) = CertificateAuthorityCommandDispatcher.dispatch(
       CertificateAuthorityCreate(
-        id = id,
+        aggregateId = id,
         name = ChildName,
         baseUrl = RsyncBaseUrl,
         rrdpNotifyUrl = RrdpNotifyUrl))
@@ -85,7 +85,11 @@ object PocDsl {
 
   object current {
     def trustAnchor() = TrustAnchorCommandDispatcher.load(TrustAnchorId).get
+    def taVersion = trustAnchor.versionedId
+    
     def certificateAuthority(id: UUID) = CertificateAuthorityCommandDispatcher.load(id).get
+    def caVersion(id: UUID) = certificateAuthority(id).versionedId
+    
     def publicationServer() = PublicationServerCommandDispatcher.load(PublicationServerId).get
     val rrdpFileStore = new RrdpFilesStore(RrdpFilesDataSources.DurableDataSource)
 
@@ -96,10 +100,11 @@ object PocDsl {
 
     class taAddingChild(child: CertificateAuthority) {
       def withResources(resources: IpResourceSet) = {
+        
         TrustAnchorCommandDispatcher.dispatch(
           TrustAnchorAddChild(
-            id = TrustAnchorId,
-            childId = child.id,
+            versionedId = current taVersion,
+            childId = child.versionedId.id,
             childXml = child.communicator.me.toChildXml,
             childResources = ChildResources))
       }
@@ -107,7 +112,7 @@ object PocDsl {
 
     def addChild(child: CertificateAuthority) = new taAddingChild(child)
 
-    def publish() = TrustAnchorCommandDispatcher.dispatch(TrustAnchorPublish(TrustAnchorId))
+    def publish() = TrustAnchorCommandDispatcher.dispatch(TrustAnchorPublish(current taVersion))
 
   }
 
@@ -116,16 +121,16 @@ object PocDsl {
     def addTa(parent: TrustAnchor) = {
       CertificateAuthorityCommandDispatcher.dispatch(
         CertificateAuthorityAddParent(
-          id = ChildId,
+          versionedId = me.versionedId,
           parentXml = parent.communicator.getParentXmlForChild(ChildId).get))
     }
 
     def update() = {
       val parentId = UUID.fromString(me.communicator.parent.get.parentHandle)
-      ChildParentResourceCertificateUpdateSaga.updateCertificates(parentId, me.id)
+      ChildParentResourceCertificateUpdateSaga.updateCertificates(parentId, me.versionedId.id)
     }
 
-    def publish() = CertificateAuthorityCommandDispatcher.dispatch(CertificateAuthorityPublish(me.id))
+    def publish() = CertificateAuthorityCommandDispatcher.dispatch(CertificateAuthorityPublish(me.versionedId))
 
   }
 

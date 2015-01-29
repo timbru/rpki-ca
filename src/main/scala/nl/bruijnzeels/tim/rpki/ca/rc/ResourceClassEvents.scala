@@ -9,5 +9,5 @@ trait ResourceClassEvent extends Event {
   def resourceClassName: String
 }
 
-case class ResourceClassCreated(aggregateId: UUID, resourceClassName: String) extends ResourceClassEvent
+case class ResourceClassCreated(resourceClassName: String) extends ResourceClassEvent
 
