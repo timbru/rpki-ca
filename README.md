@@ -15,7 +15,7 @@ https://tools.ietf.org/html/draft-tbruijnzeels-sidr-delta-protocol-03
 
 That said, I plan to keep working on this code, time permitting, and over time evolve this into
 its own stand-alone RPKI suite supporting operating:
- = A Trust Anchor (locally)
- = Any number of Certification Authorities under a local TA or remote TAs (using up-down)
- = A local publication server
+ * A Trust Anchor (locally)
+ * Any number of Certification Authorities under a local TA or remote TAs (using up-down)
+ * A local publication server
  
