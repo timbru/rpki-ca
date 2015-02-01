@@ -21,6 +21,7 @@ import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassEvent
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerReceivedCertificate
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
+import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayloadBuilder
 
 /**
  *  A Certificate Authority in RPKI. Needs to have a parent which can be either
@@ -46,34 +47,33 @@ case class CertificateAuthority(
   override def clearEventList(): CertificateAuthority = copy(events = List.empty)
 
   def applyEvent(event: Event): CertificateAuthority = event match {
-    case communicatorCreated: ProvisioningCommunicatorCreated =>
-      copy(communicator = ProvisioningCommunicator(communicatorCreated.myIdentity),
-        events = events :+ event)
 
-    case communicatorEvent: ProvisioningCommunicatorEvent =>
-      copy(communicator = communicator.applyEvent(communicatorEvent),
-        events = events :+ event)
+    case e: ProvisioningCommunicatorCreated =>
+      copy(communicator = ProvisioningCommunicator(e.myIdentity), events = events :+ e)
 
-    case resourceClassCreated: ResourceClassCreated =>
-      copy(resourceClasses = resourceClasses + (resourceClassCreated.resourceClassName -> ResourceClass.created(resourceClassCreated)),
-        events = events :+ event)
+    case e: ProvisioningCommunicatorEvent =>
+      copy(communicator = communicator.applyEvent(e), events = events :+ e)
 
-    case resourceClassEvent: ResourceClassEvent =>
-      copy(resourceClasses = processResourceClassEvent(resourceClassEvent),
-        events = events :+ event)
-  }
+    case e: ResourceClassCreated =>
+      copy(resourceClasses = resourceClasses + (e.resourceClassName -> ResourceClass.created(e)), events = events :+ e)
 
-  def processResourceClassEvent(event: ResourceClassEvent) = {
-    val rc = resourceClasses.getOrElse(event.resourceClassName, throw new IllegalArgumentException("Got event for unknown resource class"))
-    resourceClasses + (rc.resourceClassName -> rc.applyEvent(event))
+    case e: ResourceClassEvent => {
+      val rc = resourceClasses.getOrElse(e.resourceClassName, throw new IllegalArgumentException("Got event for unknown resource class"))
+      copy(resourceClasses = resourceClasses + (rc.resourceClassName -> rc.applyEvent(e)), events = events :+ e)
+    }
   }
 
   def addParent(parentXml: String) = applyEvent(communicator.addParent(parentXml))
 
-  def publish(): CertificateAuthority = {
-    applyEvents(resourceClasses.values.toList.flatMap(rc => rc.publish))
-  }
+  def publish(): CertificateAuthority = applyEvents(resourceClasses.values.toList.flatMap(rc => rc.publish))
 
+  def createResourceClassListRequest(): ProvisioningCmsObject = communicator.signRequest(new ResourceClassListQueryPayloadBuilder().build())
+
+  def createCertificateIssuanceRequests(): List[ProvisioningCmsObject] = {
+    resourceClasses.values.filter(_.currentSigner.pendingCertificateRequest.isDefined).map { rc =>
+      communicator.signRequest(rc.currentSigner.pendingCertificateRequest.get)
+    }.toList
+  }
 
   def processResourceClassListResponse(myRequest: ProvisioningCmsObject, response: ProvisioningCmsObject) = {
     communicator.validateParentResponse(response) match {
@@ -145,5 +145,6 @@ object CertificateAuthority {
     rebuild(List(created, createdProvisioningCommunicator))
   }
 }
+
 
 case class CertificateAuthorityException(msg: String) extends RuntimeException

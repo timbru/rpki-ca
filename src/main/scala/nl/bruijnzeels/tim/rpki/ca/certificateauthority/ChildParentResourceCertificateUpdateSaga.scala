@@ -11,34 +11,26 @@ import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassList
 object ChildParentResourceCertificateUpdateSaga {
 
   def updateCertificates(trustAnchorId: UUID, certificateAuthorityId: UUID) = {
-    val ta = TrustAnchorCommandDispatcher.load(trustAnchorId).getOrElse(throw new IllegalArgumentException("Can't find TA"))
-    val ca = CertificateAuthorityCommandDispatcher.load(certificateAuthorityId).getOrElse(throw new IllegalArgumentException("Can't find CA"))
+    var ta = TrustAnchorCommandDispatcher.load(trustAnchorId).getOrElse(throw new IllegalArgumentException("Can't find TA"))
+    var ca = CertificateAuthorityCommandDispatcher.load(certificateAuthorityId).getOrElse(throw new IllegalArgumentException("Can't find CA"))
 
-    val classListQuery = ca.communicator.signRequest(new ResourceClassListQueryPayloadBuilder().build())
+    val classListQuery = ca.createResourceClassListRequest()
+    val classListResponse = ta.processListQuery(certificateAuthorityId, classListQuery)
 
-    val taAfterListQuery = ta.processListQuery(certificateAuthorityId, classListQuery)
+    ta = classListResponse.updatedTa
+    ca = ca.processResourceClassListResponse(classListQuery, classListResponse.response)
 
-    // Create resource classes with pending certificate requests as needed
-    val classListResponse = taAfterListQuery.communicator.getExchangesForChild(certificateAuthorityId).last.response
-    val caWithRequests = ca.processResourceClassListResponse(classListQuery, classListResponse)
+    val signRequests = ca.createCertificateIssuanceRequests
 
-    // Let the CA request certificates for each resource class that wants one
-    val resourceClassesWithRequests = caWithRequests.resourceClasses.values.filter(_.currentSigner.pendingCertificateRequest.isDefined)
-    val caTaTuple = resourceClassesWithRequests.foldLeft((caWithRequests, taAfterListQuery)) { (caTaTuple, rc) =>
-      val ca = caTaTuple._1
-      val ta = caTaTuple._2
-      
-      val request = ca.communicator.signRequest(rc.currentSigner.pendingCertificateRequest.get)
-        
-      val taAfterIssuanceResponse = ta.processResourceCertificateIssuanceRequest(ca.versionedId.id, request)
-      val caAfterIssuanceResponse = ca.processCeritificateIssuanceResponse(request, taAfterIssuanceResponse.communicator.getExchangesForChild(ca.versionedId.id).last.response)
-        
-      (caAfterIssuanceResponse, taAfterIssuanceResponse)
+    signRequests.foreach { req =>
+      val signResponse = ta.processCertificateIssuanceRequest(ca.versionedId.id, req)
+
+      ta = signResponse.updatedTa
+      ca = ca.processCeritificateIssuanceResponse(req, signResponse.response)
     }
-    
-    CertificateAuthorityCommandDispatcher.save(caTaTuple._1)
-    TrustAnchorCommandDispatcher.save(caTaTuple._2)
 
+    CertificateAuthorityCommandDispatcher.save(ca)
+    TrustAnchorCommandDispatcher.save(ta)
   }
 
 }

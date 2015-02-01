@@ -196,7 +196,7 @@ object SigningSupport {
       .withIssuerDN(signingCertificate.getSubject())
       .withSubjectDN(RpkiObjectNameSupport.deriveSubject(eeKeyPair.getPublic()))
       .withSigningKeyPair(signingKeyPair)
-      .withSerial(BigInteger.valueOf(DateTime.now().toInstant().getMillis())) // Todo: track serials
+      .withSerial(BigInteger.valueOf(DateTime.now().toInstant().getMillis())) // Should be safe! No need to revoke and even sharing the same serial for EEs in different requests is very unlikely to be problematic
       .withPublicKey(eeKeyPair.getPublic())
       .withSignatureProvider(DEFAULT_SIGNATURE_PROVIDER)
       .build()

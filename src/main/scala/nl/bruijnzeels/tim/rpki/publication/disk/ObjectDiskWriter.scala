@@ -15,21 +15,21 @@ import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.StoredEvent
 
 /**
- * Writes/removes objects to/from disk so they can be exposed over rsync, or http for that matter.. 
+ * Writes/removes objects to/from disk so they can be exposed over rsync, or http for that matter..
  */
 case class ObjectDiskWriter(baseUri: URI, baseDir: File) extends EventListener {
-  
+
   override def handle(events: List[StoredEvent]) = {
-    
+
     events.map(_.event).collect { case e: PublicationServerReceivedSnapshot => e }.lastOption match {
-      case None => 
+      case None =>
       case Some(snapshotReceived) => {
-        
+
         val newDir = baseDir.toPath().resolve("new/").toFile()
-        
+
         snapshotReceived.snapshot.publishes.foreach { p =>
-          getRelativeFilePath(p.uri) match { 
-            case None => // 
+          getRelativeFilePath(p.uri) match {
+            case None => //
             case Some(file) => {
               val fullFile = newDir.toPath().resolve(file.toPath()).toFile()
               Files.createParentDirs(fullFile)
@@ -37,22 +37,22 @@ case class ObjectDiskWriter(baseUri: URI, baseDir: File) extends EventListener {
             }
           }
         }
-        
+
         val currentDir = baseDir.toPath().resolve("current/").toFile()
-        
+
         val oldDir = baseDir.toPath().resolve("old/").toFile()
-        
+
         if (currentDir.exists()) { Files.move(currentDir, oldDir) }
-        
+
         Files.move(newDir, currentDir)
-        
+
         if (oldDir.exists()) { FileUtils.deleteRecursive(oldDir.getAbsolutePath(), false) }
       }
     }
   }
-  
-  def listen = EventStore.subscribe(this)
-  
+
+  def listen() = EventStore.subscribe(this)
+
   def getRelativeFilePath(objectUri: URI): Option[File] = {
     val relativeUri = baseUri.relativize(objectUri)
     if (relativeUri.equals(objectUri)) {

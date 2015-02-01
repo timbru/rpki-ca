@@ -69,7 +69,7 @@ case class TrustAnchor(
   /**
    * Will return a new TA that has the response registered with the child
    */
-  def processListQuery(childId: UUID, request: ProvisioningCmsObject) = {
+  def processListQuery(childId: UUID, request: ProvisioningCmsObject): ListQueryResponse = {
     communicator.validateChildRequest(childId, request) match {
       case failure: ProvisioningMessageValidationFailure => throw new TrustAnchorException(failure.reason)
       case success: ProvisioningMessageValidationSuccess => {
@@ -81,7 +81,9 @@ case class TrustAnchor(
 
             val response = communicator.signResponse(childId, responsePayload)
 
-            applyEvent(ProvisioningCommunicatorPerformedChildExchange(ProvisioningChildExchange(childId, request, response)))
+            ListQueryResponse(
+                updatedTa = applyEvent(ProvisioningCommunicatorPerformedChildExchange(ProvisioningChildExchange(childId, request, response))),
+                response = response)
           }
           case _ => throw new TrustAnchorException("Expected resource class list query")
         }
@@ -92,7 +94,7 @@ case class TrustAnchor(
   /**
    * Will return a new TA that has the response registered with the child
    */
-  def processResourceCertificateIssuanceRequest(childId: UUID, request: ProvisioningCmsObject) = {
+  def processCertificateIssuanceRequest(childId: UUID, request: ProvisioningCmsObject): CertificateIssuanceResponse = {
     communicator.validateChildRequest(childId, request) match {
       case failure: ProvisioningMessageValidationFailure => throw new TrustAnchorException(failure.reason)
       case success: ProvisioningMessageValidationSuccess => {
@@ -124,7 +126,9 @@ case class TrustAnchor(
 
                 val response = communicator.signResponse(childId, responsePayload)
 
-                applyEvents(events :+ ProvisioningCommunicatorPerformedChildExchange(ProvisioningChildExchange(childId, request, response)))
+                CertificateIssuanceResponse(
+                    updatedTa = applyEvents(events :+ ProvisioningCommunicatorPerformedChildExchange(ProvisioningChildExchange(childId, request, response))),
+                    response = response)
               }
             }
 
@@ -156,4 +160,6 @@ object TrustAnchor {
   }
 }
 
+case class ListQueryResponse(updatedTa: TrustAnchor, response: ProvisioningCmsObject)
+case class CertificateIssuanceResponse(updatedTa: TrustAnchor, response: ProvisioningCmsObject)
 case class TrustAnchorException(msg: String) extends RuntimeException
