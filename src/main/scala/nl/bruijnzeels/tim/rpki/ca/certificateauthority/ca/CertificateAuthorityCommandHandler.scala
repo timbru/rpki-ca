@@ -32,11 +32,12 @@ import java.util.UUID
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorCommand
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.CertificationAuthorityAggregate
 
 object CertificateAuthorityCommandDispatcher {
 
   def load(id: UUID): Option[CertificateAuthority] = {
-    val events = EventStore.retrieve(id)
+    val events = EventStore.retrieve(CertificationAuthorityAggregate, id)
     if (events.size == 0) {
       None
     } else {
@@ -45,7 +46,7 @@ object CertificateAuthorityCommandDispatcher {
   }
 
   def save(ca: CertificateAuthority) = {
-    EventStore.store(ca.events, ca.versionedId.next)
+    EventStore.store(ca)
   }
 
   def dispatch(command: CertificateAuthorityCommand) = {

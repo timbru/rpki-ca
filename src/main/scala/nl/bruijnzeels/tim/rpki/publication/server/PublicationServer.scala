@@ -45,6 +45,7 @@ import nl.bruijnzeels.tim.rpki.publication.messages.SnapshotReference
 import nl.bruijnzeels.tim.rpki.publication.messages.Withdraw
 import nl.bruijnzeels.tim.rpki.publication.messages.DeltaProtocolMessage
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.PublicationServerAggregate
 
 case class PublicationServer(
   versionedId: VersionedId,
@@ -59,6 +60,7 @@ case class PublicationServer(
 
   override def applyEvents(events: List[Event]): PublicationServer = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
   override def clearEventList(): PublicationServer = copy(events = List.empty)
+  override def aggregateType = PublicationServerAggregate
 
   def applyEvent(event: Event): PublicationServer = event match {
     case created: PublicationServerCreated =>

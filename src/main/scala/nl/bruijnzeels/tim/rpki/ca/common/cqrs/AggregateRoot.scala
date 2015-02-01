@@ -32,10 +32,19 @@ import java.util.UUID
 
 trait AggregateRoot {
   def versionedId: VersionedId
+
+  def events: List[Event]
   def applyEvents(events: List[Event]): AggregateRoot
   def clearEventList(): AggregateRoot
+
+  def aggregateType: AggregateRootType
 }
 
 case class VersionedId(id: UUID, version: Long = 0) {
   def next = VersionedId(id, version + 1)
 }
+
+sealed trait AggregateRootType // Useful to avoid to problems with unexpected event types when storing events for different aggregate types in a single store
+case object TrustAnchorAggregate extends AggregateRootType
+case object CertificationAuthorityAggregate extends AggregateRootType
+case object PublicationServerAggregate extends AggregateRootType

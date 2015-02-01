@@ -30,7 +30,6 @@ package nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta
 
 import java.net.URI
 import java.util.UUID
-
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
@@ -53,6 +52,7 @@ import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassCreated
 import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassEvent
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerSignedCertificate
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.TrustAnchorAggregate
 
 /**
  * Root Certificate Authority for RPKI. Does not have a parent CA and has a self-signed certificate.
@@ -66,6 +66,7 @@ case class TrustAnchor(
 
   override def applyEvents(events: List[Event]): TrustAnchor = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
   override def clearEventList() = copy(events = List.empty)
+  override def aggregateType = TrustAnchorAggregate
 
   def applyEvent(event: Event): TrustAnchor = event match {
     case resourceClassCreated: ResourceClassCreated => copy(resourceClass = ResourceClass.created(resourceClassCreated), events = events :+ event)

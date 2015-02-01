@@ -50,6 +50,7 @@ import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerReceivedCertificate
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
 import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayloadBuilder
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.CertificationAuthorityAggregate
 
 /**
  *  A Certificate Authority in RPKI. Needs to have a parent which can be either
@@ -73,6 +74,7 @@ case class CertificateAuthority(
 
   override def applyEvents(events: List[Event]): CertificateAuthority = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
   override def clearEventList(): CertificateAuthority = copy(events = List.empty)
+  override def aggregateType = CertificationAuthorityAggregate
 
   def applyEvent(event: Event): CertificateAuthority = event match {
 

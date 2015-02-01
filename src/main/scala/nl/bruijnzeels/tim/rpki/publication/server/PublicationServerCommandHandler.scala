@@ -31,11 +31,12 @@ package nl.bruijnzeels.tim.rpki.publication.server
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 import java.util.UUID
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.PublicationServerAggregate
 
 object PublicationServerCommandDispatcher {
 
   def load(id: UUID): Option[PublicationServer] = {
-    val events = EventStore.retrieve(id)
+    val events = EventStore.retrieve(PublicationServerAggregate, id)
     if (events.size == 0) {
       None
     } else {
@@ -44,7 +45,7 @@ object PublicationServerCommandDispatcher {
   }
 
   def save(server: PublicationServer) = {
-    EventStore.store(server.events, server.versionedId.next)
+    EventStore.store(server)
   }
 
   def dispatch(command: PublicationServerCommand) = {

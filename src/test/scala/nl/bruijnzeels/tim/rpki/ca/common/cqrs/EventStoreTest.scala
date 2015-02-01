@@ -33,25 +33,30 @@ import org.scalatest.FunSuite
 import org.scalatest.Matchers
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServer
 import java.util.UUID
+import java.net.URI
+import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCreated
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class EventStoreTest extends FunSuite with Matchers {
 
   test("Should let listener subscribe to new events") {
 
-    case object TestEvent extends Event
-    
-    val events = List(TestEvent)
-    val newVersionedId = VersionedId(UUID.randomUUID())
-    
-    val expectedStored = events.map(StoredEvent(newVersionedId, _))
+    val PublicationServerId = UUID.fromString("170cd869-f729-47e7-9415-38b21da67ac1")
+    val RrdpBaseUrl = URI.create("http://localhost:8080/rrdp/")
+    val server = PublicationServer.create(PublicationServerId, RrdpBaseUrl)
 
     val listener = new EventListener {
-      override def handle(events: List[StoredEvent]) = { events should equal (expectedStored) }
+        override def handle(storedEvents: List[StoredEvent]) = {
+          storedEvents should have size (1)
+          val stored = storedEvents(0)
+          stored.aggregateType should equal (PublicationServerAggregate)
+          stored.versionedId should equal (VersionedId(PublicationServerId, 1))
+          stored.event.isInstanceOf[PublicationServerCreated] should be (true)
+        }
     }
     EventStore.subscribe(listener)
 
-    EventStore.store(events, newVersionedId);
+    EventStore.store(server);
   }
 
 }

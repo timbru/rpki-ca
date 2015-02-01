@@ -40,11 +40,13 @@ object EventStore {
 
   def subscribe(listener: EventListener) = listeners = listeners :+ listener
 
-  def retrieve(aggregateId: UUID): List[Event] = storedEventList.filter(_.versionedId.id == aggregateId).map(_.event)
+  def retrieve(aggregateType: AggregateRootType, aggregateId: UUID): List[Event] = storedEventList.filter(e => e.aggregateType == aggregateType && e.versionedId.id == aggregateId).map(_.event)
 
-  def store(events: List[Event], newVersionedId: VersionedId): Unit =  {
-    val newStoredEvents = events.map(StoredEvent(newVersionedId, _))
-    
+  def store(aggregate: AggregateRoot): Unit =  {
+    val aggregateType = aggregate.aggregateType
+    val newVersionedId = aggregate.versionedId.next
+    val newStoredEvents = aggregate.events.map(StoredEvent(aggregateType, newVersionedId, _))
+
     storedEventList = storedEventList ++ newStoredEvents
     listeners.foreach(l => l.handle(newStoredEvents))
   }
@@ -59,4 +61,4 @@ trait EventListener {
     def handle(events: List[StoredEvent]): Unit
 }
 
-case class StoredEvent(versionedId: VersionedId, event: Event)
+case class StoredEvent(aggregateType: AggregateRootType, versionedId: VersionedId, event: Event)

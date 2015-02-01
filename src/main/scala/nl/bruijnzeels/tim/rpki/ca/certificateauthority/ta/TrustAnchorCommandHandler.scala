@@ -31,11 +31,12 @@ package nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 import java.util.UUID
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.TrustAnchorAggregate
 
 object TrustAnchorCommandDispatcher {
 
   def load(id: UUID): Option[TrustAnchor] = {
-    val events = EventStore.retrieve(id)
+    val events = EventStore.retrieve(TrustAnchorAggregate, id)
     if (events.size == 0) {
       None
     } else {
@@ -44,7 +45,7 @@ object TrustAnchorCommandDispatcher {
   }
 
   def save(ta: TrustAnchor) = {
-    EventStore.store(ta.events, ta.versionedId.next)
+    EventStore.store(ta)
   }
 
 
