@@ -1,5 +1,7 @@
 target/
 .cache
+.cache-main
+.cache-tests
 .classpath
 .project
 .settings
@@ -10,3 +12,5 @@ log
 data
 repo
 bin
+.idea
+rpki-ca.iml
