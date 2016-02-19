@@ -8,15 +8,15 @@
 	<name>RPKI Certificate Authority</name>
 
 	<properties>
-		<rpki.commons.version>1.0.39-SNAPSHOT</rpki.commons.version>
+		<rpki.commons.version>1.1.3</rpki.commons.version>
 		<jetty.version>8.1.3.v20120416</jetty.version>
 		<org.springframework.version>3.1.1.RELEASE</org.springframework.version>
-		<scalatra.version>2.2.0</scalatra.version>
+		<scalatra.version>2.3.1</scalatra.version>
 		<jodatime.version>2.3</jodatime.version>
 		<slf4j.version>1.7.6</slf4j.version>
 		<log4j.version>1.2.17</log4j.version>
-		<scala.version>2.10.4</scala.version>
-		<scala.binary.version>2.10</scala.binary.version>
+		<scala.version>2.11.7</scala.version>
+		<scala.binary.version>2.11</scala.binary.version>
 		<main.class>nl.bruijnzeels.tim.rpki.rrdp.app.Main</main.class>
 	</properties>
 
@@ -36,16 +36,29 @@
 
 		<dependency>
 			<groupId>net.ripe.rpki</groupId>
-			<artifactId>rpki-commons-rrdp</artifactId>
+			<artifactId>rpki-commons</artifactId>
 			<version>${rpki.commons.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>net.ripe.rpki</groupId>
-			<artifactId>rpki-commons-rrdp</artifactId>
+			<artifactId>rpki-commons</artifactId>
 			<version>${rpki.commons.version}</version>
 			<type>test-jar</type>
 			<scope>test</scope>
 		</dependency>
+
+		<dependency>
+			<groupId>com.typesafe</groupId>
+			<artifactId>config</artifactId>
+			<version>1.3.0</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.typesafe.akka</groupId>
+			<artifactId>akka-actor_2.11</artifactId>
+			<version>2.3.12</version>
+		</dependency>
+
 
 		<dependency>
 			<groupId>joda-time</groupId>
@@ -120,7 +133,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.scalatest</groupId>
-			<artifactId>scalatest_2.10</artifactId>
+			<artifactId>scalatest_${scala.binary.version}</artifactId>
 			<version>2.1.5</version>
 		</dependency>
 
@@ -129,7 +142,7 @@
 			<!-- http://software.clapper.org/grizzled-slf4j/ -->
 			<groupId>org.clapper</groupId>
 			<artifactId>grizzled-slf4j_${scala.binary.version}</artifactId>
-			<version>1.0.1</version>
+			<version>1.0.2</version>
 		</dependency>
 
 		<dependency>
@@ -160,42 +173,42 @@
 		<testSourceDirectory>src/test/scala</testSourceDirectory>
 
 		<plugins>
-		  <plugin>
-        <groupId>com.mycila.maven-license-plugin</groupId>
-        <artifactId>maven-license-plugin</artifactId>
-        <version>1.9.0</version>
-        <configuration>
-          <strictCheck>true</strictCheck>
-          <header>LICENSE.txt</header>
-          <excludes>
-            <exclude>**/.*</exclude>
-            <exclude>**/*.conf</exclude>
-            <exclude>**/*.txt</exclude>
-            <exclude>**/*.md</exclude>
-            <exclude>bin/**</exclude>
-            <exclude>data/**</exclude>
-            <exclude>lib/**</exclude>
-            <exclude>log/**</exclude>
-            <exclude>repo/**</exclude>
-            <exclude>target/**</exclude>
-            <exclude>src/main/resources/public/javascript/bootstrap/**</exclude>
-            <exclude>src/main/resources/public/stylesheets/bootstrap/**</exclude>
-            <exclude>src/main/resources/public/javascript/datatables/**</exclude>
-            <exclude>scalastyle-output.xml</exclude>
-            <exclude>.idea/**</exclude>
-            <exclude>.worksheet/**</exclude>
-          </excludes>
-        </configuration>
-        <executions>
-          <execution>
-            <id>license-check</id>
-            <phase>verify</phase>
-            <goals>
-            <goal>check</goal>
-          </goals>
-        </execution>
-      </executions>
-      </plugin>
+			<plugin>
+				<groupId>com.mycila.maven-license-plugin</groupId>
+				<artifactId>maven-license-plugin</artifactId>
+				<version>1.9.0</version>
+				<configuration>
+					<strictCheck>true</strictCheck>
+					<header>LICENSE.txt</header>
+					<excludes>
+						<exclude>**/.*</exclude>
+						<exclude>**/*.conf</exclude>
+						<exclude>**/*.txt</exclude>
+						<exclude>**/*.md</exclude>
+						<exclude>bin/**</exclude>
+						<exclude>data/**</exclude>
+						<exclude>lib/**</exclude>
+						<exclude>log/**</exclude>
+						<exclude>repo/**</exclude>
+						<exclude>target/**</exclude>
+						<exclude>src/main/resources/public/javascript/bootstrap/**</exclude>
+						<exclude>src/main/resources/public/stylesheets/bootstrap/**</exclude>
+						<exclude>src/main/resources/public/javascript/datatables/**</exclude>
+						<exclude>scalastyle-output.xml</exclude>
+						<exclude>.idea/**</exclude>
+						<exclude>.worksheet/**</exclude>
+					</excludes>
+				</configuration>
+				<executions>
+					<execution>
+						<id>license-check</id>
+						<phase>verify</phase>
+						<goals>
+							<goal>check</goal>
+						</goals>
+					</execution>
+				</executions>
+			</plugin>
 			<plugin>
 				<artifactId>maven-assembly-plugin</artifactId>
 				<configuration>

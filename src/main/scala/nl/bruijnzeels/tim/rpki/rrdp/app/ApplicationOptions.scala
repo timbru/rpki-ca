@@ -28,7 +28,7 @@
  */
 package nl.bruijnzeels.tim.rpki.rrdp.app
 
-import com.typesafe.config.{ ConfigFactory, Config }
+import com.typesafe.config._ 
 import java.net.URI
 import java.io.File
 

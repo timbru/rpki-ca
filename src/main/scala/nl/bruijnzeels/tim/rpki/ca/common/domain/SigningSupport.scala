@@ -57,6 +57,7 @@ import net.ripe.rpki.commons.provisioning.payload.AbstractProvisioningPayload
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObjectBuilder
 import net.ripe.rpki.commons.provisioning.x509.ProvisioningIdentityCertificate
 import net.ripe.rpki.commons.crypto.x509cert.X509CertificateBuilderHelper
+import grizzled.slf4j.Logger
 
 case class SigningMaterial(
   keyPair: KeyPair,
@@ -101,6 +102,8 @@ case class ChildCertificateSignRequest(pkcs10Request: PKCS10CertificationRequest
 object SigningSupport {
 
   import X509CertificateBuilderHelper.DEFAULT_SIGNATURE_PROVIDER
+  
+  val logger = Logger[SigningSupport.type]
 
   def createCrl(signingMaterial: SigningMaterial, crlRequest: CrlRequest): X509Crl = {
 
@@ -161,30 +164,40 @@ object SigningSupport {
     builder.withCrlUri(signingMaterial.crlPublicationUri)
     builder.withParentResourceCertificatePublicationUri(signingMaterial.certificateUri)
     builder.withSigningKeyPair(signingMaterial.keyPair)
-    builder.build()
+    val cert = builder.build()
+    
+    logger.info(s"CRL -> ${cert.getCrlUri()}")
+    
+    cert
   }
 
   def createChildCaCertificate(signingMaterial: SigningMaterial, childCaCertRequest: ChildCertificateSignRequest) = {
     val reqParser = new RpkiCaCertificateRequestParser(childCaCertRequest.pkcs10Request)
 
-    val builder = new RpkiCaCertificateBuilder
-    builder.withCaRepositoryUri(reqParser.getCaRepositoryUri())
-    builder.withManifestUri(reqParser.getManifestUri())
-    builder.withRpkiNotifyUri(reqParser.getRpkiNotifyUri())
-    builder.withPublicKey(reqParser.getPublicKey())
-    builder.withResources(childCaCertRequest.resources)
-    builder.withSubjectDN(RpkiObjectNameSupport.deriveSubject(reqParser.getPublicKey()))
-
     val now = new DateTime()
-    val validityPeriod = new ValidityPeriod(now, now.plus(childCaCertRequest.validityDuration))
-    builder.withValidityPeriod(validityPeriod)
-    builder.withSerial(childCaCertRequest.serial)
 
-    builder.withIssuerDN(signingMaterial.currentCertificate.getSubject())
-    builder.withCrlUri(signingMaterial.crlPublicationUri)
-    builder.withParentResourceCertificatePublicationUri(signingMaterial.certificateUri)
-    builder.withSigningKeyPair(signingMaterial.keyPair)
-    builder.build()
+    new X509ResourceCertificateBuilder()
+      .withCa(true)
+      .withKeyUsage(KeyUsage.keyCertSign | KeyUsage.cRLSign)
+      .withAuthorityKeyIdentifier(true)
+      .withCrlDistributionPoints(signingMaterial.crlPublicationUri)
+      .withAuthorityInformationAccess(new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_CA_CA_ISSUERS, signingMaterial.certificateUri))
+
+      .withSubjectInformationAccess(
+        new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_CA_REPOSITORY, reqParser.getCaRepositoryUri),
+        new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_RPKI_MANIFEST, reqParser.getManifestUri),
+        new X509CertificateInformationAccessDescriptor(X509CertificateInformationAccessDescriptor.ID_AD_RPKI_NOTIFY, reqParser.getNotificationUri))
+
+      .withPublicKey(reqParser.getPublicKey)
+
+      .withSubjectDN(RpkiObjectNameSupport.deriveSubject(reqParser.getPublicKey()))
+      .withResources(childCaCertRequest.resources)
+      .withValidityPeriod(new ValidityPeriod(now, now.plus(childCaCertRequest.validityDuration)))
+      .withSerial(childCaCertRequest.serial)
+
+      .withIssuerDN(signingMaterial.currentCertificate.getSubject())
+      .withSigningKeyPair(signingMaterial.keyPair)
+      .build()
   }
 
   def createRootCertificate(name: String, keyPair: KeyPair, resources: IpResourceSet, publicationDir: URI, rpkiNotifyUri: URI, validityDuration: Period) = {

@@ -169,7 +169,7 @@ object Signer {
     val pkcs10Request = new RpkiCaCertificateRequestBuilder()
       .withCaRepositoryUri(repositoryUri)
       .withManifestUri(mftUri)
-      .withRrdpNotifyUri(rrdpNotifyUri)
+      .withNotificationUri(rrdpNotifyUri)
       .withSubject(subject)
       .build(keyPair)
 

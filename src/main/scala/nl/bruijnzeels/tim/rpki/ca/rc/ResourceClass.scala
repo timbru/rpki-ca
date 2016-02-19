@@ -94,6 +94,7 @@ case class ResourceClass(
     val child = children.get(childId).get
 
     val responseBuilder = createClassElementBuilder(child)
+    responseBuilder.withCertificateAuthorityUri(List(URI.create("rsync://host/bla")).asJava)
 
     // Here we return *all* certificates
     val certificateElements = child.currentCertificates.map { certificate =>
@@ -121,6 +122,7 @@ case class ResourceClass(
 
     createClassElementBuilder(children.get(childId).get)
       .withCertificateElements(List(certificateElement).asJava)
+      .withCertificateAuthorityUri(List(URI.create("rsync://host/bla")).asJava)   // Required by standard, but not realy useful here
       .buildCertificateIssuanceResponseClassElement()
   }
 

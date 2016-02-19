@@ -124,7 +124,7 @@ object ResourceClassTest {
   val ChildPkcs10Request = new RpkiCaCertificateRequestBuilder()
     .withCaRepositoryUri(ChildPublicationUri)
     .withManifestUri(ChildPublicationMftUri)
-    .withRrdpNotifyUri(RrdpNotifyUri)
+    .withNotificationUri(RrdpNotifyUri)
     .withSubject(ChildSubject)
     .build(ChildKeyPair)
 
