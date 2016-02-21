@@ -32,7 +32,7 @@ import java.math.BigInteger
 import java.net.URI
 import java.util.UUID
 
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{AggregateRoot, Event, PublicationServerAggregate, VersionedId}
+import nl.bruijnzeels.tim.rpki.common.cqrs.{AggregateRoot, Event, PublicationServerAggregate, VersionedId}
 import nl.bruijnzeels.tim.rpki.publication.messages.{Delta, DeltaProtocolMessage, DeltaReference, Notification, PublicationProtocolMessage, Publish, ReferenceHash, Snapshot, SnapshotReference, Withdraw}
 
 case class PublicationServer(

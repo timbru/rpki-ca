@@ -29,7 +29,7 @@
 package nl.bruijnzeels.tim.rpki.app.web.views
 
 import nl.bruijnzeels.tim.rpki.app.main.Dsl
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchor
+import nl.bruijnzeels.tim.rpki.ca.TrustAnchor
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServer
 
 import scala.xml.Text

@@ -28,7 +28,7 @@
  */
 package nl.bruijnzeels.tim.rpki.ca.rc
 
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
+import nl.bruijnzeels.tim.rpki.common.cqrs.Event
 
 trait ResourceClassEvent extends Event {
   def resourceClassName: String

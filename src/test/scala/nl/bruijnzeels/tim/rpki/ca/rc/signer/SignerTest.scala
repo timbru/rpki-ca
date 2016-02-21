@@ -34,7 +34,7 @@ package signer
 import java.math.BigInteger
 
 import net.ripe.ipresource.IpResourceSet
-import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
+import nl.bruijnzeels.tim.rpki.common.domain.RpkiObjectNameSupport
 import org.scalatest.{FunSuite, Matchers}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

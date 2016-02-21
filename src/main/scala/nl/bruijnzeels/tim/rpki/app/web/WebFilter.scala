@@ -29,7 +29,7 @@
 package nl.bruijnzeels.tim.rpki.app.web
 
 import nl.bruijnzeels.tim.rpki.app.web.controllers.ApplicationController
-import nl.bruijnzeels.tim.rpki.app.web.views.{View, Layouts}
+import nl.bruijnzeels.tim.rpki.app.web.views.{Layouts, View}
 import org.scalatra.ScalatraFilter
 
 import scala.xml.Xhtml

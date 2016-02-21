@@ -37,7 +37,7 @@ import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
 import net.ripe.rpki.commons.crypto.crl.X509Crl
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
 import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayload
-import nl.bruijnzeels.tim.rpki.ca.common.domain.{Revocation, SigningMaterial}
+import nl.bruijnzeels.tim.rpki.common.domain.{Revocation, SigningMaterial}
 import nl.bruijnzeels.tim.rpki.publication.messages.{Publish, Withdraw}
 
 sealed trait SignerEvent extends ResourceClassEvent

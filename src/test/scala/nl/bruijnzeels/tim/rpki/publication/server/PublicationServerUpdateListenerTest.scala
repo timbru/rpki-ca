@@ -31,7 +31,6 @@ package nl.bruijnzeels.tim.rpki.publication.server
 import java.math.BigInteger
 
 import nl.bruijnzeels.tim.rpki.RpkiTest
-import nl.bruijnzeels.tim.rpki.app.main.Dsl
 import nl.bruijnzeels.tim.rpki.app.main.Dsl.{create, publicationServer, trustAnchor}
 
 import scala.language.postfixOps

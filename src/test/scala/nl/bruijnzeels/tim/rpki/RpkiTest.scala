@@ -31,7 +31,7 @@ package nl.bruijnzeels.tim.rpki
 import java.net.URI
 
 import net.ripe.ipresource.IpResourceSet
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
+import nl.bruijnzeels.tim.rpki.common.cqrs.EventStore
 import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
 
 import scala.language.implicitConversions

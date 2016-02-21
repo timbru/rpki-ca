@@ -33,9 +33,9 @@ import java.util.UUID
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
 import net.ripe.rpki.commons.provisioning.payload.common.{CertificateElementBuilder, GenericClassElementBuilder}
-import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
 import nl.bruijnzeels.tim.rpki.ca.rc.child.{Child, ChildCreated, ChildEvent, ChildReceivedCertificate}
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.{Signer, SignerCreated, SignerEvent}
+import nl.bruijnzeels.tim.rpki.common.domain.RpkiObjectNameSupport
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.joda.time.{DateTime, DateTimeZone}
 

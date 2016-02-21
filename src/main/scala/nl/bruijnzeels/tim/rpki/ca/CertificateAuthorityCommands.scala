@@ -26,33 +26,19 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki.ca.provisioning
+package nl.bruijnzeels.tim.rpki.ca
 
-import java.security.KeyPair
+import java.net.URI
 import java.util.UUID
-import javax.security.auth.x500.X500Principal
 
-import net.ripe.rpki.commons.provisioning.x509.{ProvisioningIdentityCertificate, ProvisioningIdentityCertificateBuilder}
-import nl.bruijnzeels.tim.rpki.common.domain.KeyPairSupport
+import net.ripe.ipresource.IpResourceSet
+import nl.bruijnzeels.tim.rpki.common.cqrs.{Command, VersionedId}
 
-case class MyIdentity(id: UUID, identityCertificate: ProvisioningIdentityCertificate, keyPair: KeyPair) {
-  
-  def toChildXml() = {
-    import net.ripe.rpki.commons.provisioning.identity._
-    new ChildIdentitySerializer().serialize(new ChildIdentity(id.toString, identityCertificate))
-  }
+sealed trait CertificateAuthorityCommand extends Command
+
+case class CertificateAuthorityCreate(aggregateId: UUID, name: String, baseUrl: URI, rrdpNotifyUrl: URI) extends CertificateAuthorityCommand {
+  def versionedId = VersionedId(aggregateId)
 }
-
-object MyIdentity {
-
-  def create(id: UUID) = {
-    val kp = KeyPairSupport.createRpkiKeyPair
-    val cert = new ProvisioningIdentityCertificateBuilder()
-      .withSelfSigningKeyPair(kp)
-      .withSelfSigningSubject(new X500Principal("CN=" + id.toString))
-      .build()
-
-    MyIdentity(id = id, identityCertificate = cert, keyPair = kp)
-  }
-
-}
+case class CertificateAuthorityAddParent(versionedId: VersionedId, parentXml: String) extends CertificateAuthorityCommand
+case class CertificateAuthorityAddChild(versionedId: VersionedId, childId: UUID, childXml: String, childResources: IpResourceSet) extends CertificateAuthorityCommand
+case class CertificateAuthorityPublish(versionedId: VersionedId) extends CertificateAuthorityCommand

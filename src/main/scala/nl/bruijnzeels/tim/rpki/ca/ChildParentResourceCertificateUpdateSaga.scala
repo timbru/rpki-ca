@@ -26,33 +26,46 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki.ca.provisioning
+package nl.bruijnzeels.tim.rpki.ca
 
-import java.security.KeyPair
 import java.util.UUID
-import javax.security.auth.x500.X500Principal
 
-import net.ripe.rpki.commons.provisioning.x509.{ProvisioningIdentityCertificate, ProvisioningIdentityCertificateBuilder}
-import nl.bruijnzeels.tim.rpki.common.domain.KeyPairSupport
+import nl.bruijnzeels.tim.rpki.common.cqrs.EventStore
 
-case class MyIdentity(id: UUID, identityCertificate: ProvisioningIdentityCertificate, keyPair: KeyPair) {
-  
-  def toChildXml() = {
-    import net.ripe.rpki.commons.provisioning.identity._
-    new ChildIdentitySerializer().serialize(new ChildIdentity(id.toString, identityCertificate))
-  }
-}
+/**
+ * Long running dialogue between two aggregates
+ */
+object ChildParentResourceCertificateUpdateSaga {
 
-object MyIdentity {
+  def updateCertificates(parentId: UUID, certificateAuthorityId: UUID) = {
+    var parent: ParentCertificateAuthority = {
+      TrustAnchorCommandDispatcher.load(parentId) match {
+        case Some(ta) => ta
+        case _ => CertificateAuthorityCommandDispatcher.load(parentId) match {
+          case Some(ca) => ca
+          case _ => throw new IllegalArgumentException(s"Can't find TA or CA with id: ${parentId}")
+        }
+      }
+    }
+    var ca = CertificateAuthorityCommandDispatcher.load(certificateAuthorityId).getOrElse(throw new IllegalArgumentException("Can't find CA"))
 
-  def create(id: UUID) = {
-    val kp = KeyPairSupport.createRpkiKeyPair
-    val cert = new ProvisioningIdentityCertificateBuilder()
-      .withSelfSigningKeyPair(kp)
-      .withSelfSigningSubject(new X500Principal("CN=" + id.toString))
-      .build()
+    val classListQuery = ca.createResourceClassListRequest()
+    val classListResponse = parent.processListQuery(certificateAuthorityId, classListQuery)
 
-    MyIdentity(id = id, identityCertificate = cert, keyPair = kp)
+    parent = classListResponse.updatedParent
+    ca = ca.processResourceClassListResponse(classListQuery, classListResponse.response)
+
+    val signRequests = ca.createCertificateIssuanceRequests
+
+    signRequests.foreach { req =>
+      val signResponse = parent.processCertificateIssuanceRequest(ca.versionedId.id, req)
+
+      parent = signResponse.updatedParent
+      ca = ca.processCeritificateIssuanceResponse(req, signResponse.response)
+    }
+
+    CertificateAuthorityCommandDispatcher.save(ca)
+    EventStore.store(parent)
   }
 
 }

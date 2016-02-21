@@ -29,9 +29,8 @@
 package nl.bruijnzeels.tim.rpki.scenarios
 
 import nl.bruijnzeels.tim.rpki.RpkiTest
-import nl.bruijnzeels.tim.rpki.app.main.Dsl
 import nl.bruijnzeels.tim.rpki.app.main.Dsl._
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchor
+import nl.bruijnzeels.tim.rpki.ca.TrustAnchor
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class CertificateAuthorityFunctionsTest extends RpkiTest {

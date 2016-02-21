@@ -32,7 +32,7 @@ import java.io.File
 import java.net.URI
 
 import com.google.common.io.Files
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{EventListener, EventStore, StoredEvent}
+import nl.bruijnzeels.tim.rpki.common.cqrs.{EventListener, EventStore, StoredEvent}
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerReceivedSnapshot
 import org.h2.store.fs.FileUtils
 

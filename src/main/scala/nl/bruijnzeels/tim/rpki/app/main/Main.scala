@@ -33,7 +33,7 @@ import javax.servlet.DispatcherType
 
 import grizzled.slf4j.Logger
 import nl.bruijnzeels.tim.rpki.app.web.WebFilter
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
+import nl.bruijnzeels.tim.rpki.common.cqrs.EventStore
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.{DefaultServlet, FilterHolder, ServletContextHandler, ServletHolder}
 

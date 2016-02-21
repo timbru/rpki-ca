@@ -37,7 +37,7 @@ import java.net.URI
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
 import net.ripe.rpki.commons.crypto.crl.X509Crl
-import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
+import nl.bruijnzeels.tim.rpki.common.domain.RpkiObjectNameSupport
 import nl.bruijnzeels.tim.rpki.publication.messages.{Publish, ReferenceHash, Withdraw}
 
 case class PublicationSet(number: BigInteger, items: Map[URI, CertificateRepositoryObject] = Map.empty, mft: Option[ManifestCms] = None, crl: Option[X509Crl] = None) {

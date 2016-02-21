@@ -26,33 +26,38 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki.ca.provisioning
+package nl.bruijnzeels.tim.rpki.common.cqrs
 
-import java.security.KeyPair
 import java.util.UUID
-import javax.security.auth.x500.X500Principal
 
-import net.ripe.rpki.commons.provisioning.x509.{ProvisioningIdentityCertificate, ProvisioningIdentityCertificateBuilder}
-import nl.bruijnzeels.tim.rpki.common.domain.KeyPairSupport
+object EventStore {
 
-case class MyIdentity(id: UUID, identityCertificate: ProvisioningIdentityCertificate, keyPair: KeyPair) {
-  
-  def toChildXml() = {
-    import net.ripe.rpki.commons.provisioning.identity._
-    new ChildIdentitySerializer().serialize(new ChildIdentity(id.toString, identityCertificate))
+  // TODO: Use persistent thread safe storage, sign and verify this shit!, log this stuff?
+  var storedEventList: List[StoredEvent] = List.empty
+
+  var listeners: List[EventListener] = List.empty
+
+  def subscribe(listener: EventListener) = listeners = listeners :+ listener
+
+  def retrieve(aggregateType: AggregateRootType, aggregateId: UUID): List[Event] = storedEventList.filter(e => e.aggregateType == aggregateType && e.versionedId.id == aggregateId).map(_.event)
+
+  def store(aggregate: AggregateRoot): Unit =  {
+    val aggregateType = aggregate.aggregateType
+    val newVersionedId = aggregate.versionedId.next
+    val newStoredEvents = aggregate.events.map(StoredEvent(aggregateType, newVersionedId, _))
+
+    storedEventList = storedEventList ++ newStoredEvents
+    listeners.foreach(l => l.handle(newStoredEvents))
+  }
+
+  def clear(): Unit = {
+    storedEventList = List.empty
+    listeners = List.empty
   }
 }
 
-object MyIdentity {
-
-  def create(id: UUID) = {
-    val kp = KeyPairSupport.createRpkiKeyPair
-    val cert = new ProvisioningIdentityCertificateBuilder()
-      .withSelfSigningKeyPair(kp)
-      .withSelfSigningSubject(new X500Principal("CN=" + id.toString))
-      .build()
-
-    MyIdentity(id = id, identityCertificate = cert, keyPair = kp)
-  }
-
+trait EventListener {
+    def handle(events: List[StoredEvent]): Unit
 }
+
+case class StoredEvent(aggregateType: AggregateRootType, versionedId: VersionedId, event: Event)

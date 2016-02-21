@@ -35,7 +35,7 @@ import javax.sql.DataSource
 import com.google.common.io.BaseEncoding
 import com.googlecode.flyway.core.Flyway
 import nl.bruijnzeels.tim.rpki.app.main.ApplicationOptions
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{EventListener, StoredEvent}
+import nl.bruijnzeels.tim.rpki.common.cqrs.{EventListener, StoredEvent}
 import nl.bruijnzeels.tim.rpki.publication.messages.{DeltaProtocolMessage, ReferenceHash}
 import nl.bruijnzeels.tim.rpki.publication.server.{PublicationServerReceivedDelta, PublicationServerReceivedSnapshot}
 import org.apache.commons.dbcp.BasicDataSource

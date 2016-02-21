@@ -26,33 +26,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki.ca.provisioning
+package nl.bruijnzeels.tim.rpki.common.domain
 
-import java.security.KeyPair
-import java.util.UUID
-import javax.security.auth.x500.X500Principal
+import java.security.interfaces.RSAPrivateKey
 
-import net.ripe.rpki.commons.provisioning.x509.{ProvisioningIdentityCertificate, ProvisioningIdentityCertificateBuilder}
-import nl.bruijnzeels.tim.rpki.common.domain.KeyPairSupport
+import org.scalatest.{FunSuite, Matchers}
 
-case class MyIdentity(id: UUID, identityCertificate: ProvisioningIdentityCertificate, keyPair: KeyPair) {
-  
-  def toChildXml() = {
-    import net.ripe.rpki.commons.provisioning.identity._
-    new ChildIdentitySerializer().serialize(new ChildIdentity(id.toString, identityCertificate))
-  }
-}
+@org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
+class KeyPairSupportTest extends FunSuite with Matchers {
 
-object MyIdentity {
-
-  def create(id: UUID) = {
+  test("should standard keys RSA and 2048 bits") {
     val kp = KeyPairSupport.createRpkiKeyPair
-    val cert = new ProvisioningIdentityCertificateBuilder()
-      .withSelfSigningKeyPair(kp)
-      .withSelfSigningSubject(new X500Principal("CN=" + id.toString))
-      .build()
+    val privateKey = kp.getPrivate().asInstanceOf[RSAPrivateKey]
 
-    MyIdentity(id = id, identityCertificate = cert, keyPair = kp)
+    privateKey.getModulus().bitLength() should equal(2048)
   }
 
 }

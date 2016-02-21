@@ -31,7 +31,7 @@ package nl.bruijnzeels.tim.rpki.publication.server
 import java.net.URI
 import java.util.UUID
 
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{Command, VersionedId}
+import nl.bruijnzeels.tim.rpki.common.cqrs.{Command, VersionedId}
 import nl.bruijnzeels.tim.rpki.publication.messages.PublicationProtocolMessage
 
 sealed trait PublicationServerCommand extends Command

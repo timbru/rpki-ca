@@ -31,7 +31,7 @@ package nl.bruijnzeels.tim.rpki.publication.server
 import java.net.URI
 import java.util.UUID
 
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
+import nl.bruijnzeels.tim.rpki.common.cqrs.Event
 import nl.bruijnzeels.tim.rpki.publication.messages.{Delta, Snapshot}
 
 sealed trait PublicationServerEvent extends Event

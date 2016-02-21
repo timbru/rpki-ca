@@ -30,8 +30,8 @@ package nl.bruijnzeels.tim.rpki.publication.server
 
 import java.util.UUID
 
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{EventListener, StoredEvent}
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerUpdatedPublicationSet
+import nl.bruijnzeels.tim.rpki.common.cqrs.{EventListener, StoredEvent}
 
 class PublicationServerUpdateListener(publicationServerId: UUID) extends EventListener {
 

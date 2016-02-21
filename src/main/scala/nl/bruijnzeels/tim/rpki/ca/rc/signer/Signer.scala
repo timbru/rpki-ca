@@ -42,7 +42,7 @@ import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
 import net.ripe.rpki.commons.crypto.crl.X509Crl
 import net.ripe.rpki.commons.provisioning.payload.issue.request.{CertificateIssuanceRequestPayload, CertificateIssuanceRequestPayloadBuilder}
 import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestBuilder
-import nl.bruijnzeels.tim.rpki.ca.common.domain.{ChildCertificateSignRequest, CrlRequest, KeyPairSupport, ManifestRequest, Revocation, RpkiObjectNameSupport, SigningMaterial, SigningSupport}
+import nl.bruijnzeels.tim.rpki.common.domain.{ChildCertificateSignRequest, CrlRequest, KeyPairSupport, ManifestRequest, Revocation, RpkiObjectNameSupport, SigningMaterial, SigningSupport}
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.joda.time.Period
 

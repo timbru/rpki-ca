@@ -34,7 +34,7 @@ import java.util.UUID
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
 import net.ripe.rpki.commons.provisioning.identity.ChildIdentitySerializer
 import net.ripe.rpki.commons.provisioning.payload.AbstractProvisioningPayload
-import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningSupport
+import nl.bruijnzeels.tim.rpki.common.domain.SigningSupport
 
 
 /**

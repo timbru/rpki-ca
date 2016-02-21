@@ -31,7 +31,7 @@ package nl.bruijnzeels.tim.rpki.ca.provisioning
 import java.util.UUID
 
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
+import nl.bruijnzeels.tim.rpki.common.cqrs.Event
 
 sealed trait ProvisioningCommunicatorEvent extends Event
 

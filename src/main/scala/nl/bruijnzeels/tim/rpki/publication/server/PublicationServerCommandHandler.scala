@@ -30,7 +30,7 @@ package nl.bruijnzeels.tim.rpki.publication.server
 
 import java.util.UUID
 
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{EventStore, PublicationServerAggregate}
+import nl.bruijnzeels.tim.rpki.common.cqrs.{EventStore, PublicationServerAggregate}
 
 object PublicationServerCommandDispatcher {
 

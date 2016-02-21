@@ -30,7 +30,7 @@ package nl.bruijnzeels.tim.rpki.app.web.controllers
 
 import nl.bruijnzeels.tim.rpki.app.main.Dsl
 import nl.bruijnzeels.tim.rpki.app.web.views.HomeView
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorCommandDispatcher
+import nl.bruijnzeels.tim.rpki.ca.TrustAnchorCommandDispatcher
 import nl.bruijnzeels.tim.rpki.publication.messages.ReferenceHash
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCommandDispatcher
 import org.scalatra.{FlashMapSupport, ScalatraBase}
