@@ -40,11 +40,10 @@ import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestBu
 import nl.bruijnzeels.tim.rpki.ca.common.domain.{KeyPairSupport, RpkiObjectNameSupport}
 import nl.bruijnzeels.tim.rpki.ca.rc.child.{ChildCreated, ChildReceivedCertificate}
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.{Signer, SignerSignedCertificate}
-import nl.bruijnzeels.tim.rpki.ca.{stringToIpResourceSet, stringToUri}
 import org.scalatest.{FunSuite, Matchers}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class ResourceClassTest extends FunSuite with Matchers {
+class ResourceClassTest extends RpkiTest {
 
   import ResourceClassTest._
 
@@ -93,7 +92,7 @@ class ResourceClassTest extends FunSuite with Matchers {
 
 }
 
-object ResourceClassTest {
+object ResourceClassTest extends RpkiTest {
 
   val AggregateId = UUID.fromString("3e13717b-da5b-4371-a8c1-45d390fd8dc7")
   val ResourceClassName = "test resource class"

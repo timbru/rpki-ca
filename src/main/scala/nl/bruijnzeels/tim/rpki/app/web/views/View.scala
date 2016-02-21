@@ -26,18 +26,12 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki.ca
+package nl.bruijnzeels.tim.rpki.app.web.views
 
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
-import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
+import scala.xml.NodeSeq
 
-/**
- * Base class for testing. Wipes the EventStore. Do NOT run tests that rely on this in paralel.
- */
-abstract class RpkiCaTest extends FunSuite with Matchers with BeforeAndAfter {
-
-  before {
-    EventStore.clear
-  }
-
+trait View {
+  def tab: Tab
+  def title: NodeSeq
+  def body: NodeSeq
 }

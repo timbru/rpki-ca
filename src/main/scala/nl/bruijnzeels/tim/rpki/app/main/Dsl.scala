@@ -26,7 +26,7 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki.rrdp.app.dsl
+package nl.bruijnzeels.tim.rpki.app.main
 
 import java.io.File
 import java.net.URI
@@ -39,9 +39,8 @@ import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.{TrustAnchor, TrustAnc
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 import nl.bruijnzeels.tim.rpki.ca.provisioning.MyIdentity
 import nl.bruijnzeels.tim.rpki.publication.disk.ObjectDiskWriter
-import nl.bruijnzeels.tim.rpki.publication.server.{PublicationServerCommandDispatcher, PublicationServerCreate, PublicationServerUpdateListener}
 import nl.bruijnzeels.tim.rpki.publication.server.store.{RrdpFilesDataSources, RrdpFilesStore}
-import nl.bruijnzeels.tim.rpki.rrdp.app.ApplicationOptions
+import nl.bruijnzeels.tim.rpki.publication.server.{PublicationServerCommandDispatcher, PublicationServerCreate, PublicationServerUpdateListener}
 import org.h2.store.fs.FileUtils
 
 import scala.language.{implicitConversions, postfixOps}
@@ -51,7 +50,7 @@ import scala.language.{implicitConversions, postfixOps}
  * with a TA and child CA, publishing regularly,
  * and whatever else may be relevant for this..
  */
-object PocDsl {
+object Dsl {
 
   import scala.language.implicitConversions
 

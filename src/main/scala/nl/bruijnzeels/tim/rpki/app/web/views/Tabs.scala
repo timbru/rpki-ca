@@ -26,29 +26,13 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki.rrdp.app
+package nl.bruijnzeels.tim.rpki.app.web.views
 
-import java.io.File
-import java.net.URI
+import scala.xml.{NodeSeq, Text}
 
-import com.typesafe.config._
+case class Tab(text: NodeSeq, url: String)
 
-object ApplicationOptions {
-
-  private val config: Config = ConfigFactory.load()
-
-  def rrdpPort: Int = config.getInt("rrdp.http.port")
-  def rrdpHost: String = config.getString("rrdp.http.host")
-  def rrdpProxy: Boolean = config.getBoolean("rrdp.http.proxy")
-  
-  
-  def rrdpBaseUri = rrdpProxy match {
-    case true => URI.create(s"http://${rrdpHost}/rpki-ca/")
-    case false => URI.create(s"http://${rrdpHost}:${rrdpPort}/rpki-ca/")
-  }
-
-  def rrdpFilesStore =  new File(config.getString("rrdp.data.dir"))
-  
-  def rsyncBaseUri: URI = URI.create(config.getString("rsync.base.uri"))
-  def rsyncBaseDir: File = new File(config.getString("rsync.base.dir"))
+object Tabs {
+  val HomeTab = Tab(Text("Home"), "/")
+  def visibleTabs = Seq(HomeTab)
 }

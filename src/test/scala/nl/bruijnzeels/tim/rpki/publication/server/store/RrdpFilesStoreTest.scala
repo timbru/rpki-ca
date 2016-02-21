@@ -30,13 +30,13 @@ package nl.bruijnzeels.tim.rpki.publication.server.store
 
 import java.nio.charset.Charset
 
-import nl.bruijnzeels.tim.rpki.ca.RpkiCaTest
+import nl.bruijnzeels.tim.rpki.RpkiTest
 import nl.bruijnzeels.tim.rpki.publication.messages.ReferenceHash
 
 import scala.language.postfixOps
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class RrdpFilesStoreTest extends RpkiCaTest {
+class RrdpFilesStoreTest extends RpkiTest {
 
   test("Should initiate store") {
     val testBlob = "test string".getBytes(Charset.forName("UTF8"))

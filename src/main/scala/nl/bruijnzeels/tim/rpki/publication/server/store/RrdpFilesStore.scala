@@ -34,10 +34,10 @@ import javax.sql.DataSource
 
 import com.google.common.io.BaseEncoding
 import com.googlecode.flyway.core.Flyway
+import nl.bruijnzeels.tim.rpki.app.main.ApplicationOptions
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{EventListener, StoredEvent}
 import nl.bruijnzeels.tim.rpki.publication.messages.{DeltaProtocolMessage, ReferenceHash}
 import nl.bruijnzeels.tim.rpki.publication.server.{PublicationServerReceivedDelta, PublicationServerReceivedSnapshot}
-import nl.bruijnzeels.tim.rpki.rrdp.app.ApplicationOptions
 import org.apache.commons.dbcp.BasicDataSource
 import org.joda.time.DateTime
 import org.springframework.dao.EmptyResultDataAccessException

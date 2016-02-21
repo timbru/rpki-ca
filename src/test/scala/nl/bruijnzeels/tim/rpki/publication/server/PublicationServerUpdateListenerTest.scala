@@ -30,13 +30,14 @@ package nl.bruijnzeels.tim.rpki.publication.server
 
 import java.math.BigInteger
 
-import nl.bruijnzeels.tim.rpki.ca.RpkiCaTest
-import nl.bruijnzeels.tim.rpki.rrdp.app.dsl.PocDsl.{create, publicationServer, trustAnchor}
+import nl.bruijnzeels.tim.rpki.RpkiTest
+import nl.bruijnzeels.tim.rpki.app.main.Dsl
+import nl.bruijnzeels.tim.rpki.app.main.Dsl.{create, publicationServer, trustAnchor}
 
 import scala.language.postfixOps
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class PublicationServerUpdateListenerTest extends RpkiCaTest {
+class PublicationServerUpdateListenerTest extends RpkiTest {
 
     test("Should publish") {
       create publicationServer()

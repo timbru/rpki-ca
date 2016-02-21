@@ -40,8 +40,8 @@ import net.ripe.rpki.commons.provisioning.payload.list.response.{ResourceClassLi
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.{CertificateIssuanceResponse, ListQueryResponse, ParentCertificateAuthority}
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{CertificationAuthorityAggregate, Event, VersionedId}
 import nl.bruijnzeels.tim.rpki.ca.provisioning._
-import nl.bruijnzeels.tim.rpki.ca.rc.{ResourceClass, ResourceClassCreated, ResourceClassEvent}
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.{Signer, SignerReceivedCertificate, SignerSignedCertificate}
+import nl.bruijnzeels.tim.rpki.ca.rc.{ResourceClass, ResourceClassCreated, ResourceClassEvent}
 
 import scala.collection.JavaConverters.asScalaBufferConverter
 

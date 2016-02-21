@@ -36,6 +36,7 @@ import java.util.UUID
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayloadBuilder
 import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassListResponsePayload
+import nl.bruijnzeels.tim.rpki.RpkiTest
 import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningSupport
 import nl.bruijnzeels.tim.rpki.ca.provisioning.MyIdentity
 import org.scalatest.{FunSuite, Matchers}
@@ -123,7 +124,7 @@ import TrustAnchorTest._
 
 }
 
-object TrustAnchorTest {
+object TrustAnchorTest extends RpkiTest {
 
   val RrdpNotifyUrl: URI = "http://localhost:8080/rrdp/notify.xml"
 

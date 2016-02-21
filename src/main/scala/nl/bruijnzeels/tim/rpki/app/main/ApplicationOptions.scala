@@ -26,22 +26,29 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki.rrdp.app.web
+package nl.bruijnzeels.tim.rpki.app.main
 
-import nl.bruijnzeels.tim.rpki.rrdp.app.web.controllers.ApplicationController
-import nl.bruijnzeels.tim.rpki.rrdp.app.web.views.{Layouts, View}
-import org.scalatra.ScalatraFilter
+import java.io.File
+import java.net.URI
 
-import scala.xml.Xhtml
+import com.typesafe.config._
 
-abstract class WebFilter extends ScalatraFilter with ApplicationController {
+object ApplicationOptions {
 
-  private def renderView: PartialFunction[Any, Any] = {
-    case view: View =>
-      contentType = "text/html"
-      "<!DOCTYPE html>\n" + Xhtml.toXhtml(Layouts.standard(view))
+  private val config: Config = ConfigFactory.load()
+
+  def rrdpPort: Int = config.getInt("rrdp.http.port")
+  def rrdpHost: String = config.getString("rrdp.http.host")
+  def rrdpProxy: Boolean = config.getBoolean("rrdp.http.proxy")
+  
+  
+  def rrdpBaseUri = rrdpProxy match {
+    case true => URI.create(s"http://${rrdpHost}/rpki-ca/")
+    case false => URI.create(s"http://${rrdpHost}:${rrdpPort}/rpki-ca/")
   }
 
-  override protected def renderPipeline = renderView orElse super.renderPipeline
-
+  def rrdpFilesStore =  new File(config.getString("rrdp.data.dir"))
+  
+  def rsyncBaseUri: URI = URI.create(config.getString("rsync.base.uri"))
+  def rsyncBaseDir: File = new File(config.getString("rsync.base.dir"))
 }

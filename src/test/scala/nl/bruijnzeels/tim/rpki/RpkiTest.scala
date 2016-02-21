@@ -26,38 +26,26 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki.rrdp.app.web.views
+package nl.bruijnzeels.tim.rpki
 
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchor
-import nl.bruijnzeels.tim.rpki.publication.server.PublicationServer
-import nl.bruijnzeels.tim.rpki.rrdp.app.dsl.PocDsl
+import java.net.URI
 
-import scala.xml.Text
+import net.ripe.ipresource.IpResourceSet
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
+import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
 
-class HomeView(ta: TrustAnchor, publicationServer: PublicationServer) extends View {
+import scala.language.implicitConversions
 
-  def tab = Tabs.HomeTab
-  def title = Text("RRDP Proof of concept server")
-  def body = {
-    <pre class="alert-message block-message alert monospace">{ ta.tal }</pre>
-    <div class="alert-message block-message info">
-      <div class="row">
-        <div class="span12 center">Publication Server Details</div>
-      </div>
-      <div class="row">
-        <div class="span6">Session Id</div>
-        <div class="span6">{ publicationServer.sessionId } </div>
-      </div>
-      <div class="row">
-        <div class="span6">Last serial</div>
-        <div class="span6">{ publicationServer.serial } </div>
-      </div>
-      <div class="row">
-        <div class="span6">Notification File</div>
-        <div class="span6"><a href={PocDsl.RrdpNotifyUrl.toString}>{ PocDsl.RrdpNotifyUrl.toString }</a></div>
-      </div>
-    </div>
+/**
+ * Base class for testing. Wipes the EventStore. Do NOT run tests that rely on this in paralel.
+ */
+abstract class RpkiTest extends FunSuite with Matchers with BeforeAndAfter {
 
+  before {
+    EventStore.clear
   }
+
+  implicit def stringToIpResourceSet(s: String): IpResourceSet = IpResourceSet.parse(s)
+  implicit def stringToUri(s: String): URI = URI.create(s)
 
 }

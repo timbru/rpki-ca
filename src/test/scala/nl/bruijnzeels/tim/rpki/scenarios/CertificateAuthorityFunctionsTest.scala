@@ -26,14 +26,15 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki.ca.scenarios
+package nl.bruijnzeels.tim.rpki.scenarios
 
-import nl.bruijnzeels.tim.rpki.ca.RpkiCaTest
+import nl.bruijnzeels.tim.rpki.RpkiTest
+import nl.bruijnzeels.tim.rpki.app.main.Dsl
+import nl.bruijnzeels.tim.rpki.app.main.Dsl._
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchor
-import nl.bruijnzeels.tim.rpki.rrdp.app.dsl.PocDsl._
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class CertificateAuthorityFunctionsTest extends RpkiCaTest {
+class CertificateAuthorityFunctionsTest extends RpkiTest {
 
   import scala.language.postfixOps
 

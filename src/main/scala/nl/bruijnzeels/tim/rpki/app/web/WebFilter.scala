@@ -26,13 +26,22 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki.rrdp.app.web.views
+package nl.bruijnzeels.tim.rpki.app.web
 
-import scala.xml.{NodeSeq, Text}
+import nl.bruijnzeels.tim.rpki.app.web.controllers.ApplicationController
+import nl.bruijnzeels.tim.rpki.app.web.views.{View, Layouts}
+import org.scalatra.ScalatraFilter
 
-case class Tab(text: NodeSeq, url: String)
+import scala.xml.Xhtml
 
-object Tabs {
-  val HomeTab = Tab(Text("Home"), "/")
-  def visibleTabs = Seq(HomeTab)
+abstract class WebFilter extends ScalatraFilter with ApplicationController {
+
+  private def renderView: PartialFunction[Any, Any] = {
+    case view: View =>
+      contentType = "text/html"
+      "<!DOCTYPE html>\n" + Xhtml.toXhtml(Layouts.standard(view))
+  }
+
+  override protected def renderPipeline = renderView orElse super.renderPipeline
+
 }

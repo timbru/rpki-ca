@@ -26,14 +26,14 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki.rrdp.app
+package nl.bruijnzeels.tim.rpki.app.main
 
 import java.util.EnumSet
 import javax.servlet.DispatcherType
 
 import grizzled.slf4j.Logger
+import nl.bruijnzeels.tim.rpki.app.web.WebFilter
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
-import nl.bruijnzeels.tim.rpki.rrdp.app.web.WebFilter
 import org.eclipse.jetty.server.Server
 import org.eclipse.jetty.servlet.{DefaultServlet, FilterHolder, ServletContextHandler, ServletHolder}
 
@@ -50,8 +50,8 @@ object Main {
 class Main { main =>
 
   import ApplicationOptions._
+  import Dsl._
   import actorSystem.dispatcher
-  import dsl.PocDsl._
 
   import scala.concurrent.duration._
 

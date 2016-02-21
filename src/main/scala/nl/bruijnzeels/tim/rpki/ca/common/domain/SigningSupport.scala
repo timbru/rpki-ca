@@ -36,14 +36,14 @@ import javax.security.auth.x500.X500Principal
 
 import grizzled.slf4j.Logger
 import net.ripe.ipresource.{IpResourceSet, IpResourceType}
-import net.ripe.rpki.commons.crypto.{CertificateRepositoryObject, ValidityPeriod}
 import net.ripe.rpki.commons.crypto.cms.manifest.{ManifestCms, ManifestCmsBuilder}
 import net.ripe.rpki.commons.crypto.crl.{X509Crl, X509CrlBuilder}
 import net.ripe.rpki.commons.crypto.x509cert.{RpkiSignedObjectEeCertificateBuilder, X509CertificateBuilderHelper, X509CertificateInformationAccessDescriptor, X509ResourceCertificate, X509ResourceCertificateBuilder}
+import net.ripe.rpki.commons.crypto.{CertificateRepositoryObject, ValidityPeriod}
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObjectBuilder
 import net.ripe.rpki.commons.provisioning.payload.AbstractProvisioningPayload
-import net.ripe.rpki.commons.provisioning.x509.{ProvisioningCmsCertificateBuilder, ProvisioningIdentityCertificate}
 import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestParser
+import net.ripe.rpki.commons.provisioning.x509.{ProvisioningCmsCertificateBuilder, ProvisioningIdentityCertificate}
 import org.bouncycastle.asn1.x509.KeyUsage
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.joda.time.{DateTime, Period}

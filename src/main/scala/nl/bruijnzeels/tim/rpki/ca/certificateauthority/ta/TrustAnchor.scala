@@ -41,8 +41,8 @@ import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassLis
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.{CertificateIssuanceResponse, ListQueryResponse, ParentCertificateAuthority}
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{Event, TrustAnchorAggregate, VersionedId}
 import nl.bruijnzeels.tim.rpki.ca.provisioning.{ProvisioningChildExchange, ProvisioningCommunicator, ProvisioningCommunicatorCreated, ProvisioningCommunicatorEvent, ProvisioningCommunicatorPerformedChildExchange, ProvisioningMessageValidationFailure, ProvisioningMessageValidationSuccess}
-import nl.bruijnzeels.tim.rpki.ca.rc.{ResourceClass, ResourceClassCreated, ResourceClassEvent}
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.{Signer, SignerSignedCertificate}
+import nl.bruijnzeels.tim.rpki.ca.rc.{ResourceClass, ResourceClassCreated, ResourceClassEvent}
 
 /**
  * Root Certificate Authority for RPKI. Does not have a parent CA and has a self-signed certificate.

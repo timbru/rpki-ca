@@ -26,17 +26,17 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki.ca
-package certificateauthority.ca
+package nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca
 
 import java.net.URI
 import java.util.UUID
 
 import net.ripe.ipresource.IpResourceSet
+import nl.bruijnzeels.tim.rpki.RpkiTest
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.{TrustAnchorAddChild, TrustAnchorAddChildCommandHandler, TrustAnchorTest}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class CertificateAuthorityTest extends RpkiCaTest {
+class CertificateAuthorityTest extends RpkiTest {
 
   import CertificateAuthorityTest._
 
@@ -75,7 +75,7 @@ class CertificateAuthorityTest extends RpkiCaTest {
 
 }
 
-object CertificateAuthorityTest {
+object CertificateAuthorityTest extends RpkiTest {
 
   val RrdpNotifyUrl: URI = "rrdp://localhost:8080/rrdp/notify.xml"
 

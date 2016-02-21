@@ -26,12 +26,38 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki.rrdp.app.web.views
+package nl.bruijnzeels.tim.rpki.app.web.views
 
-import scala.xml.NodeSeq
+import nl.bruijnzeels.tim.rpki.app.main.Dsl
+import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchor
+import nl.bruijnzeels.tim.rpki.publication.server.PublicationServer
 
-trait View {
-  def tab: Tab
-  def title: NodeSeq
-  def body: NodeSeq
+import scala.xml.Text
+
+class HomeView(ta: TrustAnchor, publicationServer: PublicationServer) extends View {
+
+  def tab = Tabs.HomeTab
+  def title = Text("RRDP Proof of concept server")
+  def body = {
+    <pre class="alert-message block-message alert monospace">{ ta.tal }</pre>
+    <div class="alert-message block-message info">
+      <div class="row">
+        <div class="span12 center">Publication Server Details</div>
+      </div>
+      <div class="row">
+        <div class="span6">Session Id</div>
+        <div class="span6">{ publicationServer.sessionId } </div>
+      </div>
+      <div class="row">
+        <div class="span6">Last serial</div>
+        <div class="span6">{ publicationServer.serial } </div>
+      </div>
+      <div class="row">
+        <div class="span6">Notification File</div>
+        <div class="span6"><a href={Dsl.RrdpNotifyUrl.toString}>{ Dsl.RrdpNotifyUrl.toString }</a></div>
+      </div>
+    </div>
+
+  }
+
 }

@@ -26,20 +26,20 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki.rrdp.app.web.controllers
+package nl.bruijnzeels.tim.rpki.app.web.controllers
 
+import nl.bruijnzeels.tim.rpki.app.main.Dsl
+import nl.bruijnzeels.tim.rpki.app.web.views.HomeView
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorCommandDispatcher
 import nl.bruijnzeels.tim.rpki.publication.messages.ReferenceHash
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCommandDispatcher
-import nl.bruijnzeels.tim.rpki.rrdp.app.dsl.PocDsl
-import nl.bruijnzeels.tim.rpki.rrdp.app.web.views.HomeView
 import org.scalatra.{FlashMapSupport, ScalatraBase}
 
 trait ApplicationController extends ScalatraBase with FlashMapSupport {
 
-  def currentTa = TrustAnchorCommandDispatcher.load(PocDsl.TrustAnchorId).get
-  def currentPublicationServer = PublicationServerCommandDispatcher.load(PocDsl.PublicationServerId).get
-  val rrdpFileStore = PocDsl.current.rrdpFileStore
+  def currentTa = TrustAnchorCommandDispatcher.load(Dsl.TrustAnchorId).get
+  def currentPublicationServer = PublicationServerCommandDispatcher.load(Dsl.PublicationServerId).get
+  val rrdpFileStore = Dsl.current.rrdpFileStore
 
   val TrustAnchorCertificatePath = "ta/ta.cer"
   val RrdpNotitifyPath = "notify/notify.xml"
