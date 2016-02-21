@@ -1,5 +1,5 @@
 /**
- * Copyright (c) 2014-2015 Tim Bruijnzeels
+ * Copyright (c) 2014-2016 Tim Bruijnzeels
  * All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
