@@ -28,13 +28,11 @@
  */
 package nl.bruijnzeels.tim.rpki.ca.provisioning
 
-import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
-import net.ripe.rpki.commons.provisioning.x509.ProvisioningIdentityCertificate
-import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObjectValidator
-import net.ripe.rpki.commons.validation.ValidationResult
-import net.ripe.rpki.commons.validation.ValidationOptions
-import org.apache.commons.lang3.StringUtils
+import net.ripe.rpki.commons.provisioning.cms.{ProvisioningCmsObject, ProvisioningCmsObjectValidator}
 import net.ripe.rpki.commons.provisioning.payload.AbstractProvisioningPayload
+import net.ripe.rpki.commons.provisioning.x509.ProvisioningIdentityCertificate
+import net.ripe.rpki.commons.validation.{ValidationOptions, ValidationResult}
+import org.apache.commons.lang3.StringUtils
 
 object ProvisioningMessageValidation {
 

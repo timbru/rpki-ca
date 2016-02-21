@@ -30,6 +30,7 @@ package nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta
 
 import java.net.URI
 import java.util.UUID
+
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
@@ -38,22 +39,10 @@ import net.ripe.rpki.commons.provisioning.payload.issue.response.CertificateIssu
 import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayload
 import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassListResponsePayloadBuilder
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.{CertificateIssuanceResponse, ListQueryResponse, ParentCertificateAuthority}
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.AggregateRoot
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningChildExchange
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicator
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorCreated
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorEvent
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorPerformedChildExchange
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningMessageValidationFailure
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningMessageValidationSuccess
-import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClass
-import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassCreated
-import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassEvent
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerSignedCertificate
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.TrustAnchorAggregate
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{Event, TrustAnchorAggregate, VersionedId}
+import nl.bruijnzeels.tim.rpki.ca.provisioning.{ProvisioningChildExchange, ProvisioningCommunicator, ProvisioningCommunicatorCreated, ProvisioningCommunicatorEvent, ProvisioningCommunicatorPerformedChildExchange, ProvisioningMessageValidationFailure, ProvisioningMessageValidationSuccess}
+import nl.bruijnzeels.tim.rpki.ca.rc.{ResourceClass, ResourceClassCreated, ResourceClassEvent}
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.{Signer, SignerSignedCertificate}
 
 /**
  * Root Certificate Authority for RPKI. Does not have a parent CA and has a self-signed certificate.

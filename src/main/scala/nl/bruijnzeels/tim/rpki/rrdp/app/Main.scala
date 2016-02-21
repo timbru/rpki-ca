@@ -28,29 +28,16 @@
  */
 package nl.bruijnzeels.tim.rpki.rrdp.app
 
-import scala.language.postfixOps
-
 import java.util.EnumSet
-
 import javax.servlet.DispatcherType
 
+import grizzled.slf4j.Logger
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 import nl.bruijnzeels.tim.rpki.rrdp.app.web.WebFilter
-
-import ApplicationOptions.rrdpPort
-import dsl.PocDsl.ChildId
-import dsl.PocDsl.ChildResources
-import dsl.PocDsl.certificateAuthority
-import dsl.PocDsl.create
-import dsl.PocDsl.current
-import dsl.PocDsl.publicationServer
-import dsl.PocDsl.trustAnchor
-import grizzled.slf4j.Logger
 import org.eclipse.jetty.server.Server
-import org.eclipse.jetty.servlet.DefaultServlet
-import org.eclipse.jetty.servlet.FilterHolder
-import org.eclipse.jetty.servlet.ServletContextHandler
-import org.eclipse.jetty.servlet.ServletHolder
+import org.eclipse.jetty.servlet.{DefaultServlet, FilterHolder, ServletContextHandler, ServletHolder}
+
+import scala.language.postfixOps
 
 object Main {
 
@@ -62,13 +49,11 @@ object Main {
 
 class Main { main =>
 
-  import Main._
-
-  import dsl.PocDsl._
   import ApplicationOptions._
+  import actorSystem.dispatcher
+  import dsl.PocDsl._
 
   import scala.concurrent.duration._
-  import actorSystem.dispatcher
 
   implicit val actorSystem = akka.actor.ActorSystem()
 

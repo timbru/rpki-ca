@@ -34,18 +34,9 @@ package signer
 import java.math.BigInteger
 
 import net.ripe.ipresource.IpResourceSet
-
+import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
 import nl.bruijnzeels.tim.rpki.ca.stringToIpResourceSet
-
-import ResourceClassTest.AggregateId
-import ResourceClassTest.ChildPkcs10Request
-import ResourceClassTest.ResourceClassName
-import ResourceClassTest.SelfSignedSigner
-import ResourceClassTest.SignerResources
-import ResourceClassTest.SignerSubject
-import common.domain.RpkiObjectNameSupport
-import org.scalatest.FunSuite
-import org.scalatest.Matchers
+import org.scalatest.{FunSuite, Matchers}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class SignerTest extends FunSuite with Matchers {

@@ -28,11 +28,10 @@
  */
 package nl.bruijnzeels.tim.rpki.ca.common.domain
 
-import net.ripe.ipresource.IpResourceSet
-import net.ripe.ipresource.IpResourceType
-import scala.collection.JavaConverters._
-import java.lang.IllegalArgumentException
+import net.ripe.ipresource.{IpResourceSet, IpResourceType}
 import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayload
+
+import scala.collection.JavaConverters._
 
 object IpResourceSupport {
 

@@ -28,7 +28,6 @@
  */
 package nl.bruijnzeels.tim.rpki.ca.rc.signer
 
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Error
 import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassError
 
 sealed trait SignerError extends ResourceClassError

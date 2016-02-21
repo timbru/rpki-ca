@@ -28,9 +28,10 @@
  */
 package nl.bruijnzeels.tim.rpki.ca.rc
 
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Error
 import java.util.UUID
+
 import net.ripe.ipresource.IpResourceSet
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Error
 
 trait ResourceClassError extends Error
 

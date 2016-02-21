@@ -32,14 +32,13 @@ package certificateauthority.ta
 import java.math.BigInteger
 import java.net.URI
 import java.util.UUID
-import org.scalatest.FunSuite
-import org.scalatest.Matchers
+
 import net.ripe.ipresource.IpResourceSet
-import net.ripe.rpki.commons.provisioning.identity.ChildIdentitySerializer
 import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayloadBuilder
 import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassListResponsePayload
-import provisioning.MyIdentity
 import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningSupport
+import nl.bruijnzeels.tim.rpki.ca.provisioning.MyIdentity
+import org.scalatest.{FunSuite, Matchers}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class TrustAnchorTest extends FunSuite with Matchers {

@@ -28,24 +28,12 @@
  */
 package nl.bruijnzeels.tim.rpki.publication.server
 
-import scala.Option.option2Iterable
 import java.math.BigInteger
 import java.net.URI
 import java.util.UUID
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.AggregateRoot
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
-import nl.bruijnzeels.tim.rpki.publication.messages.Delta
-import nl.bruijnzeels.tim.rpki.publication.messages.DeltaReference
-import nl.bruijnzeels.tim.rpki.publication.messages.Notification
-import nl.bruijnzeels.tim.rpki.publication.messages.PublicationProtocolMessage
-import nl.bruijnzeels.tim.rpki.publication.messages.Publish
-import nl.bruijnzeels.tim.rpki.publication.messages.ReferenceHash
-import nl.bruijnzeels.tim.rpki.publication.messages.Snapshot
-import nl.bruijnzeels.tim.rpki.publication.messages.SnapshotReference
-import nl.bruijnzeels.tim.rpki.publication.messages.Withdraw
-import nl.bruijnzeels.tim.rpki.publication.messages.DeltaProtocolMessage
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.PublicationServerAggregate
+
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{AggregateRoot, Event, PublicationServerAggregate, VersionedId}
+import nl.bruijnzeels.tim.rpki.publication.messages.{Delta, DeltaProtocolMessage, DeltaReference, Notification, PublicationProtocolMessage, Publish, ReferenceHash, Snapshot, SnapshotReference, Withdraw}
 
 case class PublicationServer(
   versionedId: VersionedId,

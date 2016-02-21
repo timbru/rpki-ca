@@ -29,24 +29,19 @@
 package nl.bruijnzeels.tim.rpki.publication.server.store
 
 import java.io.File
+import java.sql.ResultSet
 import javax.sql.DataSource
+
+import com.google.common.io.BaseEncoding
 import com.googlecode.flyway.core.Flyway
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{EventListener, StoredEvent}
+import nl.bruijnzeels.tim.rpki.publication.messages.{DeltaProtocolMessage, ReferenceHash}
+import nl.bruijnzeels.tim.rpki.publication.server.{PublicationServerReceivedDelta, PublicationServerReceivedSnapshot}
+import nl.bruijnzeels.tim.rpki.rrdp.app.ApplicationOptions
 import org.apache.commons.dbcp.BasicDataSource
-import scala.xml.Elem
-import nl.bruijnzeels.tim.rpki.publication.messages.ReferenceHash
-import org.springframework.jdbc.core.JdbcTemplate
 import org.joda.time.DateTime
 import org.springframework.dao.EmptyResultDataAccessException
-import org.springframework.jdbc.core.RowMapper
-import java.sql.ResultSet
-import com.google.common.io.BaseEncoding
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventListener
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
-import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerReceivedDelta
-import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerReceivedSnapshot
-import nl.bruijnzeels.tim.rpki.publication.messages.DeltaProtocolMessage
-import nl.bruijnzeels.tim.rpki.rrdp.app.ApplicationOptions
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.StoredEvent
+import org.springframework.jdbc.core.{JdbcTemplate, RowMapper}
 
 class RrdpFilesStore(dataSource: BasicDataSource) extends EventListener {
 

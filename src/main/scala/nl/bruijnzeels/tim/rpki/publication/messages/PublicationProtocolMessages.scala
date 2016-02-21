@@ -28,19 +28,19 @@
  */
 package nl.bruijnzeels.tim.rpki.publication.messages
 
+import java.math.BigInteger
 import java.net.URI
-import scala.xml.Elem
-import scala.xml.XML
+import java.nio.charset.Charset
+import java.util.UUID
+
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
+import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
 import net.ripe.rpki.commons.crypto.util.CertificateRepositoryObjectFactory
 import net.ripe.rpki.commons.validation.ValidationResult
-import sun.misc.BASE64Decoder
-import sun.misc.BASE64Encoder
-import java.math.BigInteger
-import java.util.UUID
-import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
 import org.apache.commons.lang3.StringUtils
-import java.nio.charset.Charset
+import sun.misc.{BASE64Decoder, BASE64Encoder}
+
+import scala.xml.{Elem, XML}
 
 sealed trait DeltaProtocolMessage {
   def toXml: Elem

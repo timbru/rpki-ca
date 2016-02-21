@@ -30,10 +30,10 @@ package nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta
 
 import java.net.URI
 import java.util.UUID
+
 import net.ripe.ipresource.IpResourceSet
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Command
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{Command, VersionedId}
 
 sealed trait TrustAnchorCommand extends Command
 

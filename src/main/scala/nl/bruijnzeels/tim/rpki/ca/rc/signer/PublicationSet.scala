@@ -33,21 +33,14 @@ package signer
 
 import java.math.BigInteger
 import java.net.URI
-import java.util.UUID
-
-import scala.annotation.migration
 
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
 import net.ripe.rpki.commons.crypto.crl.X509Crl
 import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
-import nl.bruijnzeels.tim.rpki.publication.messages.Publish
-import nl.bruijnzeels.tim.rpki.publication.messages.ReferenceHash
-import nl.bruijnzeels.tim.rpki.publication.messages.Withdraw
+import nl.bruijnzeels.tim.rpki.publication.messages.{Publish, ReferenceHash, Withdraw}
 
 case class PublicationSet(number: BigInteger, items: Map[URI, CertificateRepositoryObject] = Map.empty, mft: Option[ManifestCms] = None, crl: Option[X509Crl] = None) {
-
-  import PublicationSet._
 
   def applyEvent(event: SignerUpdatedPublicationSet) = {
     val withdrawnHashes = event.withdraws.map(_.hash)

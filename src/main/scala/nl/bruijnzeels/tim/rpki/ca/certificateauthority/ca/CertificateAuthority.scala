@@ -28,25 +28,22 @@
  */
 package nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca
 
-import net.ripe.ipresource.IpResourceSet
-import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayload
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.{CertificateIssuanceResponse, ListQueryResponse, ParentCertificateAuthority}
-
-import scala.collection.JavaConverters.asScalaBufferConverter
 import java.net.URI
 import java.util.UUID
+
+import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
-import net.ripe.rpki.commons.provisioning.payload.issue.response.{CertificateIssuanceResponsePayloadBuilder, CertificateIssuanceResponsePayload}
-import net.ripe.rpki.commons.provisioning.payload.list.response.{ResourceClassListResponsePayloadBuilder, ResourceClassListResponsePayload}
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
-import nl.bruijnzeels.tim.rpki.ca.provisioning._
-import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClass
-import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassCreated
-import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassEvent
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.{SignerSignedCertificate, Signer, SignerReceivedCertificate}
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
+import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayload
+import net.ripe.rpki.commons.provisioning.payload.issue.response.{CertificateIssuanceResponsePayload, CertificateIssuanceResponsePayloadBuilder}
 import net.ripe.rpki.commons.provisioning.payload.list.request.{ResourceClassListQueryPayload, ResourceClassListQueryPayloadBuilder}
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.CertificationAuthorityAggregate
+import net.ripe.rpki.commons.provisioning.payload.list.response.{ResourceClassListResponsePayload, ResourceClassListResponsePayloadBuilder}
+import nl.bruijnzeels.tim.rpki.ca.certificateauthority.{CertificateIssuanceResponse, ListQueryResponse, ParentCertificateAuthority}
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{CertificationAuthorityAggregate, Event, VersionedId}
+import nl.bruijnzeels.tim.rpki.ca.provisioning._
+import nl.bruijnzeels.tim.rpki.ca.rc.{ResourceClass, ResourceClassCreated, ResourceClassEvent}
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.{Signer, SignerReceivedCertificate, SignerSignedCertificate}
+
+import scala.collection.JavaConverters.asScalaBufferConverter
 
 /**
  *  A Certificate Authority in RPKI. Needs to have a parent which can be either
@@ -64,7 +61,9 @@ case class CertificateAuthority(
   events: List[Event] = List.empty) extends ParentCertificateAuthority {
 
   override def applyEvents(events: List[Event]): CertificateAuthority = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
+
   override def clearEventList(): CertificateAuthority = copy(events = List.empty)
+
   override def aggregateType = CertificationAuthorityAggregate
 
   def applyEvent(event: Event): CertificateAuthority = event match {
@@ -131,7 +130,7 @@ case class CertificateAuthority(
     }
   }
 
-  override def processCertificateIssuanceRequest(childId: UUID, request: ProvisioningCmsObject): CertificateIssuanceResponse =
+  override def processCertificateIssuanceRequest(childId: UUID, request: ProvisioningCmsObject): CertificateIssuanceResponse = {
     communicator.validateChildRequest(childId, request) match {
       case failure: ProvisioningMessageValidationFailure => throw new CertificateAuthorityException(failure.reason)
       case success: ProvisioningMessageValidationSuccess => {
@@ -178,6 +177,7 @@ case class CertificateAuthority(
         }
       }
     }
+  }
 
   def createResourceClassListRequest(): ProvisioningCmsObject = communicator.signRequest(new ResourceClassListQueryPayloadBuilder().build())
 

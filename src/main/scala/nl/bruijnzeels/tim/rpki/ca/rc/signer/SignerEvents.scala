@@ -31,16 +31,14 @@ package ca
 package rc
 package signer
 
-import java.util.UUID
-import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
-import common.domain.Revocation
-import common.domain.SigningMaterial
-import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayload
-import nl.bruijnzeels.tim.rpki.publication.messages.Publish
-import nl.bruijnzeels.tim.rpki.publication.messages.Withdraw
 import java.math.BigInteger
+
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
 import net.ripe.rpki.commons.crypto.crl.X509Crl
+import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
+import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayload
+import nl.bruijnzeels.tim.rpki.ca.common.domain.{Revocation, SigningMaterial}
+import nl.bruijnzeels.tim.rpki.publication.messages.{Publish, Withdraw}
 
 sealed trait SignerEvent extends ResourceClassEvent
 

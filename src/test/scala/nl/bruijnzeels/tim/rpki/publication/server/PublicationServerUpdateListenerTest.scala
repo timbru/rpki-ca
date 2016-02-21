@@ -28,14 +28,12 @@
  */
 package nl.bruijnzeels.tim.rpki.publication.server
 
-import scala.language.postfixOps
-
 import java.math.BigInteger
 
 import nl.bruijnzeels.tim.rpki.ca.RpkiCaTest
-import nl.bruijnzeels.tim.rpki.rrdp.app.dsl.PocDsl.create
-import nl.bruijnzeels.tim.rpki.rrdp.app.dsl.PocDsl.publicationServer
-import nl.bruijnzeels.tim.rpki.rrdp.app.dsl.PocDsl.trustAnchor
+import nl.bruijnzeels.tim.rpki.rrdp.app.dsl.PocDsl.{create, publicationServer, trustAnchor}
+
+import scala.language.postfixOps
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class PublicationServerUpdateListenerTest extends RpkiCaTest {

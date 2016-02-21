@@ -29,24 +29,18 @@
 package nl.bruijnzeels.tim.rpki.ca.rc
 
 import java.util.UUID
+
+import net.ripe.ipresource.IpResourceSet
+import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
+import net.ripe.rpki.commons.provisioning.payload.common.{CertificateElementBuilder, GenericClassElementBuilder}
+import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
+import nl.bruijnzeels.tim.rpki.ca.rc.child.{Child, ChildCreated, ChildEvent, ChildReceivedCertificate}
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.{Signer, SignerCreated, SignerEvent}
+import org.bouncycastle.pkcs.PKCS10CertificationRequest
+import org.joda.time.{DateTime, DateTimeZone}
+
 import scala.collection.JavaConverters.seqAsJavaListConverter
 import scala.util.Either
-import org.bouncycastle.pkcs.PKCS10CertificationRequest
-import net.ripe.ipresource.IpResourceSet
-import net.ripe.rpki.commons.provisioning.payload.common.GenericClassElementBuilder
-import nl.bruijnzeels.tim.rpki.ca.rc.child.Child
-import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildCreated
-import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildEvent
-import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildReceivedCertificate
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerCreated
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerEvent
-import org.joda.time.DateTime
-import org.joda.time.DateTimeZone
-import net.ripe.rpki.commons.provisioning.payload.common.CertificateElementBuilder
-import java.net.URI
-import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
-import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
 
 /**
  * The name for this class: ResourceClass is taken from the "Provisioning Resource Certificates" Protocol.

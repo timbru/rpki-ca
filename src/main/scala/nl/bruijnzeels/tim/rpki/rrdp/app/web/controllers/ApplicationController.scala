@@ -28,15 +28,12 @@
  */
 package nl.bruijnzeels.tim.rpki.rrdp.app.web.controllers
 
-import nl.bruijnzeels.tim.rpki.rrdp.app.web.views.HomeView
-
-import org.scalatra.FlashMapSupport
-import org.scalatra.ScalatraBase
-import nl.bruijnzeels.tim.rpki.rrdp.app.ApplicationOptions
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorCommandDispatcher
-import nl.bruijnzeels.tim.rpki.rrdp.app.dsl.PocDsl
-import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCommandDispatcher
 import nl.bruijnzeels.tim.rpki.publication.messages.ReferenceHash
+import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCommandDispatcher
+import nl.bruijnzeels.tim.rpki.rrdp.app.dsl.PocDsl
+import nl.bruijnzeels.tim.rpki.rrdp.app.web.views.HomeView
+import org.scalatra.{FlashMapSupport, ScalatraBase}
 
 trait ApplicationController extends ScalatraBase with FlashMapSupport {
 

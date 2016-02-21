@@ -29,9 +29,10 @@
 package nl.bruijnzeels.tim.rpki.ca
 package certificateauthority.ca
 
-import java.util.UUID
-import common.cqrs.Event
 import java.net.URI
+import java.util.UUID
+
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
 
 sealed trait CertificateAuthorityEvent extends Event
 

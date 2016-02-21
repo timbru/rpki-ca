@@ -28,11 +28,11 @@
  */
 package nl.bruijnzeels.tim.rpki.publication.disk
 
-import org.scalatest.Matchers
-import org.scalatest.FunSuite
-import java.net.URI
-import com.google.common.io.Files
 import java.io.File
+import java.net.URI
+
+import com.google.common.io.Files
+import org.scalatest.{FunSuite, Matchers}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ObjectDiskWriterTest extends FunSuite with Matchers {

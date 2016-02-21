@@ -28,8 +28,7 @@
  */
 package nl.bruijnzeels.tim.rpki.rrdp.app.web.views
 
-import scala.xml.NodeSeq
-import scala.xml.Text
+import scala.xml.{NodeSeq, Text}
 
 case class Tab(text: NodeSeq, url: String)
 

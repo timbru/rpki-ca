@@ -28,11 +28,11 @@
  */
 package nl.bruijnzeels.tim.rpki.ca.provisioning
 
-import org.scalatest.Matchers
-import org.scalatest.FunSuite
 import java.util.UUID
 import javax.security.auth.x500.X500Principal
+
 import net.ripe.rpki.commons.provisioning.identity.ChildIdentitySerializer
+import org.scalatest.{FunSuite, Matchers}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class MyIdentityTest extends FunSuite with Matchers {

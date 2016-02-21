@@ -28,15 +28,11 @@
  */
 package nl.bruijnzeels.tim.rpki.rrdp.app.web.views
 
-import scala.xml.Text
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorCommandDispatcher
-import nl.bruijnzeels.tim.rpki.rrdp.app.Main
-import nl.bruijnzeels.tim.rpki.rrdp.app.dsl.PocDsl
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchor
-import nl.bruijnzeels.tim.rpki.rrdp.app.ApplicationOptions
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServer
-import scala.xml.XML
-import org.apache.commons.lang.StringEscapeUtils
+import nl.bruijnzeels.tim.rpki.rrdp.app.dsl.PocDsl
+
+import scala.xml.Text
 
 class HomeView(ta: TrustAnchor, publicationServer: PublicationServer) extends View {
 

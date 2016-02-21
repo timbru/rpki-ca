@@ -28,11 +28,11 @@
  */
 package nl.bruijnzeels.tim.rpki.rrdp.app.web
 
-import org.scalatra.ScalatraFilter
-import scala.xml.Xhtml
-import nl.bruijnzeels.tim.rpki.rrdp.app.web.views.View
-import nl.bruijnzeels.tim.rpki.rrdp.app.web.views.Layouts
 import nl.bruijnzeels.tim.rpki.rrdp.app.web.controllers.ApplicationController
+import nl.bruijnzeels.tim.rpki.rrdp.app.web.views.{Layouts, View}
+import org.scalatra.ScalatraFilter
+
+import scala.xml.Xhtml
 
 abstract class WebFilter extends ScalatraFilter with ApplicationController {
 

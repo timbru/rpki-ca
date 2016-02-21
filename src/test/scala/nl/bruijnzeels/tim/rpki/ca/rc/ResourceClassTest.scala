@@ -33,21 +33,15 @@ package rc
 
 import java.net.URI
 import java.util.UUID
-
-import org.scalatest.FunSuite
-import org.scalatest.Matchers
-
 import javax.security.auth.x500.X500Principal
+
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestBuilder
-import nl.bruijnzeels.tim.rpki.ca.common.domain.KeyPairSupport
-import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
-import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildCreated
-import nl.bruijnzeels.tim.rpki.ca.rc.child.ChildReceivedCertificate
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerSignedCertificate
-import nl.bruijnzeels.tim.rpki.ca.stringToIpResourceSet
-import nl.bruijnzeels.tim.rpki.ca.stringToUri
+import nl.bruijnzeels.tim.rpki.ca.common.domain.{KeyPairSupport, RpkiObjectNameSupport}
+import nl.bruijnzeels.tim.rpki.ca.rc.child.{ChildCreated, ChildReceivedCertificate}
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.{Signer, SignerSignedCertificate}
+import nl.bruijnzeels.tim.rpki.ca.{stringToIpResourceSet, stringToUri}
+import org.scalatest.{FunSuite, Matchers}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ResourceClassTest extends FunSuite with Matchers {

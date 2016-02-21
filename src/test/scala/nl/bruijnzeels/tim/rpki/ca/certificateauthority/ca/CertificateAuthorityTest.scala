@@ -31,15 +31,9 @@ package certificateauthority.ca
 
 import java.net.URI
 import java.util.UUID
+
 import net.ripe.ipresource.IpResourceSet
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorAddChild
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorAddChildCommandHandler
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorTest
-import nl.bruijnzeels.tim.rpki.ca.stringToIpResourceSet
-import nl.bruijnzeels.tim.rpki.ca.stringToUri
-import org.scalatest.FunSuite
-import org.scalatest.Matchers
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
+import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.{TrustAnchorAddChild, TrustAnchorAddChildCommandHandler, TrustAnchorTest}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class CertificateAuthorityTest extends RpkiCaTest {

@@ -28,29 +28,23 @@
  */
 package nl.bruijnzeels.tim.rpki.rrdp.app.dsl
 
-import scala.language.implicitConversions
-import scala.language.postfixOps
+import java.io.File
 import java.net.URI
 import java.util.UUID
+
 import net.ripe.ipresource.IpResourceSet
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ChildParentResourceCertificateUpdateSaga
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca._
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchor
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorAddChild
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorCommandDispatcher
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorCreate
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorPublish
+import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.{TrustAnchor, TrustAnchorAddChild, TrustAnchorCommandDispatcher, TrustAnchorCreate, TrustAnchorPublish}
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 import nl.bruijnzeels.tim.rpki.ca.provisioning.MyIdentity
-import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCommandDispatcher
-import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCreate
-import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerUpdateListener
-import nl.bruijnzeels.tim.rpki.publication.server.store.RrdpFilesDataSources
-import nl.bruijnzeels.tim.rpki.publication.server.store.RrdpFilesStore
-import nl.bruijnzeels.tim.rpki.rrdp.app.ApplicationOptions
 import nl.bruijnzeels.tim.rpki.publication.disk.ObjectDiskWriter
-import java.io.File
+import nl.bruijnzeels.tim.rpki.publication.server.{PublicationServerCommandDispatcher, PublicationServerCreate, PublicationServerUpdateListener}
+import nl.bruijnzeels.tim.rpki.publication.server.store.{RrdpFilesDataSources, RrdpFilesStore}
+import nl.bruijnzeels.tim.rpki.rrdp.app.ApplicationOptions
 import org.h2.store.fs.FileUtils
+
+import scala.language.{implicitConversions, postfixOps}
 
 /**
  * A DSL to support the proof of concept (PoC) set up

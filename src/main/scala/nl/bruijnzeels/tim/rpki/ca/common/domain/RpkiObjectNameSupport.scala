@@ -28,13 +28,9 @@
  */
 package nl.bruijnzeels.tim.rpki.ca.common.domain
 
-import java.io.ByteArrayOutputStream
-import java.io.IOException
+import java.io.{ByteArrayOutputStream, IOException}
 import java.security.PublicKey
-
 import javax.security.auth.x500.X500Principal
-
-import org.bouncycastle.util.encoders.HexEncoder
 
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
@@ -42,6 +38,7 @@ import net.ripe.rpki.commons.crypto.cms.roa.RoaCms
 import net.ripe.rpki.commons.crypto.crl.X509Crl
 import net.ripe.rpki.commons.crypto.util.KeyPairUtil
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
+import org.bouncycastle.util.encoders.HexEncoder
 
 object RpkiObjectNameSupport {
 

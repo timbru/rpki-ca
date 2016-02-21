@@ -28,11 +28,11 @@
  */
 package nl.bruijnzeels.tim.rpki
 
-import scala.language.implicitConversions
-
 import java.net.URI
 
 import net.ripe.ipresource.IpResourceSet
+
+import scala.language.implicitConversions
 
 package object ca {
   implicit def stringToIpResourceSet(s: String): IpResourceSet = IpResourceSet.parse(s)

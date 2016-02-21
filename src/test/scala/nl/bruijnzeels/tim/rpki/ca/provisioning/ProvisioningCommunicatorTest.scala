@@ -28,12 +28,11 @@
  */
 package nl.bruijnzeels.tim.rpki.ca.provisioning
 
-import org.scalatest.Matchers
-import org.scalatest.FunSuite
 import java.util.UUID
-import net.ripe.rpki.commons.provisioning.identity.ChildIdentitySerializer
+
 import net.ripe.rpki.commons.provisioning.identity.ParentIdentitySerializer
 import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayloadBuilder
+import org.scalatest.{FunSuite, Matchers}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ProvisioningCommunicatorTest extends FunSuite with Matchers {

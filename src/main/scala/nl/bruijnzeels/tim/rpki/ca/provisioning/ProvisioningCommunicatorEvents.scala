@@ -28,9 +28,10 @@
  */
 package nl.bruijnzeels.tim.rpki.ca.provisioning
 
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
 import java.util.UUID
+
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
 
 sealed trait ProvisioningCommunicatorEvent extends Event
 

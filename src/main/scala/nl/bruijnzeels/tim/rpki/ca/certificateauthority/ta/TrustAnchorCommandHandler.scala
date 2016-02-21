@@ -28,10 +28,9 @@
  */
 package nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta
 
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 import java.util.UUID
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.TrustAnchorAggregate
+
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{EventStore, TrustAnchorAggregate}
 
 object TrustAnchorCommandDispatcher {
 

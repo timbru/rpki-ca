@@ -28,13 +28,11 @@
  */
 package nl.bruijnzeels.tim.rpki.ca.common.cqrs
 
-import org.scalatest.Finders
-import org.scalatest.FunSuite
-import org.scalatest.Matchers
-import nl.bruijnzeels.tim.rpki.publication.server.PublicationServer
-import java.util.UUID
 import java.net.URI
-import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCreated
+import java.util.UUID
+
+import nl.bruijnzeels.tim.rpki.publication.server.{PublicationServer, PublicationServerCreated}
+import org.scalatest.{FunSuite, Matchers}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class EventStoreTest extends FunSuite with Matchers {

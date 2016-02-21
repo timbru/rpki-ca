@@ -28,13 +28,12 @@
  */
 package nl.bruijnzeels.tim.rpki.ca.provisioning
 
+import java.net.URI
 import java.util.UUID
+
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
 import net.ripe.rpki.commons.provisioning.identity.ChildIdentitySerializer
 import net.ripe.rpki.commons.provisioning.payload.AbstractProvisioningPayload
-import net.ripe.rpki.commons.provisioning.x509.ProvisioningCmsCertificateBuilder
-import java.net.URI
-
 import nl.bruijnzeels.tim.rpki.ca.common.domain.SigningSupport
 
 

@@ -28,8 +28,7 @@
  */
 package nl.bruijnzeels.tim.rpki.ca.provisioning
 
-import org.scalatest.Matchers
-import org.scalatest.FunSuite
+import org.scalatest.{FunSuite, Matchers}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class ChildIdentityTest extends FunSuite with Matchers {

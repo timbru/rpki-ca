@@ -30,34 +30,23 @@ package nl.bruijnzeels.tim.rpki.ca.common.domain
 
 import java.math.BigInteger
 import java.net.URI
-import java.security.KeyPair
-import java.security.PublicKey
+import java.security.{KeyPair, PublicKey}
 import java.util.EnumSet
 import javax.security.auth.x500.X500Principal
-import org.bouncycastle.asn1.x509.KeyUsage
-import org.joda.time.DateTime
-import org.joda.time.Period
-import net.ripe.ipresource.IpResourceSet
-import net.ripe.ipresource.IpResourceType
-import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
-import net.ripe.rpki.commons.crypto.ValidityPeriod
-import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
-import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCmsBuilder
-import net.ripe.rpki.commons.crypto.crl.X509Crl
-import net.ripe.rpki.commons.crypto.crl.X509CrlBuilder
-import net.ripe.rpki.commons.crypto.x509cert.RpkiSignedObjectEeCertificateBuilder
-import net.ripe.rpki.commons.crypto.x509cert.X509CertificateInformationAccessDescriptor
-import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
-import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificateBuilder
-import org.bouncycastle.pkcs.PKCS10CertificationRequest
-import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestParser
-import net.ripe.rpki.commons.crypto.x509cert.RpkiCaCertificateBuilder
-import net.ripe.rpki.commons.provisioning.x509.ProvisioningCmsCertificateBuilder
-import net.ripe.rpki.commons.provisioning.payload.AbstractProvisioningPayload
-import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObjectBuilder
-import net.ripe.rpki.commons.provisioning.x509.ProvisioningIdentityCertificate
-import net.ripe.rpki.commons.crypto.x509cert.X509CertificateBuilderHelper
+
 import grizzled.slf4j.Logger
+import net.ripe.ipresource.{IpResourceSet, IpResourceType}
+import net.ripe.rpki.commons.crypto.{CertificateRepositoryObject, ValidityPeriod}
+import net.ripe.rpki.commons.crypto.cms.manifest.{ManifestCms, ManifestCmsBuilder}
+import net.ripe.rpki.commons.crypto.crl.{X509Crl, X509CrlBuilder}
+import net.ripe.rpki.commons.crypto.x509cert.{RpkiSignedObjectEeCertificateBuilder, X509CertificateBuilderHelper, X509CertificateInformationAccessDescriptor, X509ResourceCertificate, X509ResourceCertificateBuilder}
+import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObjectBuilder
+import net.ripe.rpki.commons.provisioning.payload.AbstractProvisioningPayload
+import net.ripe.rpki.commons.provisioning.x509.{ProvisioningCmsCertificateBuilder, ProvisioningIdentityCertificate}
+import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestParser
+import org.bouncycastle.asn1.x509.KeyUsage
+import org.bouncycastle.pkcs.PKCS10CertificationRequest
+import org.joda.time.{DateTime, Period}
 
 case class SigningMaterial(
   keyPair: KeyPair,

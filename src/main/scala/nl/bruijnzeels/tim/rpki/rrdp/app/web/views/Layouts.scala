@@ -29,7 +29,6 @@
 package nl.bruijnzeels.tim.rpki.rrdp.app.web.views
 
 import scala.xml.NodeSeq
-import org.joda.time.DateTime
 
 object Layouts {
 

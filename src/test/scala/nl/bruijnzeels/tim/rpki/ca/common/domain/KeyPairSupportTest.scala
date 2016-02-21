@@ -28,9 +28,9 @@
  */
 package nl.bruijnzeels.tim.rpki.ca.common.domain
 
-import org.scalatest.FunSuite
-import org.scalatest.Matchers
 import java.security.interfaces.RSAPrivateKey
+
+import org.scalatest.{FunSuite, Matchers}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class KeyPairSupportTest extends FunSuite with Matchers {

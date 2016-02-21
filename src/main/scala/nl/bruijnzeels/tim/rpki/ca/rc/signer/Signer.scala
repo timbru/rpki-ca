@@ -34,27 +34,17 @@ package signer
 import java.math.BigInteger
 import java.net.URI
 import java.security.KeyPair
-import java.util.UUID
-
-import org.bouncycastle.pkcs.PKCS10CertificationRequest
-import org.joda.time.Period
-
-import common.domain.ChildCertificateSignRequest
-import common.domain.KeyPairSupport
-import common.domain.Revocation
-import common.domain.SigningMaterial
-import common.domain.SigningSupport
 import javax.security.auth.x500.X500Principal
+
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
 import net.ripe.rpki.commons.crypto.crl.X509Crl
-import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayload
-import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayloadBuilder
+import net.ripe.rpki.commons.provisioning.payload.issue.request.{CertificateIssuanceRequestPayload, CertificateIssuanceRequestPayloadBuilder}
 import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestBuilder
-import nl.bruijnzeels.tim.rpki.ca.common.domain.CrlRequest
-import nl.bruijnzeels.tim.rpki.ca.common.domain.ManifestRequest
-import nl.bruijnzeels.tim.rpki.ca.common.domain.RpkiObjectNameSupport
+import nl.bruijnzeels.tim.rpki.ca.common.domain.{ChildCertificateSignRequest, CrlRequest, KeyPairSupport, ManifestRequest, Revocation, RpkiObjectNameSupport, SigningMaterial, SigningSupport}
+import org.bouncycastle.pkcs.PKCS10CertificationRequest
+import org.joda.time.Period
 
 case class Signer(
   signingMaterial: SigningMaterial,

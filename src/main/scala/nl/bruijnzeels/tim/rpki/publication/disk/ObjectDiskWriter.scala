@@ -28,19 +28,13 @@
  */
 package nl.bruijnzeels.tim.rpki.publication.disk
 
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.AggregateRoot
-import java.util.UUID
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventListener
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
-import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerReceivedSnapshot
-import java.net.URI
 import java.io.File
+import java.net.URI
+
 import com.google.common.io.Files
-import java.nio.file.Paths
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{EventListener, EventStore, StoredEvent}
+import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerReceivedSnapshot
 import org.h2.store.fs.FileUtils
-import org.h2.util.IOUtils
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.StoredEvent
 
 /**
  * Writes/removes objects to/from disk so they can be exposed over rsync, or http for that matter..

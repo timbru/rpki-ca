@@ -28,9 +28,10 @@
  */
 package nl.bruijnzeels.tim.rpki.rrdp.app
 
-import com.typesafe.config._ 
-import java.net.URI
 import java.io.File
+import java.net.URI
+
+import com.typesafe.config._
 
 object ApplicationOptions {
 

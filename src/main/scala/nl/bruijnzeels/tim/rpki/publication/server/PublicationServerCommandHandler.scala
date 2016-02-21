@@ -28,10 +28,9 @@
  */
 package nl.bruijnzeels.tim.rpki.publication.server
 
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 import java.util.UUID
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.PublicationServerAggregate
+
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{EventStore, PublicationServerAggregate}
 
 object PublicationServerCommandDispatcher {
 

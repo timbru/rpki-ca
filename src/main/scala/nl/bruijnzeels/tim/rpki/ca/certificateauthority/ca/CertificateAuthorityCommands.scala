@@ -29,11 +29,11 @@
 package nl.bruijnzeels.tim.rpki.ca
 package certificateauthority.ca
 
-import common.cqrs.Command
-import java.util.UUID
 import java.net.URI
+import java.util.UUID
+
 import net.ripe.ipresource.IpResourceSet
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.{Command, VersionedId}
 
 sealed trait CertificateAuthorityCommand extends Command
 

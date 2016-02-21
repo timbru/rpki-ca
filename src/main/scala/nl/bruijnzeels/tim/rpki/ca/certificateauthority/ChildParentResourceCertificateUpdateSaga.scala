@@ -29,9 +29,9 @@
 package nl.bruijnzeels.tim.rpki.ca.certificateauthority
 
 import java.util.UUID
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.{TrustAnchor, TrustAnchorCommandDispatcher}
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca.{CertificateAuthority, CertificateAuthorityCommandDispatcher}
-import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayloadBuilder
+
+import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca.CertificateAuthorityCommandDispatcher
+import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorCommandDispatcher
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 
 /**

@@ -31,9 +31,7 @@ package nl.bruijnzeels.tim.rpki.publication.messages
 import java.net.URI
 
 import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassTest.SelfSignedSigner
-
-import org.scalatest.FunSuite
-import org.scalatest.Matchers
+import org.scalatest.{FunSuite, Matchers}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class PublicationMessagesTest extends FunSuite with Matchers {

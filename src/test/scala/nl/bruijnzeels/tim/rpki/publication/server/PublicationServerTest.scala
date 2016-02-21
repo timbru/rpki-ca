@@ -29,14 +29,12 @@
 package nl.bruijnzeels.tim.rpki.publication.server
 
 import java.math.BigInteger
-import java.util.UUID
-import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassTest.SelfSignedSigner
-import nl.bruijnzeels.tim.rpki.publication.messages.Publish
-import org.scalatest.FunSuite
-import org.scalatest.Matchers
-import nl.bruijnzeels.tim.rpki.publication.messages.Withdraw
 import java.net.URI
-import nl.bruijnzeels.tim.rpki.publication.messages.ReferenceHash
+import java.util.UUID
+
+import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassTest.SelfSignedSigner
+import nl.bruijnzeels.tim.rpki.publication.messages.{Publish, ReferenceHash, Withdraw}
+import org.scalatest.{FunSuite, Matchers}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class PublicationServerTest extends FunSuite with Matchers {

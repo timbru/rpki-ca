@@ -28,7 +28,6 @@
  */
 package nl.bruijnzeels.tim.rpki.ca.common.cqrs
 
-import scala.collection.Map
 import java.util.UUID
 
 object EventStore {
