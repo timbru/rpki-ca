@@ -94,11 +94,13 @@ case class ResourceClass(
     val child = children.get(childId).get
 
     val responseBuilder = createClassElementBuilder(child)
-    responseBuilder.withCertificateAuthorityUri(List(URI.create("rsync://host/bla")).asJava)
+
+    val certificateUri = currentSigner.signingMaterial.certificateUri
+
+    responseBuilder.withCertificateAuthorityUri(List(certificateUri).asJava)
 
     // Here we return *all* certificates
-    val certificateElements = child.currentCertificates.map { certificate =>
-      val certificatePublicationUri = currentSigner.signingMaterial.currentCertificate.getRepositoryUri().resolve(RpkiObjectNameSupport.deriveName(certificate))
+    val certificateElements = child.currentCertificates.map { certificate => val certificatePublicationUri = currentSigner.signingMaterial.currentCertificate.getRepositoryUri().resolve(RpkiObjectNameSupport.deriveName(certificate))
 
       new CertificateElementBuilder().withIpResources(certificate.getResources())
         .withCertificatePublishedLocations(List(certificatePublicationUri).asJava)
@@ -122,7 +124,7 @@ case class ResourceClass(
 
     createClassElementBuilder(children.get(childId).get)
       .withCertificateElements(List(certificateElement).asJava)
-      .withCertificateAuthorityUri(List(URI.create("rsync://host/bla")).asJava)   // Required by standard, but not realy useful here
+      .withCertificateAuthorityUri(List(currentSigner.signingMaterial.certificateUri).asJava)
       .buildCertificateIssuanceResponseClassElement()
   }
 

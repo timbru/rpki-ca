@@ -68,7 +68,7 @@ object PocDsl {
   implicit def stringToUri(s: String): URI = URI.create(s)
   implicit def stringToIpResourceSet(s: String): IpResourceSet = IpResourceSet.parse(s)
 
-  val TrustAnchorCertUri: URI = ApplicationOptions.rrdpBaseUri.resolve("ta/ta.cer")
+  val TrustAnchorCertUri: URI = ApplicationOptions.rsyncBaseUri.resolve("ta/ta.cer")
   val RrdpBaseUrl: URI = ApplicationOptions.rrdpBaseUri.resolve("rrdp/")
   val RrdpNotifyUrl: URI = ApplicationOptions.rrdpBaseUri.resolve("notify/notify.xml")
 
