@@ -29,36 +29,45 @@
 package nl.bruijnzeels.tim.rpki.ca.certificateauthority
 
 import java.util.UUID
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorCommandDispatcher
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca.CertificateAuthorityCommandDispatcher
+import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.{TrustAnchor, TrustAnchorCommandDispatcher}
+import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca.{CertificateAuthority, CertificateAuthorityCommandDispatcher}
 import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayloadBuilder
+import nl.bruijnzeels.tim.rpki.ca.common.cqrs.EventStore
 
 /**
  * Long running dialogue between two aggregates
  */
 object ChildParentResourceCertificateUpdateSaga {
 
-  def updateCertificates(trustAnchorId: UUID, certificateAuthorityId: UUID) = {
-    var ta = TrustAnchorCommandDispatcher.load(trustAnchorId).getOrElse(throw new IllegalArgumentException("Can't find TA"))
+  def updateCertificates(parentId: UUID, certificateAuthorityId: UUID) = {
+    var parent: ParentCertificateAuthority = {
+      TrustAnchorCommandDispatcher.load(parentId) match {
+        case Some(ta) => ta
+        case _ => CertificateAuthorityCommandDispatcher.load(parentId) match {
+          case Some(ca) => ca
+          case _ => throw new IllegalArgumentException(s"Can't find TA or CA with id: ${parentId}")
+        }
+      }
+    }
     var ca = CertificateAuthorityCommandDispatcher.load(certificateAuthorityId).getOrElse(throw new IllegalArgumentException("Can't find CA"))
 
     val classListQuery = ca.createResourceClassListRequest()
-    val classListResponse = ta.processListQuery(certificateAuthorityId, classListQuery)
+    val classListResponse = parent.processListQuery(certificateAuthorityId, classListQuery)
 
-    ta = classListResponse.updatedTa
+    parent = classListResponse.updatedParent
     ca = ca.processResourceClassListResponse(classListQuery, classListResponse.response)
 
     val signRequests = ca.createCertificateIssuanceRequests
 
     signRequests.foreach { req =>
-      val signResponse = ta.processCertificateIssuanceRequest(ca.versionedId.id, req)
+      val signResponse = parent.processCertificateIssuanceRequest(ca.versionedId.id, req)
 
-      ta = signResponse.updatedTa
+      parent = signResponse.updatedParent
       ca = ca.processCeritificateIssuanceResponse(req, signResponse.response)
     }
 
     CertificateAuthorityCommandDispatcher.save(ca)
-    TrustAnchorCommandDispatcher.save(ta)
+    EventStore.store(parent)
   }
 
 }

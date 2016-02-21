@@ -164,11 +164,8 @@ object SigningSupport {
     builder.withCrlUri(signingMaterial.crlPublicationUri)
     builder.withParentResourceCertificatePublicationUri(signingMaterial.certificateUri)
     builder.withSigningKeyPair(signingMaterial.keyPair)
-    val cert = builder.build()
-    
-    logger.info(s"CRL -> ${cert.getCrlUri()}")
-    
-    cert
+
+    builder.build()
   }
 
   def createChildCaCertificate(signingMaterial: SigningMaterial, childCaCertRequest: ChildCertificateSignRequest) = {

@@ -37,6 +37,7 @@ import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssua
 import net.ripe.rpki.commons.provisioning.payload.issue.response.CertificateIssuanceResponsePayloadBuilder
 import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayload
 import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassListResponsePayloadBuilder
+import nl.bruijnzeels.tim.rpki.ca.certificateauthority.{CertificateIssuanceResponse, ListQueryResponse, ParentCertificateAuthority}
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.AggregateRoot
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
@@ -62,7 +63,7 @@ case class TrustAnchor(
   name: String,
   resourceClass: ResourceClass = null,
   communicator: ProvisioningCommunicator = null,
-  events: List[Event] = List.empty) extends AggregateRoot {
+  events: List[Event] = List.empty) extends ParentCertificateAuthority {
 
   override def applyEvents(events: List[Event]): TrustAnchor = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
   override def clearEventList() = copy(events = List.empty)
@@ -98,7 +99,7 @@ case class TrustAnchor(
   /**
    * Will return a new TA that has the response registered with the child
    */
-  def processListQuery(childId: UUID, request: ProvisioningCmsObject): ListQueryResponse = {
+  override def processListQuery(childId: UUID, request: ProvisioningCmsObject): ListQueryResponse = {
     communicator.validateChildRequest(childId, request) match {
       case failure: ProvisioningMessageValidationFailure => throw new TrustAnchorException(failure.reason)
       case success: ProvisioningMessageValidationSuccess => {
@@ -111,7 +112,7 @@ case class TrustAnchor(
             val response = communicator.signResponse(childId, responsePayload)
 
             ListQueryResponse(
-                updatedTa = applyEvent(ProvisioningCommunicatorPerformedChildExchange(ProvisioningChildExchange(childId, request, response))),
+                updatedParent = applyEvent(ProvisioningCommunicatorPerformedChildExchange(ProvisioningChildExchange(childId, request, response))),
                 response = response)
           }
           case _ => throw new TrustAnchorException("Expected resource class list query")
@@ -123,7 +124,7 @@ case class TrustAnchor(
   /**
    * Will return a new TA that has the response registered with the child
    */
-  def processCertificateIssuanceRequest(childId: UUID, request: ProvisioningCmsObject): CertificateIssuanceResponse = {
+  override def processCertificateIssuanceRequest(childId: UUID, request: ProvisioningCmsObject): CertificateIssuanceResponse = {
     communicator.validateChildRequest(childId, request) match {
       case failure: ProvisioningMessageValidationFailure => throw new TrustAnchorException(failure.reason)
       case success: ProvisioningMessageValidationSuccess => {
@@ -156,7 +157,7 @@ case class TrustAnchor(
                 val response = communicator.signResponse(childId, responsePayload)
 
                 CertificateIssuanceResponse(
-                    updatedTa = applyEvents(events :+ ProvisioningCommunicatorPerformedChildExchange(ProvisioningChildExchange(childId, request, response))),
+                    updatedParent = applyEvents(events :+ ProvisioningCommunicatorPerformedChildExchange(ProvisioningChildExchange(childId, request, response))),
                     response = response)
               }
             }
@@ -189,6 +190,4 @@ object TrustAnchor {
   }
 }
 
-case class ListQueryResponse(updatedTa: TrustAnchor, response: ProvisioningCmsObject)
-case class CertificateIssuanceResponse(updatedTa: TrustAnchor, response: ProvisioningCmsObject)
 case class TrustAnchorException(msg: String) extends RuntimeException

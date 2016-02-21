@@ -34,11 +34,7 @@ import java.net.URI
 import java.util.UUID
 import net.ripe.ipresource.IpResourceSet
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ChildParentResourceCertificateUpdateSaga
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca.CertificateAuthority
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca.CertificateAuthorityAddParent
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca.CertificateAuthorityCommandDispatcher
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca.CertificateAuthorityCreate
-import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca.CertificateAuthorityPublish
+import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca._
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchor
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorAddChild
 import nl.bruijnzeels.tim.rpki.ca.certificateauthority.ta.TrustAnchorCommandDispatcher
@@ -87,6 +83,12 @@ object PocDsl {
   val ChildXml = ChildIdentity.toChildXml
   val ChildResources: IpResourceSet = "192.168.0.0/16"
 
+  val GrandChildId = UUID.fromString("811CC367-BBBC-4AF5-B1BC-411A575D69A4")
+  val GrandChildName = "GC"
+  val GrandChildIdentity = MyIdentity.create(GrandChildId)
+  val GrandChildXml = GrandChildIdentity.toChildXml
+  val GrandChildResources: IpResourceSet = "192.168.0.0/20"
+
   object create {
 
     def trustAnchor() = TrustAnchorCommandDispatcher.dispatch(
@@ -134,7 +136,7 @@ object PocDsl {
             versionedId = current taVersion,
             childId = child.versionedId.id,
             childXml = child.communicator.me.toChildXml,
-            childResources = ChildResources))
+            childResources = resources))
       }
     }
 
@@ -146,12 +148,19 @@ object PocDsl {
 
   class certificateAuthority(me: CertificateAuthority) {
 
+    private def addParentXml(parentXml: String) = CertificateAuthorityCommandDispatcher.dispatch(
+      CertificateAuthorityAddParent(versionedId = me.versionedId, parentXml = parentXml)
+    )
+
     def addTa(parent: TrustAnchor) = {
-      CertificateAuthorityCommandDispatcher.dispatch(
-        CertificateAuthorityAddParent(
-          versionedId = me.versionedId,
-          parentXml = parent.communicator.getParentXmlForChild(ChildId).get))
+      addParentXml(parent.communicator.getParentXmlForChild(me.communicator.me.id).get)
     }
+
+    def addParent(parent: CertificateAuthority) = {
+      addParentXml(parent.communicator.getParentXmlForChild(me.communicator.me.id).get)
+    }
+
+    def addChild(child: CertificateAuthority) = new caAddingChildCa(me, child)
 
     def update() = {
       val parentId = UUID.fromString(me.communicator.parent.get.parentHandle)
@@ -160,6 +169,19 @@ object PocDsl {
 
     def publish() = CertificateAuthorityCommandDispatcher.dispatch(CertificateAuthorityPublish(me.versionedId))
 
+  }
+
+  class caAddingChildCa(me: CertificateAuthority, child: CertificateAuthority) {
+    def withResources(resources: IpResourceSet) = {
+      CertificateAuthorityCommandDispatcher.dispatch(
+        CertificateAuthorityAddChild(
+          versionedId = me.versionedId,
+          childId = child.versionedId.id,
+          childXml = child.communicator.me.toChildXml,
+          childResources = resources
+        )
+      )
+    }
   }
 
   object certificateAuthority {

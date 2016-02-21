@@ -28,40 +28,31 @@
  */
 package nl.bruijnzeels.tim.rpki.ca.certificateauthority.ca
 
+import net.ripe.ipresource.IpResourceSet
+import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayload
+import nl.bruijnzeels.tim.rpki.ca.certificateauthority.{CertificateIssuanceResponse, ListQueryResponse, ParentCertificateAuthority}
+
 import scala.collection.JavaConverters.asScalaBufferConverter
 import java.net.URI
 import java.util.UUID
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
-import net.ripe.rpki.commons.provisioning.payload.issue.response.CertificateIssuanceResponsePayload
-import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassListResponsePayload
-import nl.bruijnzeels.tim.rpki.ca.common.cqrs.AggregateRoot
+import net.ripe.rpki.commons.provisioning.payload.issue.response.{CertificateIssuanceResponsePayloadBuilder, CertificateIssuanceResponsePayload}
+import net.ripe.rpki.commons.provisioning.payload.list.response.{ResourceClassListResponsePayloadBuilder, ResourceClassListResponsePayload}
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.Event
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicator
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorCreated
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorEvent
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningCommunicatorPerformedParentExchange
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningMessageValidationFailure
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningMessageValidationSuccess
-import nl.bruijnzeels.tim.rpki.ca.provisioning.ProvisioningParentExchange
+import nl.bruijnzeels.tim.rpki.ca.provisioning._
 import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClass
 import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassCreated
 import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClassEvent
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.SignerReceivedCertificate
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.{SignerSignedCertificate, Signer, SignerReceivedCertificate}
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
-import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayloadBuilder
+import net.ripe.rpki.commons.provisioning.payload.list.request.{ResourceClassListQueryPayload, ResourceClassListQueryPayloadBuilder}
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.CertificationAuthorityAggregate
 
 /**
  *  A Certificate Authority in RPKI. Needs to have a parent which can be either
  *  another Certificate Authority, or a Trust Anchor.
  *
- *  For now this implementation will only support having a single parent, and can
- *  have no children. It does not support ROAs yet, either..
- *
- *  Future versions though should support the notion of multiple parents, and
- *  multiple resource classes coming from them, and multiple children, and of
- *  course ROAs..
+ *  Does not support ROAs, yet
  */
 case class CertificateAuthority(
   versionedId: VersionedId,
@@ -70,7 +61,7 @@ case class CertificateAuthority(
   rrdpNotifyUrl: URI,
   resourceClasses: Map[String, ResourceClass] = Map.empty,
   communicator: ProvisioningCommunicator = null, // will be set by communicator created event
-  events: List[Event] = List.empty) extends AggregateRoot {
+  events: List[Event] = List.empty) extends ParentCertificateAuthority {
 
   override def applyEvents(events: List[Event]): CertificateAuthority = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
   override def clearEventList(): CertificateAuthority = copy(events = List.empty)
@@ -93,9 +84,100 @@ case class CertificateAuthority(
     }
   }
 
-  def addParent(parentXml: String) = applyEvent(communicator.addParent(parentXml))
+  def addParent(parentXml: String): CertificateAuthority = applyEvent(communicator.addParent(parentXml))
+
+  def addChild(childId: UUID, childXml: String, childResources: IpResourceSet): CertificateAuthority = {
+    val addChildEvents = resourceClasses.values.toList.flatMap { rc =>
+      val entitledResources = rc.currentSigner.resources
+      entitledResources.retainAll(childResources)
+      if (!entitledResources.isEmpty) {
+        List(rc.addChild(childId, entitledResources).left.get)
+      } else {
+        List[Event]()
+      }
+    }
+
+    if (addChildEvents.size > 0) {
+      applyEvents(addChildEvents :+ communicator.addChild(childId, childXml))
+    } else {
+      throw new CertificateAuthorityException("Could not add child")
+    }
+  }
 
   def publish(): CertificateAuthority = applyEvents(resourceClasses.values.toList.flatMap(rc => rc.publish))
+
+  override def processListQuery(childId: UUID, request: ProvisioningCmsObject): ListQueryResponse = {
+    communicator.validateChildRequest(childId, request) match {
+      case failure: ProvisioningMessageValidationFailure => throw new CertificateAuthorityException(failure.reason) // TODO: handle gracefully?
+      case success: ProvisioningMessageValidationSuccess => {
+        success.payload match {
+          case query: ResourceClassListQueryPayload => {
+            val builder = new ResourceClassListResponsePayloadBuilder()
+
+            for (rc <- resourceClasses.values) {
+              builder.addClassElement(rc.buildClassResponseForChild(childId))
+            }
+            val responsePayload = builder.build()
+
+            val response = communicator.signResponse(childId, responsePayload)
+
+            ListQueryResponse(
+              updatedParent = applyEvent(ProvisioningCommunicatorPerformedChildExchange(ProvisioningChildExchange(childId, request, response))),
+              response = response)
+          }
+          case _ => throw new CertificateAuthorityException("Expected resource class list query")
+        }
+      }
+    }
+  }
+
+  override def processCertificateIssuanceRequest(childId: UUID, request: ProvisioningCmsObject): CertificateIssuanceResponse =
+    communicator.validateChildRequest(childId, request) match {
+      case failure: ProvisioningMessageValidationFailure => throw new CertificateAuthorityException(failure.reason)
+      case success: ProvisioningMessageValidationSuccess => {
+        success.payload match {
+          case requestPayload: CertificateIssuanceRequestPayload => {
+
+            val requestedResources = {
+              if (requestPayload.getRequestElement().getAllocatedAsn() == null &&
+                requestPayload.getRequestElement().getAllocatedIpv4() == null &&
+                requestPayload.getRequestElement().getAllocatedIpv6() == null) {
+                None
+              } else {
+                val resources = new IpResourceSet()
+                resources.addAll(requestPayload.getRequestElement().getAllocatedAsn())
+                resources.addAll(requestPayload.getRequestElement().getAllocatedIpv4())
+                resources.addAll(requestPayload.getRequestElement().getAllocatedIpv6())
+                Some(resources)
+              }
+            }
+
+            val resourceClass = resourceClasses.getOrElse(requestPayload.getRequestElement.getClassName, {
+              throw new CertificateAuthorityException("Don't have resource class for request")
+            })
+
+            resourceClass.processChildCertificateRequest(childId, requestedResources, requestPayload.getRequestElement().getCertificateRequest()) match {
+              case Right(failure) => throw new CertificateAuthorityException(failure.reason)
+              case Left(events) => {
+                val signed = events.collect { case e: SignerSignedCertificate => e }.head
+
+                val responsePayload = new CertificateIssuanceResponsePayloadBuilder()
+                  .withClassElement(resourceClass.buildCertificateIssuanceResponse(childId, signed.certificate))
+                  .build()
+
+                val response = communicator.signResponse(childId, responsePayload)
+
+                CertificateIssuanceResponse(
+                  updatedParent = applyEvents(events :+ ProvisioningCommunicatorPerformedChildExchange(ProvisioningChildExchange(childId, request, response))),
+                  response = response)
+              }
+            }
+
+          }
+          case _ => throw new CertificateAuthorityException("Expected a certificate issuance request")
+        }
+      }
+    }
 
   def createResourceClassListRequest(): ProvisioningCmsObject = communicator.signRequest(new ResourceClassListQueryPayloadBuilder().build())
 

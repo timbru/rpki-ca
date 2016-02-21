@@ -58,7 +58,7 @@ object TrustAnchorCommandDispatcher {
     }
 
     if (!existingTa.isDefined && !command.isInstanceOf[TrustAnchorCreate]) {
-      throw new IllegalArgumentException(s"Can't find exisiting TA with id ${taId} for command")
+      throw new IllegalArgumentException(s"Can't find existing TA with id ${taId} for command")
     }
 
     val updatedTa = command match {
@@ -90,6 +90,6 @@ object TrustAnchorAddChildCommandHandler extends TrustAnchorCommandHandler[Trust
 }
 
 object TrustAnchorProcessResourceListQueryCommandHandler extends TrustAnchorCommandHandler[TrustAnchorProcessResourceListQuery] {
-  override def handle(command: TrustAnchorProcessResourceListQuery, ta: TrustAnchor) = ta.processListQuery(command.childId, command.provisioningCmsObject).updatedTa
+  override def handle(command: TrustAnchorProcessResourceListQuery, ta: TrustAnchor) = ta.processListQuery(command.childId, command.provisioningCmsObject).updatedParent.asInstanceOf[TrustAnchor]
 }
 

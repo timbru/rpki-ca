@@ -42,7 +42,7 @@ import org.scalatest.Matchers
 import nl.bruijnzeels.tim.rpki.ca.common.cqrs.VersionedId
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
-class CertificateAuthorityTest extends FunSuite with Matchers {
+class CertificateAuthorityTest extends RpkiCaTest {
 
   import CertificateAuthorityTest._
 
