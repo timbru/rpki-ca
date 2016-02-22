@@ -33,9 +33,11 @@ import java.net.URI
 import java.util.UUID
 
 import net.ripe.ipresource.IpResourceSet
+import net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix
 import nl.bruijnzeels.tim.rpki.ca._
 import nl.bruijnzeels.tim.rpki.ca.provisioning.MyIdentity
 import nl.bruijnzeels.tim.rpki.common.cqrs.EventStore
+import nl.bruijnzeels.tim.rpki.common.domain.RoaAuthorisation
 import nl.bruijnzeels.tim.rpki.publication.disk.ObjectDiskWriter
 import nl.bruijnzeels.tim.rpki.publication.server.store.{RrdpFilesDataSources, RrdpFilesStore}
 import nl.bruijnzeels.tim.rpki.publication.server.{PublicationServerCommandDispatcher, PublicationServerCreate, PublicationServerUpdateListener}
@@ -153,13 +155,21 @@ object Dsl {
 
     def addChild(child: CertificateAuthority) = new caAddingChildCa(me, child)
 
+    def addRoaConfig(roaAuthorisation: RoaAuthorisation) = CertificateAuthorityCommandDispatcher.dispatch(
+      CertificateAuthorityAddRoa(versionedId = me.versionedId, roaAuthorisation = roaAuthorisation))
+
+    def removeRoaConfig(roaAuthorisation: RoaAuthorisation) = CertificateAuthorityCommandDispatcher.dispatch(
+      CertificateAuthorityRemoveRoa(versionedId = me.versionedId, roaAuthorisation = roaAuthorisation))
+
+    def listRoaAuthorisations = me.roaConfiguration.roaAuthorisations
+    def listRoas() = me.resourceClasses.map(_._2).flatMap(_.currentSigner.roas)
+
     def update() = {
       val parentId = UUID.fromString(me.communicator.parent.get.parentHandle)
       ChildParentResourceCertificateUpdateSaga.updateCertificates(parentId, me.versionedId.id)
     }
 
     def publish() = CertificateAuthorityCommandDispatcher.dispatch(CertificateAuthorityPublish(me.versionedId))
-
   }
 
   class caAddingChildCa(me: CertificateAuthority, child: CertificateAuthority) {

@@ -26,30 +26,33 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki
+package nl.bruijnzeels.tim.rpki.ca.roas
 
-import java.net.URI
-
-import net.ripe.ipresource.{IpRange, Asn, IpResourceSet}
-import net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix
-import nl.bruijnzeels.tim.rpki.common.cqrs.EventStore
-import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
-
-import scala.language.implicitConversions
+import net.ripe.ipresource.IpResourceSet
+import nl.bruijnzeels.tim.rpki.common.domain.RoaAuthorisation
 
 /**
- * Base class for testing. Wipes the EventStore. Do NOT run tests that rely on this in paralel.
- */
-abstract class RpkiTest extends FunSuite with Matchers with BeforeAndAfter {
+  * Because there can be more than one resource class holding certificates for resources,
+  * and the certified resources may change over time (even move from one class to the other),
+  * decided to keep ROA Prefix config at a higher level.
+  *
+  * Actual ROAs can be generated in the appropriate resource class whenever there is a change.
+  */
+case class RoaConfiguration(roaAuthorisations: List[RoaAuthorisation] = List.empty) {
 
-  before {
-    EventStore.clear
+
+  def applyEvents(events: List[RoaConfigurationEvent]): RoaConfiguration = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
+
+  def applyEvent(event: RoaConfigurationEvent): RoaConfiguration = event match {
+    case added: RoaConfigurationPrefixAdded => copy(roaAuthorisations = roaAuthorisations :+ added.roaAuthorisation)
+    case removed: RoaConfigurationPrefixRemoved => copy(roaAuthorisations = roaAuthorisations.filter(_ != removed.roaAuthorisation))
   }
 
-  implicit def stringToIpResourceSet(s: String): IpResourceSet = IpResourceSet.parse(s)
-  implicit def stringToIpRange(s: String): IpRange =  IpRange.parse(s)
-  implicit def stringToPrefix(s: String): RoaPrefix =  new RoaPrefix(IpRange.parse(s))
-  implicit def stringToAsn(s: String): Asn = Asn.parse(s)
-  implicit def stringToUri(s: String): URI = URI.create(s)
+  def addRoaAuthorisation(roaAuthorisation: RoaAuthorisation) = RoaConfigurationPrefixAdded(roaAuthorisation)
+  def removeRoaAuthorisation(roaAuthorisation: RoaAuthorisation) = RoaConfigurationPrefixRemoved(roaAuthorisation)
 
+  def findRelevantRoaPrefixes(relevantResources: IpResourceSet): List[RoaAuthorisation] = roaAuthorisations.filter(auth => relevantResources.contains(auth.roaPrefix.getPrefix))
 }
+
+
+

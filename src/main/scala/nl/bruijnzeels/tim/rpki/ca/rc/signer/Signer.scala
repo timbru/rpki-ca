@@ -38,17 +38,19 @@ import javax.security.auth.x500.X500Principal
 
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
-import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
-import net.ripe.rpki.commons.crypto.crl.X509Crl
+import net.ripe.rpki.commons.crypto.cms.roa.RoaCms
 import net.ripe.rpki.commons.provisioning.payload.issue.request.{CertificateIssuanceRequestPayload, CertificateIssuanceRequestPayloadBuilder}
 import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestBuilder
-import nl.bruijnzeels.tim.rpki.common.domain.{ChildCertificateSignRequest, CrlRequest, KeyPairSupport, ManifestRequest, Revocation, RpkiObjectNameSupport, SigningMaterial, SigningSupport}
+import nl.bruijnzeels.tim.rpki.common.domain._
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.joda.time.Period
+
+import scala.collection.JavaConverters._
 
 case class Signer(
   signingMaterial: SigningMaterial,
   pendingCertificateRequest: Option[CertificateIssuanceRequestPayload] = None,
+  roas: List[RoaCms] = List.empty,
   publicationSet: PublicationSet = PublicationSet(BigInteger.ZERO),
   revocationList: List[Revocation] = List.empty) {
 
@@ -66,6 +68,12 @@ case class Signer(
     case published: SignerUpdatedPublicationSet => copy(publicationSet = publicationSet.applyEvent(published))
     case signed: SignerSignedCertificate => copy(signingMaterial = signingMaterial.updateLastSerial(signed.certificate.getSerialNumber()))
     case revoked: SignerAddedRevocation => copy(revocationList = revocationList :+ revoked.revocation)
+    case signedRoa: SignerSignedRoaCms => copy(signingMaterial = signingMaterial.updateLastSerial(signedRoa.roaCms.getCertificate.getSerialNumber()), roas = roas :+ signedRoa.roaCms)
+    case removedRoa: SignerRemovedRoaCms => copy(roas = roas.filter(_ != removedRoa.roaCms))
+  }
+
+  def foo = {
+    roas
   }
 
   /**
@@ -74,14 +82,35 @@ case class Signer(
    * Creates initial publication set for the first publication and will use existing publication set
    * so that mft and crl numbers can be tracked properly
    */
-  def publish(resourceClassName: String, products: List[CertificateRepositoryObject] = List.empty) = {
+  def publish(resourceClassName: String, authorisations: List[RoaAuthorisation] = List.empty, products: List[CertificateRepositoryObject] = List.empty) = {
 
-    // Validate that there was no attempt to publish an additional CRL or MFT
-    products.foreach(p => p match {
-      case crl: X509Crl => throw new IllegalArgumentException("Do not publish CRL manually, will be created here")
-      case mft: ManifestCms => throw new IllegalArgumentException("Do not publish CRL manually, will be created here")
-      case _ => // Everything okay
-    })
+    var serialUsed = signingMaterial.lastSerial
+    def nextSerial = {
+      serialUsed = serialUsed.add(BigInteger.ONE)
+      serialUsed
+    }
+
+    val authorisationsInRoas = roas.flatMap { roa =>
+      roa.getPrefixes.asScala.flatMap { pfx =>
+        List(RoaAuthorisation(roa.getAsn, pfx))
+      }
+    }
+
+    val roaAuthorisationsToAdd = authorisations.filter(auth => !authorisationsInRoas.contains(auth))
+    val roaAuthorisationsToRemove = authorisationsInRoas.filter(existingRoa => !authorisations.contains(existingRoa))
+
+    val newRoaEvents = roaAuthorisationsToAdd.map { auth =>
+      SignerSignedRoaCms(resourceClassName, SigningSupport.createRoaCms(signingMaterial, nextSerial, auth))
+    }
+
+    val removeRoaEvents = roaAuthorisationsToRemove.flatMap { auth =>
+      val existingRoa = roas.find(r => auth.matchesRoa(r)).getOrElse { throw new IllegalArgumentException(s"Can't find ROA for ${auth}")}
+      List(
+        SignerAddedRevocation(resourceClassName, Revocation.forRoa(existingRoa)),
+        SignerRemovedRoaCms(resourceClassName, existingRoa))
+    }
+
+    val roasToPublish: List[RoaCms] = roas ++ newRoaEvents.map(_.roaCms)
 
     val setNumber = publicationSet.number.add(BigInteger.ONE)
 
@@ -105,7 +134,7 @@ case class Signer(
         validityDuration = MftValidityTime,
         manifestNumber = setNumber,
         publishedObjects = products :+ newCrl,
-        certificateSerial = signingMaterial.lastSerial.add(BigInteger.ONE))
+        certificateSerial = nextSerial)
       SigningSupport.createManifest(signingMaterial, mftRequest)
     }
 
@@ -116,11 +145,11 @@ case class Signer(
         baseUri = signingMaterial.currentCertificate.getRepositoryUri,
         mft = newMft,
         crl = newCrl,
-        products = products)
+        products = roasToPublish ++ products)
 
     mftRevocationOption match {
-      case None => List(manifestSignedEvent, publicationSetUpdatedEvent)
-      case Some(revocationEvent) => List(revocationEvent, manifestSignedEvent, publicationSetUpdatedEvent)
+      case None => newRoaEvents ++ removeRoaEvents :+ manifestSignedEvent :+ publicationSetUpdatedEvent
+      case Some(revocationEvent) => newRoaEvents ++ removeRoaEvents :+ revocationEvent :+ manifestSignedEvent :+ publicationSetUpdatedEvent
     }
   }
 
@@ -142,8 +171,8 @@ case class Signer(
     } else {
       Right(RejectedCertificate(s"Child certificate request includes resources not included in parent certificate: ${overclaimingResources}"))
     }
-
   }
+
 
 }
 

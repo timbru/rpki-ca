@@ -61,8 +61,13 @@ object CertificateAuthorityCommandDispatcher {
 
     val updatedCa = command match {
       case create: CertificateAuthorityCreate => CertificateAuthorityCreateHandler.handle(create)
+
       case addParent: CertificateAuthorityAddParent => CertificateAuthorityAddParentHandler.handle(addParent, existingCa.get)
       case addChild: CertificateAuthorityAddChild => CertificateAuthorityAddChildHandler.handle(addChild, existingCa.get)
+
+      case addRoa: CertificateAuthorityAddRoa => CertificateAuthorityAddRoaHandler.handle(addRoa, existingCa.get)
+      case removeRoa: CertificateAuthorityRemoveRoa => CertificateAuthorityRemoveRoaHandler.handle(removeRoa, existingCa.get)
+
       case publish: CertificateAuthorityPublish => CertificateAuthorityPublishHandler.handle(publish, existingCa.get)
     }
 
@@ -88,6 +93,18 @@ object CertificateAuthorityAddChildHandler extends CertificateAuthorityCommandHa
     ca.addChild(childId = command.childId, childXml = command.childXml, childResources = command.childResources)
 }
 
+object CertificateAuthorityAddRoaHandler extends CertificateAuthorityCommandHandler[CertificateAuthorityAddRoa] {
+  override def handle(command: CertificateAuthorityAddRoa, ca: CertificateAuthority) = ca.addRoa(command.roaAuthorisation)
+}
+
+object CertificateAuthorityRemoveRoaHandler extends  CertificateAuthorityCommandHandler[CertificateAuthorityRemoveRoa] {
+  override def handle(command: CertificateAuthorityRemoveRoa, ca: CertificateAuthority)  = ca.removeRoa(command.roaAuthorisation)
+}
+
+/**
+  * Creates new mft and crl, but also ensure that ROAs are updated according to ROA Configs and certified
+  * space in each resource class
+  */
 object CertificateAuthorityPublishHandler extends CertificateAuthorityCommandHandler[CertificateAuthorityPublish] {
   override def handle(command: CertificateAuthorityPublish, ca: CertificateAuthority) = ca.publish
 }

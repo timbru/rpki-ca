@@ -37,6 +37,7 @@ import javax.security.auth.x500.X500Principal
 import grizzled.slf4j.Logger
 import net.ripe.ipresource.{IpResourceSet, IpResourceType}
 import net.ripe.rpki.commons.crypto.cms.manifest.{ManifestCms, ManifestCmsBuilder}
+import net.ripe.rpki.commons.crypto.cms.roa.{RoaCmsBuilder, RoaCms, RoaPrefix}
 import net.ripe.rpki.commons.crypto.crl.{X509Crl, X509CrlBuilder}
 import net.ripe.rpki.commons.crypto.x509cert.{RpkiSignedObjectEeCertificateBuilder, X509CertificateBuilderHelper, X509CertificateInformationAccessDescriptor, X509ResourceCertificate, X509ResourceCertificateBuilder}
 import net.ripe.rpki.commons.crypto.{CertificateRepositoryObject, ValidityPeriod}
@@ -47,6 +48,7 @@ import net.ripe.rpki.commons.provisioning.x509.{ProvisioningCmsCertificateBuilde
 import org.bouncycastle.asn1.x509.KeyUsage
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.joda.time.{DateTime, Period}
+import collection.JavaConverters._
 
 case class SigningMaterial(
   keyPair: KeyPair,
@@ -76,12 +78,17 @@ object Revocation {
   def forCertificate(cert: X509ResourceCertificate) = {
     Revocation(serial = cert.getSerialNumber(), revocationTime = new DateTime(), expiryTime = cert.getValidityPeriod().getNotValidAfter())
   }
+  def forRoa(roa: RoaCms) = {
+    Revocation.forCertificate(roa.getCertificate)
+  }
 }
 
 case class CrlRequest(nextUpdateDuration: Period, crlNumber: BigInteger, revocations: List[Revocation])
 
 case class ManifestRequest(nextUpdateDuration: Period, validityDuration: Period, manifestNumber: BigInteger, publishedObjects: List[CertificateRepositoryObject] = List.empty, certificateSerial: BigInteger)
 case class ManifestEntry(name: String, content: Array[Byte])
+
+case class RoaRequest(roaAuthorisation: RoaAuthorisation, certificateSerial: BigInteger)
 
 case class GenericCertificateSignRequestInfo(pubKey: PublicKey, validityPeriod: ValidityPeriod, serial: BigInteger, resources: IpResourceSet)
 case class EndEntityCertificateSignRequestInfo(rpkiObjectUri: URI, genericInfo: GenericCertificateSignRequestInfo)
@@ -129,6 +136,29 @@ object SigningSupport {
     entries.foreach(e => builder.addFile(e.name, e.content))
 
     builder.build(eeKeyPair.getPrivate())
+  }
+
+  def createRoaCms(signingMaterial: SigningMaterial, serial: BigInteger, roaAuthorisation: RoaAuthorisation): RoaCms = {
+    val now = new DateTime()
+    val validity = new ValidityPeriod(now, now.plusYears(100))
+
+    val eeKeyPair = KeyPairSupport.createRpkiKeyPair()
+    val genericRequestInfo = GenericCertificateSignRequestInfo(
+      pubKey = eeKeyPair.getPublic,
+      validityPeriod = validity,
+      serial = serial,
+      resources = new IpResourceSet(roaAuthorisation.roaPrefix.getPrefix))
+    val eeRequestInfo = EndEntityCertificateSignRequestInfo(
+      rpkiObjectUri = signingMaterial.currentCertificate.getManifestUri(),
+      genericInfo = genericRequestInfo)
+    val eeCertificate = createEeCertificate(signingMaterial, eeRequestInfo)
+
+    new RoaCmsBuilder()
+      .withAsn(roaAuthorisation.asn)
+      .withPrefixes(List(roaAuthorisation.roaPrefix).asJava)
+      .withCertificate(eeCertificate)
+      .withSignatureProvider(X509CertificateBuilderHelper.DEFAULT_SIGNATURE_PROVIDER) // Should be default in rpki-commons, but isn't for RoaCms..
+      .build(eeKeyPair.getPrivate)
   }
 
   private def createEeCertificate(signingMaterial: SigningMaterial, eeRequestInfo: EndEntityCertificateSignRequestInfo) = {

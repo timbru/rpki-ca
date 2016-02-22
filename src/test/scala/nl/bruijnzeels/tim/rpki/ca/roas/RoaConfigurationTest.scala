@@ -26,24 +26,45 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki.ca
-
-import java.net.URI
-import java.util.UUID
+package nl.bruijnzeels.tim.rpki.ca.roas
 
 import net.ripe.ipresource.IpResourceSet
-import net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix
-import nl.bruijnzeels.tim.rpki.common.cqrs.{Command, VersionedId}
+import nl.bruijnzeels.tim.rpki.RpkiTest
 import nl.bruijnzeels.tim.rpki.common.domain.RoaAuthorisation
 
-sealed trait CertificateAuthorityCommand extends Command
+class RoaConfigurationTest extends RpkiTest {
 
-case class CertificateAuthorityCreate(aggregateId: UUID, name: String, baseUrl: URI, rrdpNotifyUrl: URI) extends CertificateAuthorityCommand {
-  def versionedId = VersionedId(aggregateId)
+  test("Should add Roa confifuration prefix") {
+    val roaPrefixAdded = RoaConfigurationPrefixAdded(RoaAuthorisation(asn = "AS1", roaPrefix = "192.168.0.0/24"))
+
+    val roaConfiguration = new RoaConfiguration()
+    roaConfiguration.roaAuthorisations should have size (0)
+
+    val roaConfigurationAfterAdd = roaConfiguration.applyEvent(roaPrefixAdded)
+    roaConfigurationAfterAdd.roaAuthorisations should have size (1)
+  }
+
+  test("Should remove Roa confifuration prefix") {
+    val roaPrefixAdded = RoaConfigurationPrefixAdded(RoaAuthorisation(asn = "AS1", roaPrefix = "192.168.0.0/24"))
+
+    val roaConfiguration = new RoaConfiguration()
+    roaConfiguration.roaAuthorisations should have size (0)
+
+    val roaConfigurationAfterAdd = roaConfiguration.applyEvent(roaPrefixAdded)
+    roaConfigurationAfterAdd.roaAuthorisations should have size (1)
+
+    val roaPrefixRemoved = RoaConfigurationPrefixRemoved(RoaAuthorisation(asn = "AS1", roaPrefix = "192.168.0.0/24"))
+    val roaConfigurationAfterRemove = roaConfigurationAfterAdd.applyEvent(roaPrefixRemoved)
+    roaConfigurationAfterRemove.roaAuthorisations should have size (0)
+  }
+
+  test("Should filter relevant ROA Prefixes for resources") {
+    val roaConfigurationWithPrefixes = new RoaConfiguration().applyEvents(List(
+      RoaConfigurationPrefixAdded(RoaAuthorisation(asn = "AS1", roaPrefix = "192.168.0.0/16")),
+      RoaConfigurationPrefixAdded(RoaAuthorisation(asn = "AS1", roaPrefix = "10.0.0.0/16"))
+    ))
+
+    roaConfigurationWithPrefixes.findRelevantRoaPrefixes(IpResourceSet.parse("192.168.0.0/16")) should have size(1)
+  }
+
 }
-case class CertificateAuthorityAddParent(versionedId: VersionedId, parentXml: String) extends CertificateAuthorityCommand
-case class CertificateAuthorityAddChild(versionedId: VersionedId, childId: UUID, childXml: String, childResources: IpResourceSet) extends CertificateAuthorityCommand
-case class CertificateAuthorityPublish(versionedId: VersionedId) extends CertificateAuthorityCommand
-
-case class CertificateAuthorityAddRoa(versionedId: VersionedId, roaAuthorisation: RoaAuthorisation) extends CertificateAuthorityCommand
-case class CertificateAuthorityRemoveRoa(versionedId: VersionedId, roaAuthorisation: RoaAuthorisation) extends CertificateAuthorityCommand

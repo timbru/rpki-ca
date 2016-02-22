@@ -64,7 +64,7 @@ case class TrustAnchor(
     case comminicatorEvent: ProvisioningCommunicatorEvent => copy(communicator = communicator.applyEvent(comminicatorEvent), events = events :+ event)
   }
 
-  def publish(): TrustAnchor = applyEvents(resourceClass.publish)
+  def publish(): TrustAnchor = applyEvents(resourceClass.publish())
 
   def addChild(childId: UUID, childXml: String, childResources: IpResourceSet): TrustAnchor = {
     resourceClass.addChild(childId, childResources) match {

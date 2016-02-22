@@ -28,9 +28,12 @@
  */
 package nl.bruijnzeels.tim.rpki.scenarios
 
+import net.ripe.ipresource.{IpRange, Asn}
+import net.ripe.rpki.commons.crypto.cms.roa.RoaCms
 import nl.bruijnzeels.tim.rpki.RpkiTest
 import nl.bruijnzeels.tim.rpki.app.main.Dsl._
 import nl.bruijnzeels.tim.rpki.ca.TrustAnchor
+import nl.bruijnzeels.tim.rpki.common.domain.RoaAuthorisation
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
 class CertificateAuthorityFunctionsTest extends RpkiTest {
@@ -70,5 +73,45 @@ class CertificateAuthorityFunctionsTest extends RpkiTest {
 
     gcCertificate.getResources() should equal(GrandChildResources)
   }
+
+  test("Create Child with ROA, re-publish, and remove ROA") {
+    create trustAnchor ()
+
+    create certificateAuthority ChildId
+    def child = certificateAuthority withId ChildId
+
+    trustAnchor addChild (current certificateAuthority ChildId) withResources ChildResources
+    child addTa(current trustAnchor)
+    child update
+
+    child addRoaConfig(RoaAuthorisation(asn = "AS1", roaPrefix = "192.168.0.0/24"))
+
+    child publish
+
+    val roas = child listRoas
+
+    roas should have size(1)
+    val roa = roas.head
+    roa.getAsn should equal ("AS1": Asn)
+    roa.getPrefixes should have size (1)
+    roa.getPrefixes.get(0).getPrefix should equal ("192.168.0.0/24": IpRange)
+    roa.getPrefixes.get(0).getEffectiveMaximumLength should equal (24)
+
+    child publish
+
+    val roasAfterRepubslih = child listRoas
+
+    roasAfterRepubslih should equal (roas)
+
+    child removeRoaConfig(RoaAuthorisation("AS1", "192.168.0.0/24"))
+    child publish
+
+    child listRoas() should have size (0)
+
+    val childRevocations = (current certificateAuthority ChildId resourceClasses).map(_._2).map(_.currentSigner).flatMap(_.revocationList)
+
+    childRevocations.exists(_.serial == roa.getCertificate.getSerialNumber) should be (true)
+  }
+
 
 }

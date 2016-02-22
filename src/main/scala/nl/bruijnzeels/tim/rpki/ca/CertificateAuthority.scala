@@ -32,6 +32,7 @@ import java.net.URI
 import java.util.UUID
 
 import net.ripe.ipresource.IpResourceSet
+import net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
 import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayload
 import net.ripe.rpki.commons.provisioning.payload.issue.response.{CertificateIssuanceResponsePayload, CertificateIssuanceResponsePayloadBuilder}
@@ -40,7 +41,9 @@ import net.ripe.rpki.commons.provisioning.payload.list.response.{ResourceClassLi
 import nl.bruijnzeels.tim.rpki.ca.provisioning._
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.{Signer, SignerReceivedCertificate, SignerSignedCertificate}
 import nl.bruijnzeels.tim.rpki.ca.rc.{ResourceClass, ResourceClassCreated, ResourceClassEvent}
+import nl.bruijnzeels.tim.rpki.ca.roas.{RoaConfiguration, RoaConfigurationEvent}
 import nl.bruijnzeels.tim.rpki.common.cqrs.{CertificationAuthorityAggregate, Event, VersionedId}
+import nl.bruijnzeels.tim.rpki.common.domain.RoaAuthorisation
 
 import scala.collection.JavaConverters.asScalaBufferConverter
 
@@ -57,6 +60,7 @@ case class CertificateAuthority(
   rrdpNotifyUrl: URI,
   resourceClasses: Map[String, ResourceClass] = Map.empty,
   communicator: ProvisioningCommunicator = null, // will be set by communicator created event
+  roaConfiguration: RoaConfiguration = new RoaConfiguration(),
   events: List[Event] = List.empty) extends ParentCertificateAuthority {
 
   override def applyEvents(events: List[Event]): CertificateAuthority = events.foldLeft(this)((updated, event) => updated.applyEvent(event))
@@ -80,6 +84,8 @@ case class CertificateAuthority(
       val rc = resourceClasses.getOrElse(e.resourceClassName, throw new IllegalArgumentException("Got event for unknown resource class"))
       copy(resourceClasses = resourceClasses + (rc.resourceClassName -> rc.applyEvent(e)), events = events :+ e)
     }
+
+    case e: RoaConfigurationEvent => copy (roaConfiguration = roaConfiguration.applyEvent(e), events = events :+ e)
   }
 
   def addParent(parentXml: String): CertificateAuthority = applyEvent(communicator.addParent(parentXml))
@@ -102,7 +108,15 @@ case class CertificateAuthority(
     }
   }
 
-  def publish(): CertificateAuthority = applyEvents(resourceClasses.values.toList.flatMap(rc => rc.publish))
+  def addRoa(roaAuthorisation: RoaAuthorisation): CertificateAuthority = applyEvent(roaConfiguration.addRoaAuthorisation(roaAuthorisation))
+
+  def removeRoa(roaAuthorisation: RoaAuthorisation): CertificateAuthority = applyEvent(roaConfiguration.removeRoaAuthorisation(roaAuthorisation))
+
+  def publish(): CertificateAuthority = {
+    applyEvents(resourceClasses.values.toList.flatMap { rc =>
+      val roaAuthorisations = roaConfiguration.findRelevantRoaPrefixes(rc.currentSigner.resources)
+      rc.publish(roaAuthorisations)})
+  }
 
   override def processListQuery(childId: UUID, request: ProvisioningCmsObject): ListQueryResponse = {
     communicator.validateChildRequest(childId, request) match {
@@ -256,6 +270,5 @@ object CertificateAuthority {
     rebuild(List(created, createdProvisioningCommunicator))
   }
 }
-
 
 case class CertificateAuthorityException(msg: String) extends RuntimeException

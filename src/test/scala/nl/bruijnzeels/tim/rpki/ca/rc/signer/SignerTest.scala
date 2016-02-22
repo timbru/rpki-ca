@@ -127,7 +127,7 @@ class SignerTest extends FunSuite with Matchers {
     val childCertificate = signedEvent.certificate
     val signerAfterSigning = SelfSignedSigner.applyEvent(signedEvent)
 
-    val signerAfterPublish = signerAfterSigning.applyEvents(signerAfterSigning.publish(ResourceClassName, List(childCertificate)))
+    val signerAfterPublish = signerAfterSigning.applyEvents(signerAfterSigning.publish(ResourceClassName, List.empty, List(childCertificate)))
 
     val set = signerAfterPublish.publicationSet
 

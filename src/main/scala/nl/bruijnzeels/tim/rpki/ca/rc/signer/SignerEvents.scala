@@ -34,6 +34,7 @@ package signer
 import java.math.BigInteger
 
 import net.ripe.rpki.commons.crypto.cms.manifest.ManifestCms
+import net.ripe.rpki.commons.crypto.cms.roa.RoaCms
 import net.ripe.rpki.commons.crypto.crl.X509Crl
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
 import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayload
@@ -48,6 +49,8 @@ case class SignerCreatedPendingCertificateRequest(resourceClassName: String, req
 case class SignerReceivedCertificate(resourceClassName: String, certificate: X509ResourceCertificate) extends SignerEvent
 case class SignerSignedCertificate(resourceClassName: String, certificate: X509ResourceCertificate) extends SignerEvent
 case class SignerAddedRevocation(resourceClassName: String, revocation: Revocation) extends SignerEvent
+case class SignerSignedRoaCms(resourceClassName: String, roaCms: RoaCms) extends SignerEvent
+case class SignerRemovedRoaCms(resourceClassName: String, roaCms: RoaCms) extends SignerEvent
 
 sealed trait PublicationSetEvent extends SignerEvent
 

@@ -26,30 +26,11 @@
  * ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
  * POSSIBILITY OF SUCH DAMAGE.
  */
-package nl.bruijnzeels.tim.rpki
+package nl.bruijnzeels.tim.rpki.common.domain
 
-import java.net.URI
+import net.ripe.ipresource.Asn
+import net.ripe.rpki.commons.crypto.cms.roa.{RoaCms, RoaPrefix}
 
-import net.ripe.ipresource.{IpRange, Asn, IpResourceSet}
-import net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix
-import nl.bruijnzeels.tim.rpki.common.cqrs.EventStore
-import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
-
-import scala.language.implicitConversions
-
-/**
- * Base class for testing. Wipes the EventStore. Do NOT run tests that rely on this in paralel.
- */
-abstract class RpkiTest extends FunSuite with Matchers with BeforeAndAfter {
-
-  before {
-    EventStore.clear
-  }
-
-  implicit def stringToIpResourceSet(s: String): IpResourceSet = IpResourceSet.parse(s)
-  implicit def stringToIpRange(s: String): IpRange =  IpRange.parse(s)
-  implicit def stringToPrefix(s: String): RoaPrefix =  new RoaPrefix(IpRange.parse(s))
-  implicit def stringToAsn(s: String): Asn = Asn.parse(s)
-  implicit def stringToUri(s: String): URI = URI.create(s)
-
+case class RoaAuthorisation(asn: Asn, roaPrefix: RoaPrefix) {
+  def matchesRoa(roa: RoaCms) = roa.getAsn.equals(asn) && roa.getPrefixes.contains(roaPrefix)
 }
