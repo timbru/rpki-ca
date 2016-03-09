@@ -28,8 +28,7 @@
  */
 package nl.bruijnzeels.tim.rpki.scenarios
 
-import net.ripe.ipresource.{IpRange, Asn}
-import net.ripe.rpki.commons.crypto.cms.roa.RoaCms
+import net.ripe.ipresource.{Asn, IpRange}
 import nl.bruijnzeels.tim.rpki.RpkiTest
 import nl.bruijnzeels.tim.rpki.app.main.Dsl._
 import nl.bruijnzeels.tim.rpki.ca.TrustAnchor

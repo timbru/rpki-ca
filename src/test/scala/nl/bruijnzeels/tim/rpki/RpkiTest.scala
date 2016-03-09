@@ -46,6 +46,14 @@ abstract class RpkiTest extends FunSuite with Matchers with BeforeAndAfter {
     EventStore.clear
   }
 
+  def time[R](block: => R): TimeResult[R] = {
+    val t0 = System.nanoTime()
+    val result = block    // call-by-name
+    val t1 = System.nanoTime()
+    TimeResult(t1-t0, result)
+  }
+
+
   implicit def stringToIpResourceSet(s: String): IpResourceSet = IpResourceSet.parse(s)
   implicit def stringToIpRange(s: String): IpRange =  IpRange.parse(s)
   implicit def stringToPrefix(s: String): RoaPrefix =  new RoaPrefix(IpRange.parse(s))
@@ -53,3 +61,5 @@ abstract class RpkiTest extends FunSuite with Matchers with BeforeAndAfter {
   implicit def stringToUri(s: String): URI = URI.create(s)
 
 }
+
+case class TimeResult[R](timeInNs: Long, result: R)
