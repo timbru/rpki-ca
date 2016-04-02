@@ -34,6 +34,7 @@ import java.util.UUID
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
 import net.ripe.rpki.commons.provisioning.identity.ChildIdentitySerializer
 import net.ripe.rpki.commons.provisioning.payload.AbstractProvisioningPayload
+import nl.bruijnzeels.tim.rpki.ca._
 import nl.bruijnzeels.tim.rpki.common.domain.SigningSupport
 
 
@@ -43,7 +44,7 @@ import nl.bruijnzeels.tim.rpki.common.domain.SigningSupport
  */
 case class ProvisioningCommunicator(
     me: MyIdentity,
-    parent: Option[ParentIdentity] = None,
+    parent: Option[ParentIdentity] = None, // Will remain None If used by TrustAnchor
     parentExchanges: List[ProvisioningParentExchange] = List.empty,
     children: Map[UUID, ChildIdentity] = Map.empty,
     childExchanges: List[ProvisioningChildExchange] = List.empty) {
@@ -51,11 +52,8 @@ case class ProvisioningCommunicator(
   val UpDownUri = URI.create("http://invalid.com/") // TODO.. won't use http for now..
 
   def applyEvent(event: ProvisioningCommunicatorEvent) = event match {
-    case created: ProvisioningCommunicatorCreated => ProvisioningCommunicator(created.myIdentity)
-    
     case childAdded: ProvisioningCommunicatorAddedChild => copy(children = children + (childAdded.childIdentity.childId -> childAdded.childIdentity))
     case childExchangePerformed: ProvisioningCommunicatorPerformedChildExchange => copy(childExchanges = childExchanges :+ childExchangePerformed.exchange)
-    
     case parentAdded: ProvisioningCommunicatorAddedParent => copy(parent = Some(parentAdded.parentIdentity))
     case parentExchangePerformed: ProvisioningCommunicatorPerformedParentExchange => copy(parentExchanges = parentExchanges :+ parentExchangePerformed.exchange)
   }

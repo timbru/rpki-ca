@@ -51,16 +51,17 @@ object CertificateAuthorityCommandDispatcher {
     val caId = command.versionedId.id
     val existingCa = load(caId)
 
-    if (existingCa.isDefined && command.isInstanceOf[CertificateAuthorityCreate]) {
+    if (existingCa.isDefined && (command.isInstanceOf[CertificateAuthorityCreate] || command.isInstanceOf[CertificateAuthorityCreateAsTrustAnchor])) {
       throw new IllegalArgumentException(s"Can't create new CA with id ${caId} CA with same id exists")
     }
 
-    if (!existingCa.isDefined && !command.isInstanceOf[CertificateAuthorityCreate]) {
-      throw new IllegalArgumentException(s"Can't find exisiting CA with id ${caId} for command")
+    if (!existingCa.isDefined && !(command.isInstanceOf[CertificateAuthorityCreate] || command.isInstanceOf[CertificateAuthorityCreateAsTrustAnchor])) {
+      throw new IllegalArgumentException(s"Can't find existing CA with id ${caId} for command")
     }
 
     val updatedCa = command match {
       case create: CertificateAuthorityCreate => CertificateAuthorityCreateHandler.handle(create)
+      case createAsTA: CertificateAuthorityCreateAsTrustAnchor => CertificateAuthorityCreateAsTrustAnchorHandler.handle(createAsTA)
 
       case addParent: CertificateAuthorityAddParent => CertificateAuthorityAddParentHandler.handle(addParent, existingCa.get)
       case addChild: CertificateAuthorityAddChild => CertificateAuthorityAddChildHandler.handle(addChild, existingCa.get)
@@ -78,6 +79,10 @@ object CertificateAuthorityCommandDispatcher {
 
 object CertificateAuthorityCreateHandler {
   def handle(create: CertificateAuthorityCreate) = CertificateAuthority.create(create.aggregateId, create.name, create.baseUrl, create.rrdpNotifyUrl)
+}
+
+object CertificateAuthorityCreateAsTrustAnchorHandler {
+  def handle(create: CertificateAuthorityCreateAsTrustAnchor) = CertificateAuthority.createAsTrustAnchor(create.aggregateId, create.name, create.resources, create.certificateUrl, create.baseUrl, create.rrdpNotifyUrl)
 }
 
 trait CertificateAuthorityCommandHandler[C <: CertificateAuthorityCommand] {

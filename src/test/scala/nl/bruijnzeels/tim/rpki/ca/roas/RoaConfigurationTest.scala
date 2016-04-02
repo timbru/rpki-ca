@@ -30,6 +30,7 @@ package nl.bruijnzeels.tim.rpki.ca.roas
 
 import net.ripe.ipresource.IpResourceSet
 import nl.bruijnzeels.tim.rpki.RpkiTest
+import nl.bruijnzeels.tim.rpki.ca.{RoaConfigurationPrefixAdded, RoaConfigurationPrefixRemoved}
 import nl.bruijnzeels.tim.rpki.common.domain.RoaAuthorisation
 
 class RoaConfigurationTest extends RpkiTest {

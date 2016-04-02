@@ -30,14 +30,14 @@ package nl.bruijnzeels.tim.rpki.app.web.controllers
 
 import nl.bruijnzeels.tim.rpki.app.main.Dsl
 import nl.bruijnzeels.tim.rpki.app.web.views.HomeView
-import nl.bruijnzeels.tim.rpki.ca.TrustAnchorCommandDispatcher
+import nl.bruijnzeels.tim.rpki.ca.{CertificateAuthority, CertificateAuthorityCommandDispatcher}
 import nl.bruijnzeels.tim.rpki.publication.messages.ReferenceHash
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServerCommandDispatcher
 import org.scalatra.{FlashMapSupport, ScalatraBase}
 
 trait ApplicationController extends ScalatraBase with FlashMapSupport {
 
-  def currentTa = TrustAnchorCommandDispatcher.load(Dsl.TrustAnchorId).get
+  def currentTa = CertificateAuthorityCommandDispatcher.load(Dsl.TrustAnchorId).get
   def currentPublicationServer = PublicationServerCommandDispatcher.load(Dsl.PublicationServerId).get
   val rrdpFileStore = Dsl.current.rrdpFileStore
 
@@ -55,7 +55,7 @@ trait ApplicationController extends ScalatraBase with FlashMapSupport {
     response.addHeader("Pragma", "public")
     response.addHeader("Cache-Control", "no-cache")
 
-    response.getOutputStream().write(currentTa.resourceClass.currentSigner.signingMaterial.currentCertificate.getEncoded())
+    response.getOutputStream().write(currentTa.resourceClasses.get(CertificateAuthority.DefaultResourceClassName).get.currentSigner.signingMaterial.currentCertificate.getEncoded())
   }
 
   get("/notify/notify.xml") {

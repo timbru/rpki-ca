@@ -29,6 +29,7 @@
 package nl.bruijnzeels.tim.rpki.ca.roas
 
 import net.ripe.ipresource.IpResourceSet
+import nl.bruijnzeels.tim.rpki.ca.{RoaConfigurationEvent, RoaConfigurationPrefixAdded, RoaConfigurationPrefixRemoved}
 import nl.bruijnzeels.tim.rpki.common.domain.RoaAuthorisation
 
 /**

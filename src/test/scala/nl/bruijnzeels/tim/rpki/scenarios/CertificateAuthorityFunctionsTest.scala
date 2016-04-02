@@ -31,7 +31,7 @@ package nl.bruijnzeels.tim.rpki.scenarios
 import net.ripe.ipresource.{Asn, IpRange}
 import nl.bruijnzeels.tim.rpki.RpkiTest
 import nl.bruijnzeels.tim.rpki.app.main.Dsl._
-import nl.bruijnzeels.tim.rpki.ca.TrustAnchor
+import nl.bruijnzeels.tim.rpki.ca.CertificateAuthority
 import nl.bruijnzeels.tim.rpki.common.domain.RoaAuthorisation
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -43,11 +43,12 @@ class CertificateAuthorityFunctionsTest extends RpkiTest {
     create trustAnchor ()
     create certificateAuthority ChildId
     trustAnchor addChild (current certificateAuthority ChildId) withResources ChildResources
-    certificateAuthority withId ChildId addTa (current trustAnchor)
+    certificateAuthority withId ChildId addParent  (current trustAnchor)
     certificateAuthority withId ChildId update
 
     (current certificateAuthority ChildId resourceClasses) should have size (1)
-    val caRcWithCertificate = (current certificateAuthority ChildId resourceClasses).get(TrustAnchor.DefaultResourceClassName).get
+
+    val caRcWithCertificate = (current certificateAuthority ChildId resourceClasses).get(CertificateAuthority.DefaultResourceClassName).get
     val caCertificate = caRcWithCertificate.currentSigner.signingMaterial.currentCertificate
 
     caCertificate.getResources() should equal(ChildResources)
@@ -58,7 +59,7 @@ class CertificateAuthorityFunctionsTest extends RpkiTest {
 
     create certificateAuthority ChildId
     trustAnchor addChild (current certificateAuthority ChildId) withResources ChildResources
-    certificateAuthority withId ChildId addTa(current trustAnchor)
+    certificateAuthority withId ChildId addParent(current trustAnchor)
     certificateAuthority withId ChildId update
 
     create certificateAuthority GrandChildId
@@ -67,7 +68,7 @@ class CertificateAuthorityFunctionsTest extends RpkiTest {
     certificateAuthority withId GrandChildId update
 
     (current certificateAuthority GrandChildId resourceClasses) should have size (1)
-    val gcRcWithCertificate = (current certificateAuthority GrandChildId resourceClasses).get(TrustAnchor.DefaultResourceClassName).get
+    val gcRcWithCertificate = (current certificateAuthority GrandChildId resourceClasses).get(CertificateAuthority.DefaultResourceClassName).get
     val gcCertificate = gcRcWithCertificate.currentSigner.signingMaterial.currentCertificate
 
     gcCertificate.getResources() should equal(GrandChildResources)
@@ -80,7 +81,7 @@ class CertificateAuthorityFunctionsTest extends RpkiTest {
     def child = certificateAuthority withId ChildId
 
     trustAnchor addChild (current certificateAuthority ChildId) withResources ChildResources
-    child addTa(current trustAnchor)
+    child addParent(current trustAnchor)
     child update
 
     child addRoaConfig(RoaAuthorisation(asn = "AS1", roaPrefix = "192.168.0.0/24"))

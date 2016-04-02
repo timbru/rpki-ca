@@ -29,17 +29,17 @@
 package nl.bruijnzeels.tim.rpki.app.web.views
 
 import nl.bruijnzeels.tim.rpki.app.main.Dsl
-import nl.bruijnzeels.tim.rpki.ca.TrustAnchor
+import nl.bruijnzeels.tim.rpki.ca.CertificateAuthority
 import nl.bruijnzeels.tim.rpki.publication.server.PublicationServer
 
 import scala.xml.Text
 
-class HomeView(ta: TrustAnchor, publicationServer: PublicationServer) extends View {
+class HomeView(ta: CertificateAuthority, publicationServer: PublicationServer) extends View {
 
   def tab = Tabs.HomeTab
   def title = Text("RRDP Proof of concept server")
   def body = {
-    <pre class="alert-message block-message alert monospace">{ ta.tal }</pre>
+    <pre class="alert-message block-message alert monospace">{ CertificateAuthority.printTal(ta) }</pre>
     <div class="alert-message block-message info">
       <div class="row">
         <div class="span12 center">Publication Server Details</div>

@@ -37,8 +37,7 @@ import javax.security.auth.x500.X500Principal
 
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestBuilder
-import nl.bruijnzeels.tim.rpki.ca.rc.child.{ChildCreated, ChildReceivedCertificate}
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.{Signer, SignerSignedCertificate}
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
 import nl.bruijnzeels.tim.rpki.common.domain.{KeyPairSupport, RpkiObjectNameSupport}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])

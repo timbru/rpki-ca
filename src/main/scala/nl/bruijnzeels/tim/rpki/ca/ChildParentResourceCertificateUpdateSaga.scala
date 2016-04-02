@@ -38,15 +38,11 @@ import nl.bruijnzeels.tim.rpki.common.cqrs.EventStore
 object ChildParentResourceCertificateUpdateSaga {
 
   def updateCertificates(parentId: UUID, certificateAuthorityId: UUID) = {
-    var parent: ParentCertificateAuthority = {
-      TrustAnchorCommandDispatcher.load(parentId) match {
-        case Some(ta) => ta
-        case _ => CertificateAuthorityCommandDispatcher.load(parentId) match {
-          case Some(ca) => ca
-          case _ => throw new IllegalArgumentException(s"Can't find TA or CA with id: ${parentId}")
-        }
-      }
+
+    var parent: ParentCertificateAuthority = CertificateAuthorityCommandDispatcher.load(parentId).getOrElse {
+      throw new IllegalArgumentException(s"Can't find CA with id: ${parentId}")
     }
+
     var ca = CertificateAuthorityCommandDispatcher.load(certificateAuthorityId).getOrElse(throw new IllegalArgumentException("Can't find CA"))
 
     val classListQuery = ca.createResourceClassListRequest()

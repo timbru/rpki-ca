@@ -33,7 +33,6 @@ import java.net.URI
 import java.util.UUID
 
 import net.ripe.ipresource.IpResourceSet
-import net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix
 import nl.bruijnzeels.tim.rpki.ca._
 import nl.bruijnzeels.tim.rpki.ca.provisioning.MyIdentity
 import nl.bruijnzeels.tim.rpki.common.cqrs.EventStore
@@ -84,13 +83,13 @@ object Dsl {
 
   object create {
 
-    def trustAnchor() = TrustAnchorCommandDispatcher.dispatch(
-      TrustAnchorCreate(
+    def trustAnchor() = CertificateAuthorityCommandDispatcher.dispatch(
+      CertificateAuthorityCreateAsTrustAnchor(
         aggregateId = TrustAnchorId,
         name = TrustAnchorName,
         resources = TrustAnchorResources,
-        taCertificateUri = TrustAnchorCertUri,
-        publicationUri = RsyncBaseUrl,
+        certificateUrl = TrustAnchorCertUri,
+        baseUrl = RsyncBaseUrl,
         rrdpNotifyUrl = RrdpNotifyUrl))
 
     def certificateAuthority(id: UUID) = CertificateAuthorityCommandDispatcher.dispatch(
@@ -107,7 +106,7 @@ object Dsl {
   }
 
   object current {
-    def trustAnchor() = TrustAnchorCommandDispatcher.load(TrustAnchorId).get
+    def trustAnchor() = CertificateAuthorityCommandDispatcher.load(TrustAnchorId).get
     def taVersion = trustAnchor.versionedId
     
     def certificateAuthority(id: UUID) = CertificateAuthorityCommandDispatcher.load(id).get
@@ -124,8 +123,8 @@ object Dsl {
     class taAddingChild(child: CertificateAuthority) {
       def withResources(resources: IpResourceSet) = {
         
-        TrustAnchorCommandDispatcher.dispatch(
-          TrustAnchorAddChild(
+        CertificateAuthorityCommandDispatcher.dispatch(
+          CertificateAuthorityAddChild(
             versionedId = current taVersion,
             childId = child.versionedId.id,
             childXml = child.communicator.me.toChildXml,
@@ -135,7 +134,7 @@ object Dsl {
 
     def addChild(child: CertificateAuthority) = new taAddingChild(child)
 
-    def publish() = TrustAnchorCommandDispatcher.dispatch(TrustAnchorPublish(current taVersion))
+    def publish() = CertificateAuthorityCommandDispatcher.dispatch(CertificateAuthorityPublish(current taVersion))
 
   }
 
@@ -144,10 +143,6 @@ object Dsl {
     private def addParentXml(parentXml: String) = CertificateAuthorityCommandDispatcher.dispatch(
       CertificateAuthorityAddParent(versionedId = me.versionedId, parentXml = parentXml)
     )
-
-    def addTa(parent: TrustAnchor) = {
-      addParentXml(parent.communicator.getParentXmlForChild(me.communicator.me.id).get)
-    }
 
     def addParent(parent: CertificateAuthority) = {
       addParentXml(parent.communicator.getParentXmlForChild(me.communicator.me.id).get)

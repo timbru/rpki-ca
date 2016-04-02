@@ -32,27 +32,34 @@ import java.net.URI
 import java.util.UUID
 
 import net.ripe.ipresource.IpResourceSet
-import net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix
+import net.ripe.rpki.commons.crypto.x509cert.X509CertificateUtil
 import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObject
 import net.ripe.rpki.commons.provisioning.payload.issue.request.CertificateIssuanceRequestPayload
 import net.ripe.rpki.commons.provisioning.payload.issue.response.{CertificateIssuanceResponsePayload, CertificateIssuanceResponsePayloadBuilder}
 import net.ripe.rpki.commons.provisioning.payload.list.request.{ResourceClassListQueryPayload, ResourceClassListQueryPayloadBuilder}
 import net.ripe.rpki.commons.provisioning.payload.list.response.{ResourceClassListResponsePayload, ResourceClassListResponsePayloadBuilder}
 import nl.bruijnzeels.tim.rpki.ca.provisioning._
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.{Signer, SignerReceivedCertificate, SignerSignedCertificate}
-import nl.bruijnzeels.tim.rpki.ca.rc.{ResourceClass, ResourceClassCreated, ResourceClassEvent}
-import nl.bruijnzeels.tim.rpki.ca.roas.{RoaConfiguration, RoaConfigurationEvent}
+import nl.bruijnzeels.tim.rpki.ca.rc.ResourceClass
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
+import nl.bruijnzeels.tim.rpki.ca.roas.RoaConfiguration
 import nl.bruijnzeels.tim.rpki.common.cqrs.{CertificationAuthorityAggregate, Event, VersionedId}
 import nl.bruijnzeels.tim.rpki.common.domain.RoaAuthorisation
 
 import scala.collection.JavaConverters.asScalaBufferConverter
 
 /**
- *  A Certificate Authority in RPKI. Needs to have a parent which can be either
- *  another Certificate Authority, or a Trust Anchor.
- *
- *  Does not support ROAs, yet
- */
+  * A CertificateAuthority
+  *
+  * Can be created as a Trust Anchor, in that case a self signed certificate with any resource set can be used
+  * Or can be created as a 'normal' CA, in which case a parent CA needs to be added.
+  *
+  * Can have any number of Child CAs
+  *
+  * Note: Although the requests and issuance between CAs here follow the semantics of the RPKI provisioning
+  * protocol, remote parent/children are not yet supported. The same XML is used but the provisioningCMS wrapping
+  * and verification of trust is missing (i.e. we can assume that requests can be trusted).
+  *
+  */
 case class CertificateAuthority(
   versionedId: VersionedId,
   name: String,
@@ -250,6 +257,8 @@ case class CertificateAuthority(
 
 object CertificateAuthority {
 
+  val DefaultResourceClassName = "default"
+
   def rebuild(events: List[Event]): CertificateAuthority = events.head match {
     case created: CertificateAuthorityCreated =>
       CertificateAuthority(
@@ -263,12 +272,35 @@ object CertificateAuthority {
       throw new IllegalArgumentException(s"First event MUST be creation of the CertificateAuthority, was: ${event}")
   }
 
-  def create(id: UUID, name: String, baseUrl: URI, rrdpNotifyUrl: URI) = {
-    val created = CertificateAuthorityCreated(aggregateId = id, name = name, baseUrl = baseUrl, rrdpNotifyUrl = rrdpNotifyUrl)
+  def create(id: UUID, name: String, publicationDirUrl: URI, rrdpNotifyUrl: URI): CertificateAuthority = {
+    val created = CertificateAuthorityCreated(aggregateId = id, name = name, baseUrl = publicationDirUrl, rrdpNotifyUrl = rrdpNotifyUrl)
     val createdProvisioningCommunicator = ProvisioningCommunicator.create(id)
 
     rebuild(List(created, createdProvisioningCommunicator))
   }
+
+  def createAsTrustAnchor(id: UUID, name: String, resources: IpResourceSet, taCertificateUri: URI, publicationDirUrl: URI, rrdpNotifyUrl: URI): CertificateAuthority = {
+    val created = CertificateAuthorityCreated(aggregateId = id, name = name, baseUrl = publicationDirUrl, rrdpNotifyUrl = rrdpNotifyUrl)
+    val createdProvisioningCommunicator = ProvisioningCommunicator.create(id)
+
+    val createdResourceClass = ResourceClassCreated(DefaultResourceClassName)
+    val createdSelfSignedSigner = Signer.createSelfSigned(DefaultResourceClassName, name, resources, taCertificateUri, publicationDirUrl, rrdpNotifyUrl)
+
+    rebuild(List(created, createdResourceClass) ++ createdSelfSignedSigner :+ createdProvisioningCommunicator)
+  }
+
+  def printTal(ca: CertificateAuthority) = {
+    try {
+      val resourceClass = ca.resourceClasses.get(DefaultResourceClassName).get
+      val rootCertUri = resourceClass.currentSigner.signingMaterial.certificateUri
+      val rootCert = resourceClass.currentSigner.signingMaterial.currentCertificate.getCertificate
+      val rootCertFingerPrint = X509CertificateUtil.getEncodedSubjectPublicKeyInfo(rootCert).grouped(60).mkString("\n")
+      s"${rootCertUri}\n\n${rootCertFingerPrint}"
+    } catch {
+      case _: Throwable => s"Could not create TAL for CA ${ca.name}. Are you sure this CA is a TrustAnchor?"
+    }
+  }
+
 }
 
 case class CertificateAuthorityException(msg: String) extends RuntimeException

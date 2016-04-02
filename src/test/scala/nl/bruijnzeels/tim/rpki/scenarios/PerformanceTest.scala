@@ -64,7 +64,7 @@ class PerformanceTest extends RpkiTest {
 
     create certificateAuthority ChildId
     trustAnchor addChild (current certificateAuthority ChildId) withResources "10.0.0.0/8"
-    certificateAuthority withId ChildId addTa(current trustAnchor)
+    certificateAuthority withId ChildId addParent(current trustAnchor)
     certificateAuthority withId ChildId update
 
     val timeBeforeGrandChildren = new DateTime()

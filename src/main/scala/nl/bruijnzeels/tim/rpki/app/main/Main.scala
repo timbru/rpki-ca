@@ -78,7 +78,7 @@ class Main { main =>
     create trustAnchor ()
     create certificateAuthority ChildId
     trustAnchor addChild (current certificateAuthority ChildId) withResources ChildResources
-    certificateAuthority withId ChildId addTa (current trustAnchor)
+    certificateAuthority withId ChildId addParent (current trustAnchor)
     certificateAuthority withId ChildId update
   }
 

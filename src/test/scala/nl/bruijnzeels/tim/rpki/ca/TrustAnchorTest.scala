@@ -28,16 +28,12 @@
  */
 package nl.bruijnzeels.tim.rpki.ca
 
-import java.math.BigInteger
 import java.net.URI
 import java.util.UUID
 
 import net.ripe.ipresource.IpResourceSet
-import net.ripe.rpki.commons.provisioning.payload.list.request.ResourceClassListQueryPayloadBuilder
-import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassListResponsePayload
 import nl.bruijnzeels.tim.rpki.RpkiTest
 import nl.bruijnzeels.tim.rpki.ca.provisioning.MyIdentity
-import nl.bruijnzeels.tim.rpki.common.domain.SigningSupport
 import org.scalatest.{FunSuite, Matchers}
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -45,19 +41,20 @@ class TrustAnchorTest extends FunSuite with Matchers {
 
 import TrustAnchorTest._
 
-  test("Should create TA with selfsigned signer and provisioning communicator") {
+  test("Should create CA and use as TA with self-signed signer and provisioning communicator") {
 
-    val create = TrustAnchorCreate(
-      aggregateId = TrustAnchorId,
-      name = TrustAnchorName,
-      resources = TrustAnchorResources,
-      taCertificateUri = TrustAnchorCertUri,
-      publicationUri = TrustAnchorPubUri,
-      rrdpNotifyUrl = RrdpNotifyUrl)
+    val create = CertificateAuthorityCreateAsTrustAnchor(
+       aggregateId = TrustAnchorId,
+       name = TrustAnchorName,
+       resources = TrustAnchorResources,
+       certificateUrl = TrustAnchorCertUri,
+       baseUrl = TrustAnchorPubUri,
+       rrdpNotifyUrl = RrdpNotifyUrl
+    )
 
-    val ta = TrustAnchorCreateCommandHandler.handle(create)
+    val ta = CertificateAuthorityCreateAsTrustAnchorHandler.handle(create)
 
-    val rc = ta.resourceClass
+    val rc = ta.resourceClasses.get(CertificateAuthority.DefaultResourceClassName).get
     val signingMaterial = rc.currentSigner.signingMaterial
     val certificate = signingMaterial.currentCertificate
 
@@ -70,57 +67,30 @@ import TrustAnchorTest._
     ta.communicator.me.id should equal(TrustAnchorId)
     ta.communicator.children should have size (0)
 
-    ta should equal(TrustAnchor.rebuild(ta.events))
+    ta should equal(CertificateAuthority.rebuild(ta.events))
   }
 
-  test("Should publish") {
-    val ta = TrustAnchorInitial.publish
+  test("Should configure child with parent") {
 
-    // Publishing is tested in more detail elsewhere, here I just want to verify that it's done
-    val set = ta.resourceClass.currentSigner.publicationSet
-    set.number should equal(BigInteger.ONE)
+    val taInitial = TrustAnchorTest.TrustAnchorInitial
 
-    ta should equal(TrustAnchor.rebuild(ta.events))
+    val ca = CertificateAuthorityTest.CertificateAuthorityInitial
+
+    val childIdXml = ca.communicator.me.toChildXml
+    val childResources: IpResourceSet = "192.168.0.0/16"
+
+    val addChild = CertificateAuthorityAddChild(versionedId = taInitial.versionedId, childId = ca.versionedId.id, childXml = childIdXml, childResources = childResources)
+
+    val taWithChild = CertificateAuthorityAddChildHandler.handle(addChild, taInitial)
+
+    val parentXml = taWithChild.communicator.getParentXmlForChild(ca.versionedId.id).get
+    val addParent = CertificateAuthorityAddParent(ca.versionedId, parentXml)
+
+    val caWithParent = CertificateAuthorityAddParentHandler.handle(addParent, ca)
+
+    val parentKnownByCa = caWithParent.communicator.parent.get
+    parentKnownByCa.identityCertificate should equal(taWithChild.communicator.me.identityCertificate)
   }
-
-  test("Should add child") {
-    val addChild = TrustAnchorAddChild(versionedId = TrustAnchorInitial.versionedId, childId = ChildId, childXml = ChildXml, childResources = ChildResources)
-
-    val taWithChild = TrustAnchorAddChildCommandHandler.handle(addChild, TrustAnchorInitial)
-
-    taWithChild.communicator.children.isDefinedAt(ChildId) should be(true)
-    taWithChild.resourceClass.children.isDefinedAt(ChildId) should be(true)
-  }
-
-  test("Should process child resource class list query") {
-    val addChild = TrustAnchorAddChild(versionedId = TrustAnchorInitial.versionedId, childId = ChildId, childXml = ChildXml, childResources = ChildResources)
-    val taWithChild = TrustAnchorAddChildCommandHandler.handle(addChild, TrustAnchorInitial)
-
-    val request = SigningSupport.createProvisioningCms(
-      sender = ChildId.toString,
-      recipient = TrustAnchorId.toString,
-      signingCertificate = ChildIdentity.identityCertificate,
-      signingKeyPair = ChildIdentity.keyPair,
-      payload = new ResourceClassListQueryPayloadBuilder().build())
-
-    val command = TrustAnchorProcessResourceListQuery(taWithChild.versionedId, ChildId, request)
-
-    val taAfterResponse = TrustAnchorProcessResourceListQueryCommandHandler.handle(command, taWithChild)
-
-    val exchange = taAfterResponse.communicator.getExchangesForChild(ChildId)(0)
-
-    val responsePayload = exchange.response.getPayload().asInstanceOf[ResourceClassListResponsePayload]
-    responsePayload.getSender should equal (TrustAnchorId.toString())
-    responsePayload.getRecipient should equal (ChildId.toString())
-
-    val resourceClassInResponse = responsePayload.getClassElements().get(0)
-    resourceClassInResponse.getCertificateElements() should be (null)
-    resourceClassInResponse.getClassName() should equal (TrustAnchor.DefaultResourceClassName)
-    resourceClassInResponse.getResourceSetIpv4() should equal (ChildResources)
-    resourceClassInResponse.getResourceSetIpv6() should equal(new IpResourceSet())
-    resourceClassInResponse.getResourceSetAsn() should equal(new IpResourceSet())
-  }
-
 }
 
 object TrustAnchorTest extends RpkiTest {
@@ -138,14 +108,12 @@ object TrustAnchorTest extends RpkiTest {
   val ChildXml = ChildIdentity.toChildXml
   val ChildResources: IpResourceSet = "192.168.0.0/16"
 
-  val TrustAnchorInitial =
-    TrustAnchorCreateCommandHandler.handle(
-      TrustAnchorCreate(
-        aggregateId = TrustAnchorId,
-        name = TrustAnchorName,
-        resources = TrustAnchorResources,
-        taCertificateUri = TrustAnchorCertUri,
-        publicationUri = TrustAnchorPubUri,
-        rrdpNotifyUrl = RrdpNotifyUrl))
+  val TrustAnchorInitial = CertificateAuthorityCreateAsTrustAnchorHandler.handle(CertificateAuthorityCreateAsTrustAnchor(
+      aggregateId = TrustAnchorId,
+      name = TrustAnchorName,
+      resources = TrustAnchorResources,
+      certificateUrl = TrustAnchorCertUri,
+      baseUrl = TrustAnchorPubUri,
+      rrdpNotifyUrl = RrdpNotifyUrl))
 
 }

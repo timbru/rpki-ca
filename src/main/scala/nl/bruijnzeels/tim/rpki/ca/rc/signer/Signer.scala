@@ -72,10 +72,6 @@ case class Signer(
     case removedRoa: SignerRemovedRoaCms => copy(roas = roas.filter(_ != removedRoa.roaCms))
   }
 
-  def foo = {
-    roas
-  }
-
   /**
    * Publish or re-publish.
    *

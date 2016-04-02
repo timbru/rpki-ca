@@ -31,7 +31,6 @@ package nl.bruijnzeels.tim.rpki.ca
 import java.net.URI
 import java.util.UUID
 
-import net.ripe.ipresource.IpResourceSet
 import nl.bruijnzeels.tim.rpki.RpkiTest
 
 @org.junit.runner.RunWith(classOf[org.scalatest.junit.JUnitRunner])
@@ -51,26 +50,7 @@ class CertificateAuthorityTest extends RpkiTest {
     ca should equal(CertificateAuthority.rebuild(ca.events))
   }
 
-  test("Should configure child with parent") {
 
-    val taInitial = TrustAnchorTest.TrustAnchorInitial
-
-    val ca = ChildInitial
-
-    val childIdXml = ca.communicator.me.toChildXml
-    val childResources: IpResourceSet = "192.168.0.0/16"
-    val addChild = TrustAnchorAddChild(versionedId = taInitial.versionedId, childId = ca.versionedId.id, childXml = childIdXml, childResources = childResources)
-
-    val taWithChild = TrustAnchorAddChildCommandHandler.handle(addChild, taInitial)
-
-    val parentXml = taWithChild.communicator.getParentXmlForChild(ca.versionedId.id).get
-    val addParent = CertificateAuthorityAddParent(ca.versionedId, parentXml)
-
-    val caWithParent = CertificateAuthorityAddParentHandler.handle(addParent, ca)
-
-    val parentKnownByCa = caWithParent.communicator.parent.get
-    parentKnownByCa.identityCertificate should equal(taWithChild.communicator.me.identityCertificate)
-  }
 
 }
 
@@ -82,6 +62,6 @@ object CertificateAuthorityTest extends RpkiTest {
   val CertificateAuthorityName = "Test CA"
   val CertificateAuthorityBaseUrl: URI = "rsync://invalid.com/foo"
 
-  val ChildInitial = CertificateAuthorityCreateHandler.handle(CertificateAuthorityCreate(CertificateAuthorityId, name = CertificateAuthorityName, baseUrl = CertificateAuthorityBaseUrl, rrdpNotifyUrl = RrdpNotifyUrl))
+  val CertificateAuthorityInitial = CertificateAuthorityCreateHandler.handle(CertificateAuthorityCreate(CertificateAuthorityId, name = CertificateAuthorityName, baseUrl = CertificateAuthorityBaseUrl, rrdpNotifyUrl = RrdpNotifyUrl))
 
 }

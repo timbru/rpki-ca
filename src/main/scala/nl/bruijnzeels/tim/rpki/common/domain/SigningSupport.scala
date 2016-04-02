@@ -37,7 +37,7 @@ import javax.security.auth.x500.X500Principal
 import grizzled.slf4j.Logger
 import net.ripe.ipresource.{IpResourceSet, IpResourceType}
 import net.ripe.rpki.commons.crypto.cms.manifest.{ManifestCms, ManifestCmsBuilder}
-import net.ripe.rpki.commons.crypto.cms.roa.{RoaCmsBuilder, RoaCms, RoaPrefix}
+import net.ripe.rpki.commons.crypto.cms.roa.{RoaCms, RoaCmsBuilder}
 import net.ripe.rpki.commons.crypto.crl.{X509Crl, X509CrlBuilder}
 import net.ripe.rpki.commons.crypto.x509cert.{RpkiSignedObjectEeCertificateBuilder, X509CertificateBuilderHelper, X509CertificateInformationAccessDescriptor, X509ResourceCertificate, X509ResourceCertificateBuilder}
 import net.ripe.rpki.commons.crypto.{CertificateRepositoryObject, ValidityPeriod}
@@ -48,7 +48,8 @@ import net.ripe.rpki.commons.provisioning.x509.{ProvisioningCmsCertificateBuilde
 import org.bouncycastle.asn1.x509.KeyUsage
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.joda.time.{DateTime, Period}
-import collection.JavaConverters._
+
+import scala.collection.JavaConverters._
 
 case class SigningMaterial(
   keyPair: KeyPair,

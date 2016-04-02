@@ -32,18 +32,51 @@ import java.net.URI
 import java.util.UUID
 
 import net.ripe.ipresource.IpResourceSet
-import net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix
 import nl.bruijnzeels.tim.rpki.common.cqrs.{Command, VersionedId}
 import nl.bruijnzeels.tim.rpki.common.domain.RoaAuthorisation
 
 sealed trait CertificateAuthorityCommand extends Command
 
+/**
+  * Create a CertificateAuthority to use with a parent (i.e. not as a TrustAnchor)
+  */
 case class CertificateAuthorityCreate(aggregateId: UUID, name: String, baseUrl: URI, rrdpNotifyUrl: URI) extends CertificateAuthorityCommand {
   def versionedId = VersionedId(aggregateId)
 }
+
+/**
+  * Create as a Trust Anchor, i.e. this CA has no parent and uses self-signed certificates
+  */
+case class CertificateAuthorityCreateAsTrustAnchor(aggregateId: UUID, name: String, certificateUrl: URI, baseUrl: URI, rrdpNotifyUrl: URI, resources: IpResourceSet) extends CertificateAuthorityCommand {
+  def versionedId = VersionedId(aggregateId)
+}
+
+/**
+  * Add a parent. A CertificateAuthority can have only one parent (at least for now)
+  */
 case class CertificateAuthorityAddParent(versionedId: VersionedId, parentXml: String) extends CertificateAuthorityCommand
+
+/**
+  * Add a child. A CertificateAuthority can have many children
+  */
 case class CertificateAuthorityAddChild(versionedId: VersionedId, childId: UUID, childXml: String, childResources: IpResourceSet) extends CertificateAuthorityCommand
+
+/**
+  * Create a new set of published objects, including a new mft and CRL.
+  * Note: this does include publishing to a repository, this just creates the latest set.
+  */
 case class CertificateAuthorityPublish(versionedId: VersionedId) extends CertificateAuthorityCommand
 
+/**
+  * Add a ROA configuration. Will ensure that a ROA is created as needed.
+  * Note that the ROAs are not created until a CertificateAuthorityPublish is issued. This
+  * ensures that multiple ROA configurations can be added/removed and published as a set.
+  */
 case class CertificateAuthorityAddRoa(versionedId: VersionedId, roaAuthorisation: RoaAuthorisation) extends CertificateAuthorityCommand
+
+/**
+  * Remove a ROA configuration. Will ensure that a ROA is created as needed.
+  * Note that the ROAs are not created until a CertificateAuthorityPublish is issued. This
+  * ensures that multiple ROA configurations can be added/removed and published as a set.
+  */
 case class CertificateAuthorityRemoveRoa(versionedId: VersionedId, roaAuthorisation: RoaAuthorisation) extends CertificateAuthorityCommand

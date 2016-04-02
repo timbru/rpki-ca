@@ -22,7 +22,6 @@ Currently this code supports:
  * Publishing using a built-in RRDP server (but see below, not production ready)
 
 Future ideas (not in order):
- * Merge TA and CA code (clean up TA code, special instance of CA)
  * Re-issue certificates to child CAs:
    * Grow child resources
    * Soft shrink child resources (give child time to shrink)

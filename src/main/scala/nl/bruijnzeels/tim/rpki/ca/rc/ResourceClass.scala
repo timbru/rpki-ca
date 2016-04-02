@@ -31,11 +31,11 @@ package nl.bruijnzeels.tim.rpki.ca.rc
 import java.util.UUID
 
 import net.ripe.ipresource.IpResourceSet
-import net.ripe.rpki.commons.crypto.cms.roa.{RoaCms, RoaPrefix}
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
 import net.ripe.rpki.commons.provisioning.payload.common.{CertificateElementBuilder, GenericClassElementBuilder}
-import nl.bruijnzeels.tim.rpki.ca.rc.child.{Child, ChildCreated, ChildEvent, ChildReceivedCertificate}
-import nl.bruijnzeels.tim.rpki.ca.rc.signer.{Signer, SignerCreated, SignerEvent}
+import nl.bruijnzeels.tim.rpki.ca._
+import nl.bruijnzeels.tim.rpki.ca.rc.child.Child
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
 import nl.bruijnzeels.tim.rpki.common.domain.{RoaAuthorisation, RpkiObjectNameSupport}
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.joda.time.{DateTime, DateTimeZone}
@@ -162,11 +162,7 @@ case class ResourceClass(
    * Publish this resource class and all current certificates
    */
   def publish(authorisations: List[RoaAuthorisation] = List.empty) = {
-
-
-
     val certificates = children.values.flatMap(c => c.currentCertificates).toList
-
     currentSigner.publish(resourceClassName, authorisations, certificates)
   }
 }

@@ -30,7 +30,7 @@ package nl.bruijnzeels.tim.rpki
 
 import java.net.URI
 
-import net.ripe.ipresource.{IpRange, Asn, IpResourceSet}
+import net.ripe.ipresource.{Asn, IpRange, IpResourceSet}
 import net.ripe.rpki.commons.crypto.cms.roa.RoaPrefix
 import nl.bruijnzeels.tim.rpki.common.cqrs.EventStore
 import org.scalatest.{BeforeAndAfter, FunSuite, Matchers}
