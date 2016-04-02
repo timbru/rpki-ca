@@ -78,7 +78,10 @@ case class SignerCreated(resourceClassName: String) extends SignerEvent
 case class SignerSigningMaterialCreated(resourceClassName: String, signingMaterial: SigningMaterial) extends SignerEvent
 case class SignerCreatedPendingCertificateRequest(resourceClassName: String, request: CertificateIssuanceRequestPayload) extends SignerEvent
 case class SignerReceivedCertificate(resourceClassName: String, certificate: X509ResourceCertificate) extends SignerEvent
-case class SignerSignedCertificate(resourceClassName: String, certificate: X509ResourceCertificate) extends SignerEvent
+case class SignerSignedTaCertificate(resourceClassName: String, certificate: X509ResourceCertificate) extends SignerEvent
+case class SignerSignedManifest(resourceClassName: String, manifest: ManifestCms) extends SignerEvent
+case class SignerSignedCaCertificate(resourceClassName: String, certificate: X509ResourceCertificate) extends SignerEvent
+case class SignerRemovedCaCertificate(resourceClassName: String, certificate: X509ResourceCertificate) extends SignerEvent
 case class SignerAddedRevocation(resourceClassName: String, revocation: Revocation) extends SignerEvent
 case class SignerSignedRoaCms(resourceClassName: String, roaCms: RoaCms) extends SignerEvent
 case class SignerRemovedRoaCms(resourceClassName: String, roaCms: RoaCms) extends SignerEvent
@@ -88,9 +91,11 @@ case class SignerUpdatedPublicationSet(resourceClassName: String, number: BigInt
 
 sealed trait ChildEvent extends ResourceClassEvent {
   def childId: UUID
+  def resourceClassName: String
 }
 case class ChildCreated(resourceClassName: String, childId: UUID, entitledResources: IpResourceSet) extends ChildEvent
 case class ChildUpdatedResourceEntitlements(resourceClassName: String, childId: UUID, entitledResources: IpResourceSet) extends ChildEvent
+case class ChildRemoved(resourceClassName: String, childId: UUID) extends ChildEvent
 case class ChildReceivedCertificate(resourceClassName: String, childId: UUID, certificate: X509ResourceCertificate) extends ChildEvent
 
 sealed trait RoaConfigurationEvent extends CertificateAuthorityEvent

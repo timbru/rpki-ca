@@ -33,6 +33,7 @@ import java.util.UUID
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
 import net.ripe.rpki.commons.provisioning.payload.common.{CertificateElementBuilder, GenericClassElementBuilder}
+import net.ripe.rpki.commons.provisioning.payload.list.response.ResourceClassListResponseClassElement
 import nl.bruijnzeels.tim.rpki.ca._
 import nl.bruijnzeels.tim.rpki.ca.rc.child.Child
 import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
@@ -41,7 +42,6 @@ import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.joda.time.{DateTime, DateTimeZone}
 
 import scala.collection.JavaConverters._
-import scala.util.Either
 
 /**
  * The name for this class: ResourceClass is taken from the "Provisioning Resource Certificates" Protocol.
@@ -123,12 +123,37 @@ case class ResourceClass(
       .buildCertificateIssuanceResponseClassElement()
   }
 
-  def addChild(childId: UUID, entitledResources: IpResourceSet): Either[ChildCreated, ResourceClassError] = {
-    if (!isOverclaiming(entitledResources)) {
-      Left(ChildCreated(resourceClassName = resourceClassName, childId = childId, entitledResources = entitledResources))
-    } else {
-      Right(CannotAddChildWithOverclaimingResources)
+  def processResourceClassResponse(element: ResourceClassListResponseClassElement): Option[SignerCreatedPendingCertificateRequest] = {
+
+    def getResourcesElement(element: ResourceClassListResponseClassElement) = {
+      val resources = element.getResourceSetAsn
+      resources.addAll(element.getResourceSetIpv4)
+      resources.addAll(element.getResourceSetIpv6)
+      resources
     }
+
+    val entitledResources = getResourcesElement(element)
+    val entitledNotAfter = element.getValidityNotAfter
+
+    currentSigner.requestCertificateIfNeeded(resourceClassName, entitledResources, entitledNotAfter)
+  }
+
+  def updateChild(childId: UUID, entitledResources: IpResourceSet): Option[ChildEvent] = {
+    if (isOverclaiming(entitledResources)) {
+      throw new CertificateAuthorityException("Trying to assign resources to child not held by this CA")
+    }
+
+    children.isDefinedAt(childId) match {
+      case true => entitledResources.isEmpty match {
+        case true => ??? // remove and revoke
+        case false => Some(ChildUpdatedResourceEntitlements(resourceClassName, childId, entitledResources))
+      }
+      case false => entitledResources.isEmpty match {
+        case true => None
+        case false => Some(ChildCreated(resourceClassName, childId, entitledResources))
+      }
+    }
+
   }
 
   /**
@@ -142,17 +167,24 @@ case class ResourceClass(
    *   <li>the request includes resources this resource class is not authoritative over</li>
    * </ul>
    */
-  def processChildCertificateRequest(childId: UUID, requestedResources: Option[IpResourceSet], pkcs10Request: PKCS10CertificationRequest): Either[List[ResourceClassEvent], ResourceClassError] = children.get(childId) match {
-    case None => Right(UnknownChild(childId))
+  def processChildCertificateRequest(childId: UUID, requestedResources: Option[IpResourceSet], pkcs10Request: PKCS10CertificationRequest): List[ResourceClassEvent] = children.get(childId) match {
+
+    case None => throw new CertificateAuthorityException(s"Unknown child with id: ${childId}")
+
     case Some(child) => {
       val resources = requestedResources.getOrElse(child.entitledResources)
       if (!child.entitledResources.contains(resources)) {
-        Right(ChildDoesNotHaveAllResources(resources))
+        throw new CertificateAuthorityException(s"Child is not entitled to all resources in set: ${resources}")
       } else {
-        currentSigner.signChildCertificateRequest(resourceClassName, resources, pkcs10Request) match {
-          case Left(signed) =>
-            Left(List(signed, ChildReceivedCertificate(resourceClassName, childId, signed.certificate)))
-          case Right(error) => Right(error)
+        val signed = currentSigner.signChildCertificateRequest(resourceClassName, resources, pkcs10Request)
+        val childReceived = ChildReceivedCertificate(resourceClassName, childId, signed.certificate)
+        val newCertificateEvents = List(signed, childReceived)
+
+        child.currentCertificateForKey(signed.certificate.getPublicKey) match {
+          case None => newCertificateEvents
+          case Some(cert) => {
+            currentSigner.revokeCaCertificate(resourceClassName, cert) ++ newCertificateEvents
+          }
         }
       }
     }
@@ -161,10 +193,8 @@ case class ResourceClass(
   /**
    * Publish this resource class and all current certificates
    */
-  def publish(authorisations: List[RoaAuthorisation] = List.empty) = {
-    val certificates = children.values.flatMap(c => c.currentCertificates).toList
-    currentSigner.publish(resourceClassName, authorisations, certificates)
-  }
+  def publish(authorisations: List[RoaAuthorisation] = List.empty) = currentSigner.publish(resourceClassName, authorisations)
+
 }
 
 object ResourceClass {

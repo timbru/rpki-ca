@@ -52,34 +52,53 @@ class ResourceClassTest extends RpkiTest {
   }
 
   test("Should add child") {
-    RcWithSelfSignedSigner.addChild(ChildId, ChildResources) match {
-      case Left(createEvent) => {
+    RcWithSelfSignedSigner.updateChild(ChildId, ChildResources) match {
+      case Some(createEvent: ChildCreated) => {
         createEvent.childId should equal(ChildId)
         createEvent.entitledResources should equal(ChildResources)
         createEvent.resourceClassName should equal(ResourceClassName)
       }
-      case _ => fail("Should have created  child")
+      case _ => fail("Should have created child")
     }
   }
 
   test("Should NOT add child with resources not held") {
-    RcWithSelfSignedSigner.addChild(ChildId, "192.168.0.0/16") match {
-      case Right(failedEvent) =>
-      case _ => fail("Should have refused to create child")
+    try {
+      RcWithSelfSignedSigner.updateChild(ChildId, "192.168.0.0/16")
+      fail("Should have refused to create child")
+    } catch {
+      case ex: CertificateAuthorityException => // expected
     }
   }
 
   test("Should sign child request and store certificate") {
-    RcWithChild.processChildCertificateRequest(ChildId, Some(ChildResources), ChildPkcs10Request) match {
-      case Right(error) => fail("Should sign request")
-      case Left(events) => {
-        events should have size (2)
-        val signed = events(0).asInstanceOf[SignerSignedCertificate]
-        val received = events(1).asInstanceOf[ChildReceivedCertificate]
-        signed.certificate should equal(received.certificate)
-      }
-    }
+    val events = RcWithChild.processChildCertificateRequest(ChildId, Some(ChildResources), ChildPkcs10Request)
+
+    events should have size (2)
+    val signed = events(0).asInstanceOf[SignerSignedCaCertificate]
+    val received = events(1).asInstanceOf[ChildReceivedCertificate]
+    signed.certificate should equal(received.certificate)
   }
+
+  test("Should sign new child request revoke old certificate") {
+    val firstSignEvents = RcWithChild.processChildCertificateRequest(ChildId, Some(ChildResources), ChildPkcs10Request)
+    val rcWithSignedChild = RcWithChild.applyEvents(firstSignEvents)
+    val firstCertificate = firstSignEvents(1).asInstanceOf[ChildReceivedCertificate].certificate
+
+    val secondSignEvents = rcWithSignedChild.processChildCertificateRequest(ChildId, Some(ChildResources), ChildPkcs10Request)
+
+    secondSignEvents should have size (4)
+    val revoked = secondSignEvents(0).asInstanceOf[SignerAddedRevocation]
+    revoked.revocation.serial should equal (firstCertificate.getSerialNumber)
+
+    val removed = secondSignEvents(1).asInstanceOf[SignerRemovedCaCertificate]
+    removed.certificate should equal(firstCertificate)
+    
+    val signed = secondSignEvents(2).asInstanceOf[SignerSignedCaCertificate]
+    val received = secondSignEvents(3).asInstanceOf[ChildReceivedCertificate]
+    signed.certificate should equal(received.certificate)
+  }
+
 
   test("Should publish certificate for child") {
     val rcAfterPublish = RcWithCertifiedChild.applyEvents(RcWithCertifiedChild.publish())
@@ -127,11 +146,11 @@ object ResourceClassTest extends RpkiTest {
 
   val RcWithSelfSignedSigner = ResourceClass.created(RcCreatedEvent).applyEvents(SelfSignedSignerCreatedEvents)
 
-  val ChildAddedEvent = RcWithSelfSignedSigner.addChild(ChildId, ChildResources).left.get
+  val ChildAddedEvent = RcWithSelfSignedSigner.updateChild(ChildId, ChildResources).get
 
   val RcWithChild = RcWithSelfSignedSigner.applyEvent(ChildAddedEvent)
 
-  val RcChildSignEvents = RcWithChild.processChildCertificateRequest(ChildId, Some(ChildResources), ChildPkcs10Request).left.get
+  val RcChildSignEvents = RcWithChild.processChildCertificateRequest(ChildId, Some(ChildResources), ChildPkcs10Request)
 
   val RcWithCertifiedChild = RcWithChild.applyEvents(RcChildSignEvents)
 

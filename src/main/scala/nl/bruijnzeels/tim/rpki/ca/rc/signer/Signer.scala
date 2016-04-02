@@ -33,17 +33,18 @@ package signer
 
 import java.math.BigInteger
 import java.net.URI
-import java.security.KeyPair
+import java.security.{PublicKey, KeyPair}
 import javax.security.auth.x500.X500Principal
 
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.crypto.CertificateRepositoryObject
 import net.ripe.rpki.commons.crypto.cms.roa.RoaCms
+import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
 import net.ripe.rpki.commons.provisioning.payload.issue.request.{CertificateIssuanceRequestPayload, CertificateIssuanceRequestPayloadBuilder}
 import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestBuilder
 import nl.bruijnzeels.tim.rpki.common.domain._
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
-import org.joda.time.Period
+import org.joda.time.{DateTime, Period}
 
 import scala.collection.JavaConverters._
 
@@ -51,6 +52,7 @@ case class Signer(
   signingMaterial: SigningMaterial,
   pendingCertificateRequest: Option[CertificateIssuanceRequestPayload] = None,
   roas: List[RoaCms] = List.empty,
+  caCertificates: Map[PublicKey, X509ResourceCertificate] = Map.empty,
   publicationSet: PublicationSet = PublicationSet(BigInteger.ZERO),
   revocationList: List[Revocation] = List.empty) {
 
@@ -66,7 +68,10 @@ case class Signer(
     case pendingRequestCreated: SignerCreatedPendingCertificateRequest => copy(pendingCertificateRequest = Some(pendingRequestCreated.request))
     case certificateReceived: SignerReceivedCertificate => copy(pendingCertificateRequest = None, signingMaterial = signingMaterial.updateCurrentCertificate(certificateReceived.certificate))
     case published: SignerUpdatedPublicationSet => copy(publicationSet = publicationSet.applyEvent(published))
-    case signed: SignerSignedCertificate => copy(signingMaterial = signingMaterial.updateLastSerial(signed.certificate.getSerialNumber()))
+    case signed: SignerSignedCaCertificate => copy(signingMaterial = signingMaterial.updateLastSerial(signed.certificate.getSerialNumber()), caCertificates = caCertificates + (signed.certificate.getPublicKey -> signed.certificate))
+    case signed: SignerSignedTaCertificate => copy(signingMaterial = signingMaterial.updateLastSerial(signed.certificate.getSerialNumber()))
+    case signed: SignerSignedManifest => copy(signingMaterial = signingMaterial.updateLastSerial(signed.manifest.getCertificate.getSerialNumber()))
+    case removed: SignerRemovedCaCertificate => copy( caCertificates = caCertificates - (removed.certificate.getPublicKey))
     case revoked: SignerAddedRevocation => copy(revocationList = revocationList :+ revoked.revocation)
     case signedRoa: SignerSignedRoaCms => copy(signingMaterial = signingMaterial.updateLastSerial(signedRoa.roaCms.getCertificate.getSerialNumber()), roas = roas :+ signedRoa.roaCms)
     case removedRoa: SignerRemovedRoaCms => copy(roas = roas.filter(_ != removedRoa.roaCms))
@@ -78,7 +83,7 @@ case class Signer(
    * Creates initial publication set for the first publication and will use existing publication set
    * so that mft and crl numbers can be tracked properly
    */
-  def publish(resourceClassName: String, authorisations: List[RoaAuthorisation] = List.empty, products: List[CertificateRepositoryObject] = List.empty) = {
+  def publish(resourceClassName: String, authorisations: List[RoaAuthorisation] = List.empty) = {
 
     var serialUsed = signingMaterial.lastSerial
     def nextSerial = {
@@ -108,6 +113,8 @@ case class Signer(
 
     val roasToPublish: List[RoaCms] = roas ++ newRoaEvents.map(_.roaCms)
 
+    val caCertificatesToPublish = caCertificates.values.toList
+
     val setNumber = publicationSet.number.add(BigInteger.ONE)
 
     val mftRevocationOption = publicationSet.mft.map(mft => {
@@ -129,19 +136,19 @@ case class Signer(
       val mftRequest = ManifestRequest(nextUpdateDuration = MftNextUpdate,
         validityDuration = MftValidityTime,
         manifestNumber = setNumber,
-        publishedObjects = products :+ newCrl,
+        publishedObjects = roasToPublish ++ caCertificatesToPublish :+ newCrl,
         certificateSerial = nextSerial)
       SigningSupport.createManifest(signingMaterial, mftRequest)
     }
 
-    val manifestSignedEvent = SignerSignedCertificate(resourceClassName, newMft.getCertificate())
+    val manifestSignedEvent = SignerSignedManifest(resourceClassName, newMft)
 
     val publicationSetUpdatedEvent = publicationSet.publish(
         resourceClassName = resourceClassName,
         baseUri = signingMaterial.currentCertificate.getRepositoryUri,
         mft = newMft,
         crl = newCrl,
-        products = roasToPublish ++ products)
+        products = roasToPublish ++ caCertificatesToPublish)
 
     mftRevocationOption match {
       case None => newRoaEvents ++ removeRoaEvents :+ manifestSignedEvent :+ publicationSetUpdatedEvent
@@ -149,27 +156,50 @@ case class Signer(
     }
   }
 
+  def revokeCaCertificate(resourceClassName: String, certificate: X509ResourceCertificate) = List(
+    SignerAddedRevocation(resourceClassName, Revocation.forCertificate(certificate)),
+    SignerRemovedCaCertificate(resourceClassName, certificate))
+
   /**
    * Sign a child certificate request
    */
-  def signChildCertificateRequest(resourceClassName: String, resources: IpResourceSet, pkcs10Request: PKCS10CertificationRequest): Either[SignerSignedCertificate, RejectedCertificate] = {
+  def signChildCertificateRequest(resourceClassName: String, resources: IpResourceSet, pkcs10Request: PKCS10CertificationRequest): SignerSignedCaCertificate = {
     val childCaRequest = ChildCertificateSignRequest(
       pkcs10Request = pkcs10Request,
       resources = resources,
       validityDuration = ChildCaLifeTime,
       serial = signingMaterial.lastSerial.add(BigInteger.ONE))
 
-    val overclaimingResources = new IpResourceSet(resources)
-    overclaimingResources.removeAll(signingMaterial.currentCertificate.getResources())
+    val certificate: X509ResourceCertificate = SigningSupport.createChildCaCertificate(signingMaterial, childCaRequest)
 
-    if (overclaimingResources.isEmpty()) {
-      Left(SignerSignedCertificate(resourceClassName, SigningSupport.createChildCaCertificate(signingMaterial, childCaRequest)))
-    } else {
-      Right(RejectedCertificate(s"Child certificate request includes resources not included in parent certificate: ${overclaimingResources}"))
-    }
+    SignerSignedCaCertificate(resourceClassName, certificate)
   }
 
 
+  /**
+    * Request a new certificate if needed.
+    */
+  def requestCertificateIfNeeded(resourceClassName: String, entitledResources: IpResourceSet, entitledNotAfter: DateTime): Option[SignerCreatedPendingCertificateRequest] = {
+
+    val currentCertificate = signingMaterial.currentCertificate
+
+    if (currentCertificate == null ||
+      ! currentCertificate.getResources.equals(entitledResources) ||
+      currentCertificate.getValidityPeriod.getNotValidAfter.isEqual(entitledNotAfter)) {
+
+      val preferredSubject = RpkiObjectNameSupport.deriveSubject(signingMaterial.keyPair.getPublic()) // parent may override..
+      val request = Signer.createCertificateIssuanceRequest(resourceClassName,
+          currentCertificate.getRepositoryUri,
+          signingMaterial.mftPublicationUri,
+          signingMaterial.rrdpNotifyUrl,
+          preferredSubject,
+          signingMaterial.keyPair)
+      Some(SignerCreatedPendingCertificateRequest(resourceClassName, request))
+
+    } else {
+      None
+    }
+  }
 }
 
 object Signer {
@@ -191,6 +221,7 @@ object Signer {
     new CertificateIssuanceRequestPayloadBuilder().withClassName(className).withCertificateRequest(pkcs10Request).build()
   }
 
+
   def create(resourceClassName: String, publicationUri: URI, rrdpNotifyUri: URI) = {
     val keyPair = KeyPairSupport.createRpkiKeyPair
 
@@ -201,14 +232,14 @@ object Signer {
       SignerSigningMaterialCreated(resourceClassName, signingMaterial)
     }
 
-    val pendingCeritifcateRequest = {
+    val pendingCertificateRequest = {
       val mftUri = publicationUri.resolve(RpkiObjectNameSupport.deriveMftFileNameForKey(keyPair.getPublic()))
       val preferredSubject = RpkiObjectNameSupport.deriveSubject(keyPair.getPublic()) // parent may override..
       val request = createCertificateIssuanceRequest(resourceClassName, publicationUri, mftUri, rrdpNotifyUri, preferredSubject, keyPair)
       SignerCreatedPendingCertificateRequest(resourceClassName, request)
     }
 
-    List(created, signingMaterialCreated, pendingCeritifcateRequest)
+    List(created, signingMaterialCreated, pendingCertificateRequest)
   }
 
   def createSelfSigned(
@@ -224,7 +255,7 @@ object Signer {
     List(
       SignerCreated(resourceClassName),
       SignerSigningMaterialCreated(resourceClassName, SigningMaterial(keyPair, certificate, taCertificateUri, rrdpNotifyUri, BigInteger.ZERO)),
-      SignerSignedCertificate(resourceClassName, certificate))
+      SignerSignedTaCertificate(resourceClassName, certificate))
   }
 
   def buildFromEvents(events: List[SignerEvent]): Signer = Signer(null).applyEvents(events)

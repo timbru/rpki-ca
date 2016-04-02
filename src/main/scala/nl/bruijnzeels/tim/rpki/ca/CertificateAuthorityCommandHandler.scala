@@ -65,6 +65,7 @@ object CertificateAuthorityCommandDispatcher {
 
       case addParent: CertificateAuthorityAddParent => CertificateAuthorityAddParentHandler.handle(addParent, existingCa.get)
       case addChild: CertificateAuthorityAddChild => CertificateAuthorityAddChildHandler.handle(addChild, existingCa.get)
+      case updateChildResources: CertificateAuthorityUpdateChildResources => CertificateAuthorityUpdateChildResourcesHandler.handle(updateChildResources, existingCa.get)
 
       case addRoa: CertificateAuthorityAddRoa => CertificateAuthorityAddRoaHandler.handle(addRoa, existingCa.get)
       case removeRoa: CertificateAuthorityRemoveRoa => CertificateAuthorityRemoveRoaHandler.handle(removeRoa, existingCa.get)
@@ -96,6 +97,11 @@ object CertificateAuthorityAddParentHandler extends CertificateAuthorityCommandH
 object CertificateAuthorityAddChildHandler extends CertificateAuthorityCommandHandler[CertificateAuthorityAddChild] {
   override def handle(command: CertificateAuthorityAddChild, ca: CertificateAuthority) =
     ca.addChild(childId = command.childId, childXml = command.childXml, childResources = command.childResources)
+}
+
+object CertificateAuthorityUpdateChildResourcesHandler extends CertificateAuthorityCommandHandler[CertificateAuthorityUpdateChildResources] {
+  override def handle(command: CertificateAuthorityUpdateChildResources, ca: CertificateAuthority) =
+    ca.updateChild(childId = command.childId, childResources = command.childResources)
 }
 
 object CertificateAuthorityAddRoaHandler extends CertificateAuthorityCommandHandler[CertificateAuthorityAddRoa] {

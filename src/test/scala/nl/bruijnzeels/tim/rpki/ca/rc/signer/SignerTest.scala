@@ -53,11 +53,7 @@ class SignerTest extends FunSuite with Matchers {
   }
 
   test("should sign child certificate request") {
-    val signingResponse = SelfSignedSigner.signChildCertificateRequest(ResourceClassName, "10.0.0.0/24", ChildPkcs10Request)
-
-    signingResponse.isLeft should be(true)
-
-    val signedEvent = signingResponse.left.get
+    val signedEvent = SelfSignedSigner.signChildCertificateRequest(ResourceClassName, "10.0.0.0/24", ChildPkcs10Request)
 
     val childCertificate = signedEvent.certificate
 
@@ -72,17 +68,9 @@ class SignerTest extends FunSuite with Matchers {
 
   test("should include rrdp in SIA of signed certificate") {
     val signingResponse = SelfSignedSigner.signChildCertificateRequest(ResourceClassName, "10.0.0.0/24", ChildPkcs10Request)
-    val childCertificate = signingResponse.left.get.certificate
+    val childCertificate = signingResponse.certificate
 
     childCertificate.getRrdpNotifyUri() should equal (RrdpNotifyUri)
-  }
-
-  test("should reject overclaiming child certificate request") {
-    val signingResponse = SelfSignedSigner.signChildCertificateRequest(ResourceClassName, "192.168.0.0/24", ChildPkcs10Request)
-    signingResponse.isRight should be(true)
-
-    val rejectionEvent = signingResponse.right.get
-    rejectionEvent.reason should include("192.168.0.0/24")
   }
 
   test("should publish") {
@@ -121,13 +109,11 @@ class SignerTest extends FunSuite with Matchers {
   }
 
   test("should publish objects") {
-
-    val signingResponse = SelfSignedSigner.signChildCertificateRequest(ResourceClassName, "10.0.0.0/24", ChildPkcs10Request)
-    val signedEvent = signingResponse.left.get
+    val signedEvent = SelfSignedSigner.signChildCertificateRequest(ResourceClassName, "10.0.0.0/24", ChildPkcs10Request)
     val childCertificate = signedEvent.certificate
     val signerAfterSigning = SelfSignedSigner.applyEvent(signedEvent)
 
-    val signerAfterPublish = signerAfterSigning.applyEvents(signerAfterSigning.publish(ResourceClassName, List.empty, List(childCertificate)))
+    val signerAfterPublish = signerAfterSigning.applyEvents(signerAfterSigning.publish(ResourceClassName, List.empty))
 
     val set = signerAfterPublish.publicationSet
 
@@ -135,5 +121,7 @@ class SignerTest extends FunSuite with Matchers {
     set.mft.get.containsFile(RpkiObjectNameSupport.deriveName(childCertificate)) should be(true)
     set.items.values should contain(childCertificate)
   }
+
+
 
 }

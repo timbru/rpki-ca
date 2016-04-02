@@ -35,11 +35,7 @@ import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
 import nl.bruijnzeels.tim.rpki.ca.{ChildCreated, ChildEvent, ChildReceivedCertificate, ChildUpdatedResourceEntitlements}
 
-case class ChildKeyCertificates(currentCertificate: X509ResourceCertificate, oldCertificates: List[X509ResourceCertificate] = List.empty) {
-  def withNewCertificate(certificate: X509ResourceCertificate) = copy(currentCertificate = certificate, oldCertificates = oldCertificates :+ currentCertificate)
-}
-
-case class Child(id: UUID, entitledResources: IpResourceSet, knownKeys: Map[PublicKey, ChildKeyCertificates] = Map.empty) {
+case class Child(id: UUID, entitledResources: IpResourceSet, knownKeys: Map[PublicKey, X509ResourceCertificate] = Map.empty) {
 
   def applyEvent(event: ChildEvent) = event match {
     case created: ChildCreated => Child.created(created)
@@ -47,15 +43,12 @@ case class Child(id: UUID, entitledResources: IpResourceSet, knownKeys: Map[Publ
     case certReceived: ChildReceivedCertificate => certificateReceived(certReceived.certificate)
   }
 
-  def currentCertificates(): List[X509ResourceCertificate] = knownKeys.values.map(_.currentCertificate).toList
+  def currentCertificateForKey(publicKey: PublicKey): Option[X509ResourceCertificate] = knownKeys.get(publicKey)
+
+  def currentCertificates(): List[X509ResourceCertificate] = knownKeys.values.toList
 
   private def certificateReceived(cert: X509ResourceCertificate) = {
-    val pubKey = cert.getPublicKey
-    val childCertificates = knownKeys.get(pubKey) match {
-      case None => ChildKeyCertificates(cert)
-      case Some(ckc) => ckc.withNewCertificate(cert)
-    }
-    copy(knownKeys = knownKeys + (pubKey -> childCertificates))
+    copy(knownKeys = knownKeys + (cert.getPublicKey -> cert))
   }
 
 }

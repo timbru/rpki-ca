@@ -51,6 +51,8 @@ case class CertificateAuthorityCreateAsTrustAnchor(aggregateId: UUID, name: Stri
   def versionedId = VersionedId(aggregateId)
 }
 
+
+
 /**
   * Add a parent. A CertificateAuthority can have only one parent (at least for now)
   */
@@ -60,6 +62,15 @@ case class CertificateAuthorityAddParent(versionedId: VersionedId, parentXml: St
   * Add a child. A CertificateAuthority can have many children
   */
 case class CertificateAuthorityAddChild(versionedId: VersionedId, childId: UUID, childXml: String, childResources: IpResourceSet) extends CertificateAuthorityCommand
+
+/**
+  * Update a Child CA's resources. Just updates the eligible resources, but will only re-issue
+  * on request. Even if resources are shrunk.
+  *
+  * TODO: Implement command to force shrink issued certificates for children that don't request
+  * in time voluntarily
+  */
+case class CertificateAuthorityUpdateChildResources(versionedId: VersionedId, childId: UUID, childResources: IpResourceSet) extends CertificateAuthorityCommand
 
 /**
   * Create a new set of published objects, including a new mft and CRL.

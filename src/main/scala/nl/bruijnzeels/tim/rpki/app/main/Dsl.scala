@@ -122,7 +122,6 @@ object Dsl {
 
     class taAddingChild(child: CertificateAuthority) {
       def withResources(resources: IpResourceSet) = {
-        
         CertificateAuthorityCommandDispatcher.dispatch(
           CertificateAuthorityAddChild(
             versionedId = current taVersion,
@@ -133,6 +132,18 @@ object Dsl {
     }
 
     def addChild(child: CertificateAuthority) = new taAddingChild(child)
+
+    class taUpdatingChild(child: CertificateAuthority) {
+      def withResources(resources: IpResourceSet) = {
+        CertificateAuthorityCommandDispatcher.dispatch(
+          CertificateAuthorityUpdateChildResources(
+            versionedId = current taVersion,
+            childId = child.versionedId.id,
+            childResources = resources))
+      }
+    }
+
+    def updateChild(child: CertificateAuthority) = new taUpdatingChild(child)
 
     def publish() = CertificateAuthorityCommandDispatcher.dispatch(CertificateAuthorityPublish(current taVersion))
 

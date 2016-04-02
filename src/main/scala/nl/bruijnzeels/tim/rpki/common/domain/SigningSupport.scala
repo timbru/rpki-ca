@@ -45,6 +45,8 @@ import net.ripe.rpki.commons.provisioning.cms.ProvisioningCmsObjectBuilder
 import net.ripe.rpki.commons.provisioning.payload.AbstractProvisioningPayload
 import net.ripe.rpki.commons.provisioning.x509.pkcs10.RpkiCaCertificateRequestParser
 import net.ripe.rpki.commons.provisioning.x509.{ProvisioningCmsCertificateBuilder, ProvisioningIdentityCertificate}
+import nl.bruijnzeels.tim.rpki.ca.SignerCreatedPendingCertificateRequest
+import nl.bruijnzeels.tim.rpki.ca.rc.signer.Signer
 import org.bouncycastle.asn1.x509.KeyUsage
 import org.bouncycastle.pkcs.PKCS10CertificationRequest
 import org.joda.time.{DateTime, Period}
