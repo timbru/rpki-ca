@@ -33,12 +33,11 @@ import java.util.UUID
 
 import net.ripe.ipresource.IpResourceSet
 import net.ripe.rpki.commons.crypto.x509cert.X509ResourceCertificate
-import nl.bruijnzeels.tim.rpki.ca.{ChildCreated, ChildEvent, ChildReceivedCertificate, ChildUpdatedResourceEntitlements}
+import nl.bruijnzeels.tim.rpki.ca.{ChildEvent, ChildReceivedCertificate, ChildUpdatedResourceEntitlements}
 
 case class Child(id: UUID, entitledResources: IpResourceSet, knownKeys: Map[PublicKey, X509ResourceCertificate] = Map.empty) {
 
   def applyEvent(event: ChildEvent) = event match {
-    case created: ChildCreated => Child.created(created)
     case resourceUpdated: ChildUpdatedResourceEntitlements => copy(entitledResources = resourceUpdated.entitledResources)
     case certReceived: ChildReceivedCertificate => certificateReceived(certReceived.certificate)
   }
@@ -51,8 +50,4 @@ case class Child(id: UUID, entitledResources: IpResourceSet, knownKeys: Map[Publ
     copy(knownKeys = knownKeys + (cert.getPublicKey -> cert))
   }
 
-}
-
-object Child {
-  def created(created: ChildCreated) = Child(id = created.childId, entitledResources = created.entitledResources)
 }

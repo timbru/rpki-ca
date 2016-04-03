@@ -19,13 +19,16 @@ Currently this code supports:
  * Running any number of CAs under a TA
  * Running any number of CAs under another CA
  * Issuing ROAs
+ * Basic extending and shrinking of resources to child CA, re-issuance waits for request by child
+ * Will re-issue ROAs when republishing and resources changed
+ * Child CA can handle if resource class disappears
  * Publishing using a built-in RRDP server (but see below, not production ready)
 
 Future ideas (not in order):
- * Re-issue certificates to child CAs:
-   * Grow child resources
-   * Soft shrink child resources (give child time to shrink)
-   * Hard shrink child resources (pro-actively re-issue after time X, child had enough time)
+ * Improve resource changes
+   * Force shrink issued certificates when resources are lost, on publish (just like ROAs immediately after update)
+   * Soft revoke child when no longer eligible? I.e. let Child do a revoke request? Protocol unclear on this I believe
+   * Hard shrink child resources (pro-actively re-issue after time X, X can also be 0 seconds..)
  * Support key rolls
  * Extract library and proof-of-concept implementation code
    * Allow use of code as library with DSL

@@ -28,7 +28,7 @@
  */
 package nl.bruijnzeels.tim.rpki.scenarios
 
-import net.ripe.ipresource.{Asn, IpRange}
+import net.ripe.ipresource.{IpResourceSet, Asn, IpRange}
 import nl.bruijnzeels.tim.rpki.RpkiTest
 import nl.bruijnzeels.tim.rpki.app.main.Dsl._
 import nl.bruijnzeels.tim.rpki.ca.CertificateAuthority
@@ -39,7 +39,7 @@ class CertificateAuthorityChildResourcesUpdatesTest extends RpkiTest {
 
   import scala.language.postfixOps
 
-  test("Should update Child resources, extend certificate on request") {
+  test("Should update Child resources, extend certificate on request, and shrink again") {
     create trustAnchor ()
     create certificateAuthority ChildId
     trustAnchor addChild (current certificateAuthority ChildId) withResources ChildResources
@@ -71,5 +71,27 @@ class CertificateAuthorityChildResourcesUpdatesTest extends RpkiTest {
     getCurrentChildCertificate.getResources() should equal(ChildResources)
   }
 
+  test("Should update Child resources, shrink to empty and revoke certificate on request, and grow again") {
+
+    def getCurrentChildCertificate = {
+      val caRcWithCertificate = (current certificateAuthority ChildId resourceClasses).get(CertificateAuthority.DefaultResourceClassName).get
+      caRcWithCertificate.currentSigner.signingMaterial.currentCertificate
+    }
+
+    create trustAnchor ()
+    create certificateAuthority ChildId
+    trustAnchor addChild (current certificateAuthority ChildId) withResources ChildResources
+    certificateAuthority withId ChildId addParent (current trustAnchor)
+    certificateAuthority withId ChildId update()
+    getCurrentChildCertificate.getResources() should equal(ChildResources)
+
+    trustAnchor updateChild (current certificateAuthority ChildId) withResources ""
+    certificateAuthority withId ChildId update()
+    (current certificateAuthority ChildId resourceClasses).get(CertificateAuthority.DefaultResourceClassName) should be(None)
+
+    trustAnchor updateChild (current certificateAuthority ChildId) withResources ChildResources
+    certificateAuthority withId ChildId update()
+    getCurrentChildCertificate.getResources() should equal(ChildResources)
+  }
 
 }

@@ -61,7 +61,8 @@ case class ResourceClass(
   def applyEvent(event: ResourceClassEvent): ResourceClass = event match {
     case signerCreated: SignerCreated => copy(currentSigner = Signer(null))
     case signerEvent: SignerEvent => copy(currentSigner = currentSigner.applyEvent(signerEvent))
-    case childCreated: ChildCreated => copy(children = children + (childCreated.childId -> Child.created(childCreated)))
+    case childCreated: ChildCreated => copy(children = children + (childCreated.childId -> Child(id = childCreated.childId, entitledResources = childCreated.entitledResources)))
+    case childRemoved: ChildRemoved => copy(children = children - (childRemoved.childId))
     case childEvent: ChildEvent => copy(children = processChildEvent(childEvent))
   }
 
@@ -76,36 +77,43 @@ case class ResourceClass(
     !overclaiming.isEmpty
   }
 
-  private def createClassElementBuilder(child: Child) = {
+  private def createClassElementBuilder(entitledResources: IpResourceSet) = {
     new GenericClassElementBuilder()
       .withClassName(resourceClassName)
       .withCertificateAuthorityUri(List(currentSigner.signingMaterial.certificateUri).asJava)
-      .withIpResourceSet(child.entitledResources)
+      .withIpResourceSet(entitledResources)
       .withValidityNotAfter(new DateTime().plusYears(1).withZone(DateTimeZone.UTC))
       .withIssuer(currentSigner.signingMaterial.currentCertificate)
   }
 
   def buildClassResponseForChild(childId: UUID) = {
-    val child = children.get(childId).get
+    children.get(childId) match {
+      case None => {
+        // Empty response - no resources
+        createClassElementBuilder(new IpResourceSet()).buildResourceClassListResponseClassElement()
+      }
+      case Some(child) => {
+        val responseBuilder = createClassElementBuilder(child.entitledResources)
 
-    val responseBuilder = createClassElementBuilder(child)
+        val certificateUri = currentSigner.signingMaterial.certificateUri
 
-    val certificateUri = currentSigner.signingMaterial.certificateUri
+        responseBuilder.withCertificateAuthorityUri(List(certificateUri).asJava)
 
-    responseBuilder.withCertificateAuthorityUri(List(certificateUri).asJava)
+        // Here we return *all* certificates
+        val certificateElements = child.currentCertificates.map { certificate =>
+          val certificatePublicationUri = currentSigner.signingMaterial.currentCertificate.getRepositoryUri().resolve(RpkiObjectNameSupport.deriveName(certificate))
 
-    // Here we return *all* certificates
-    val certificateElements = child.currentCertificates.map { certificate => val certificatePublicationUri = currentSigner.signingMaterial.currentCertificate.getRepositoryUri().resolve(RpkiObjectNameSupport.deriveName(certificate))
+          new CertificateElementBuilder().withIpResources(certificate.getResources())
+            .withCertificatePublishedLocations(List(certificatePublicationUri).asJava)
+            .withCertificate(certificate).build()
+        }
 
-      new CertificateElementBuilder().withIpResources(certificate.getResources())
-        .withCertificatePublishedLocations(List(certificatePublicationUri).asJava)
-        .withCertificate(certificate).build()
-    }
-
-    if (certificateElements.size > 0) {
-      responseBuilder.withCertificateElements(certificateElements.asJava).buildResourceClassListResponseClassElement()
-    } else {
-      responseBuilder.buildResourceClassListResponseClassElement()
+        if (certificateElements.size > 0) {
+          responseBuilder.withCertificateElements(certificateElements.asJava).buildResourceClassListResponseClassElement()
+        } else {
+          responseBuilder.buildResourceClassListResponseClassElement()
+        }
+      }
     }
   }
 
@@ -117,13 +125,13 @@ case class ResourceClass(
         .withCertificate(certificate).build()
     }
 
-    createClassElementBuilder(children.get(childId).get)
+    createClassElementBuilder(children.get(childId).get.entitledResources)
       .withCertificateElements(List(certificateElement).asJava)
       .withCertificateAuthorityUri(List(currentSigner.signingMaterial.certificateUri).asJava)
       .buildCertificateIssuanceResponseClassElement()
   }
 
-  def processResourceClassResponse(element: ResourceClassListResponseClassElement): Option[SignerCreatedPendingCertificateRequest] = {
+  def processResourceClassResponse(element: ResourceClassListResponseClassElement): List[CertificateAuthorityEvent] = {
 
     def getResourcesElement(element: ResourceClassListResponseClassElement) = {
       val resources = element.getResourceSetAsn
@@ -135,22 +143,34 @@ case class ResourceClass(
     val entitledResources = getResourcesElement(element)
     val entitledNotAfter = element.getValidityNotAfter
 
-    currentSigner.requestCertificateIfNeeded(resourceClassName, entitledResources, entitledNotAfter)
+    if (entitledResources.isEmpty) {
+      // Seems we were revoked.. just clean up
+      List(currentSigner.unpublishAll(resourceClassName), ResourceClassRemoved(resourceClassName))
+    } else {
+      // TODO: If current resources > entitled -> update child entitlements and
+      currentSigner.requestCertificateIfNeeded(resourceClassName, entitledResources, entitledNotAfter).toList
+    }
+
+
   }
 
-  def updateChild(childId: UUID, entitledResources: IpResourceSet): Option[ChildEvent] = {
+  def updateChild(childId: UUID, entitledResources: IpResourceSet): List[ResourceClassEvent] = {
     if (isOverclaiming(entitledResources)) {
       throw new CertificateAuthorityException("Trying to assign resources to child not held by this CA")
     }
 
-    children.isDefinedAt(childId) match {
-      case true => entitledResources.isEmpty match {
-        case true => ??? // remove and revoke
-        case false => Some(ChildUpdatedResourceEntitlements(resourceClassName, childId, entitledResources))
+    children.get(childId) match {
+      case Some(child) => entitledResources.isEmpty match {
+        case true => {
+          child.currentCertificates.flatMap { cert =>
+            currentSigner.revokeCaCertificate(resourceClassName, cert)
+          } :+ ChildRemoved(resourceClassName, childId)
+        }
+        case false => List(ChildUpdatedResourceEntitlements(resourceClassName, childId, entitledResources))
       }
-      case false => entitledResources.isEmpty match {
-        case true => None
-        case false => Some(ChildCreated(resourceClassName, childId, entitledResources))
+      case None => entitledResources.isEmpty match {
+        case true => List.empty
+        case false => List(ChildCreated(resourceClassName, childId, entitledResources))
       }
     }
 

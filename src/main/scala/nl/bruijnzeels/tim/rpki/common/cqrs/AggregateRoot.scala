@@ -45,6 +45,5 @@ case class VersionedId(id: UUID, version: Long = 0) {
 }
 
 sealed trait AggregateRootType // Useful to avoid to problems with unexpected event types when storing events for different aggregate types in a single store
-case object TrustAnchorAggregate extends AggregateRootType
 case object CertificationAuthorityAggregate extends AggregateRootType
 case object PublicationServerAggregate extends AggregateRootType

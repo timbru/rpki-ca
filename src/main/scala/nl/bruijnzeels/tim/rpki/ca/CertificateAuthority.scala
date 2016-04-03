@@ -87,6 +87,9 @@ case class CertificateAuthority(
     case e: ResourceClassCreated =>
       copy(resourceClasses = resourceClasses + (e.resourceClassName -> ResourceClass.created(e)), events = events :+ e)
 
+    case e: ResourceClassRemoved =>
+      copy(resourceClasses = resourceClasses - (e.resourceClassName), events = events :+ e)
+
     case e: ResourceClassEvent => {
       val rc = resourceClasses.getOrElse(e.resourceClassName, throw new IllegalArgumentException("Got event for unknown resource class"))
       copy(resourceClasses = resourceClasses + (rc.resourceClassName -> rc.applyEvent(e)), events = events :+ e)
@@ -206,11 +209,7 @@ case class CertificateAuthority(
     }.toList
   }
 
-
-
   def processResourceClassListResponse(myRequest: ProvisioningCmsObject, response: ProvisioningCmsObject) = {
-
-
     communicator.validateParentResponse(response) match {
       case failure: ProvisioningMessageValidationFailure => throw new CertificateAuthorityException(failure.reason)
       case success: ProvisioningMessageValidationSuccess => {
@@ -229,7 +228,6 @@ case class CertificateAuthority(
             applyEvents(resourceClassEvents)
           }
           // TODO: Gracefully handle error response (other response types are more problematic though)
-          // TODO: Handle resource class disappearing on response -> remove resource class, and unpublish everything
           case _ => throw new CertificateAuthorityException("Expected resource class list response, but got: " + success.payload.getType())
         }
       }

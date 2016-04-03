@@ -50,6 +50,10 @@ case class PublicationSet(number: BigInteger, items: Map[URI, CertificateReposit
     copy(number = event.number, items = remainingItems ++ newOrUpdatedItems, mft = Some(event.newMft), crl = Some(event.newCrl))
   }
 
+  def unpublishAll = {
+    items.map(o => Withdraw.forRepositoryObject(o._1, o._2)).toList
+  }
+
   def publish(resourceClassName: String, baseUri: URI, mft: ManifestCms, crl: X509Crl, products: List[CertificateRepositoryObject] = List.empty) = {
 
     def deriveUri(repositoryObject: CertificateRepositoryObject) = baseUri.resolve(RpkiObjectNameSupport.deriveName(repositoryObject))

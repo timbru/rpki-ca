@@ -58,6 +58,7 @@ import nl.bruijnzeels.tim.rpki.publication.messages.{Publish, Withdraw}
 sealed trait CertificateAuthorityEvent extends Event
 case class CertificateAuthorityCreated(aggregateId: UUID, name: String, baseUrl: URI, rrdpNotifyUrl: URI) extends CertificateAuthorityEvent
 case class ResourceClassCreated(resourceClassName: String) extends CertificateAuthorityEvent
+case class ResourceClassRemoved(resourceClassName: String) extends CertificateAuthorityEvent
 case class ProvisioningCommunicatorCreated(myIdentity: MyIdentity) extends CertificateAuthorityEvent
 
 
@@ -88,14 +89,15 @@ case class SignerRemovedRoaCms(resourceClassName: String, roaCms: RoaCms) extend
 
 sealed trait PublicationSetEvent extends SignerEvent
 case class SignerUpdatedPublicationSet(resourceClassName: String, number: BigInteger, newMft: ManifestCms, newCrl: X509Crl, publishes: List[Publish] = List.empty, withdraws: List[Withdraw] = List.empty) extends PublicationSetEvent
+case class SignerUnpublishedAll(resourceClassName: String, withdraws: List[Withdraw]) extends SignerEvent
 
+case class ChildCreated(resourceClassName: String, childId: UUID, entitledResources: IpResourceSet) extends ResourceClassEvent
+case class ChildRemoved(resourceClassName: String, childId: UUID) extends ResourceClassEvent
 sealed trait ChildEvent extends ResourceClassEvent {
   def childId: UUID
   def resourceClassName: String
 }
-case class ChildCreated(resourceClassName: String, childId: UUID, entitledResources: IpResourceSet) extends ChildEvent
 case class ChildUpdatedResourceEntitlements(resourceClassName: String, childId: UUID, entitledResources: IpResourceSet) extends ChildEvent
-case class ChildRemoved(resourceClassName: String, childId: UUID) extends ChildEvent
 case class ChildReceivedCertificate(resourceClassName: String, childId: UUID, certificate: X509ResourceCertificate) extends ChildEvent
 
 sealed trait RoaConfigurationEvent extends CertificateAuthorityEvent

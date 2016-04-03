@@ -52,14 +52,11 @@ class ResourceClassTest extends RpkiTest {
   }
 
   test("Should add child") {
-    RcWithSelfSignedSigner.updateChild(ChildId, ChildResources) match {
-      case Some(createEvent: ChildCreated) => {
-        createEvent.childId should equal(ChildId)
-        createEvent.entitledResources should equal(ChildResources)
-        createEvent.resourceClassName should equal(ResourceClassName)
-      }
-      case _ => fail("Should have created child")
-    }
+    val events = RcWithSelfSignedSigner.updateChild(ChildId, ChildResources)
+    val createEvent: ChildCreated = events(0).asInstanceOf[ChildCreated]
+    createEvent.childId should equal(ChildId)
+    createEvent.entitledResources should equal(ChildResources)
+    createEvent.resourceClassName should equal(ResourceClassName)
   }
 
   test("Should NOT add child with resources not held") {
@@ -93,7 +90,7 @@ class ResourceClassTest extends RpkiTest {
 
     val removed = secondSignEvents(1).asInstanceOf[SignerRemovedCaCertificate]
     removed.certificate should equal(firstCertificate)
-    
+
     val signed = secondSignEvents(2).asInstanceOf[SignerSignedCaCertificate]
     val received = secondSignEvents(3).asInstanceOf[ChildReceivedCertificate]
     signed.certificate should equal(received.certificate)
@@ -146,7 +143,7 @@ object ResourceClassTest extends RpkiTest {
 
   val RcWithSelfSignedSigner = ResourceClass.created(RcCreatedEvent).applyEvents(SelfSignedSignerCreatedEvents)
 
-  val ChildAddedEvent = RcWithSelfSignedSigner.updateChild(ChildId, ChildResources).get
+  val ChildAddedEvent = RcWithSelfSignedSigner.updateChild(ChildId, ChildResources)(0)
 
   val RcWithChild = RcWithSelfSignedSigner.applyEvent(ChildAddedEvent)
 

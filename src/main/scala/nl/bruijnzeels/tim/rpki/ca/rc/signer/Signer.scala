@@ -68,6 +68,7 @@ case class Signer(
     case pendingRequestCreated: SignerCreatedPendingCertificateRequest => copy(pendingCertificateRequest = Some(pendingRequestCreated.request))
     case certificateReceived: SignerReceivedCertificate => copy(pendingCertificateRequest = None, signingMaterial = signingMaterial.updateCurrentCertificate(certificateReceived.certificate))
     case published: SignerUpdatedPublicationSet => copy(publicationSet = publicationSet.applyEvent(published))
+    case unpublishedAll: SignerUnpublishedAll => copy(publicationSet = null) // The resource class that owns this signer is about to be removed
     case signed: SignerSignedCaCertificate => copy(signingMaterial = signingMaterial.updateLastSerial(signed.certificate.getSerialNumber()), caCertificates = caCertificates + (signed.certificate.getPublicKey -> signed.certificate))
     case signed: SignerSignedTaCertificate => copy(signingMaterial = signingMaterial.updateLastSerial(signed.certificate.getSerialNumber()))
     case signed: SignerSignedManifest => copy(signingMaterial = signingMaterial.updateLastSerial(signed.manifest.getCertificate.getSerialNumber()))
@@ -76,6 +77,11 @@ case class Signer(
     case signedRoa: SignerSignedRoaCms => copy(signingMaterial = signingMaterial.updateLastSerial(signedRoa.roaCms.getCertificate.getSerialNumber()), roas = roas :+ signedRoa.roaCms)
     case removedRoa: SignerRemovedRoaCms => copy(roas = roas.filter(_ != removedRoa.roaCms))
   }
+
+  /**
+    * Unpublish everything so that ResourceClass can be removed
+    */
+  def unpublishAll(resourceClassName: String) = SignerUnpublishedAll(resourceClassName, publicationSet.unpublishAll)
 
   /**
    * Publish or re-publish.

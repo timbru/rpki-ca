@@ -35,7 +35,7 @@ import java.util.UUID
 import net.ripe.ipresource.IpResourceSet
 import nl.bruijnzeels.tim.rpki.ca._
 import nl.bruijnzeels.tim.rpki.ca.provisioning.MyIdentity
-import nl.bruijnzeels.tim.rpki.common.cqrs.EventStore
+import nl.bruijnzeels.tim.rpki.common.cqrs.{CertificationAuthorityAggregate, Event, EventStore}
 import nl.bruijnzeels.tim.rpki.common.domain.RoaAuthorisation
 import nl.bruijnzeels.tim.rpki.publication.disk.ObjectDiskWriter
 import nl.bruijnzeels.tim.rpki.publication.server.store.{RrdpFilesDataSources, RrdpFilesStore}
@@ -100,9 +100,6 @@ object Dsl {
         rrdpNotifyUrl = RrdpNotifyUrl))
 
     def publicationServer() = PublicationServerCommandDispatcher.dispatch(PublicationServerCreate(PublicationServerId, RrdpBaseUrl))
-    
-    
-
   }
 
   object current {
@@ -147,6 +144,8 @@ object Dsl {
 
     def publish() = CertificateAuthorityCommandDispatcher.dispatch(CertificateAuthorityPublish(current taVersion))
 
+    def history(): List[Event] = EventStore.retrieve(CertificationAuthorityAggregate, TrustAnchorId)
+
   }
 
   class certificateAuthority(me: CertificateAuthority) {
@@ -176,6 +175,8 @@ object Dsl {
     }
 
     def publish() = CertificateAuthorityCommandDispatcher.dispatch(CertificateAuthorityPublish(me.versionedId))
+
+    def history(): List[Event] = EventStore.retrieve(CertificationAuthorityAggregate, me.versionedId.id)
   }
 
   class caAddingChildCa(me: CertificateAuthority, child: CertificateAuthority) {
