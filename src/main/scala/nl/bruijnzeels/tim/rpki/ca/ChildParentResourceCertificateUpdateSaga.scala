@@ -60,6 +60,8 @@ object ChildParentResourceCertificateUpdateSaga {
       ca = ca.processCeritificateIssuanceResponse(req, signResponse.response)
     }
 
+    ca = ca.publish
+
     CertificateAuthorityCommandDispatcher.save(ca)
     EventStore.store(parent)
   }

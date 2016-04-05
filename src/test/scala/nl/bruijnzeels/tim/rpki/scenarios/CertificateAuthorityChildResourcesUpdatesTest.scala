@@ -73,25 +73,60 @@ class CertificateAuthorityChildResourcesUpdatesTest extends RpkiTest {
 
   test("Should update Child resources, shrink to empty and revoke certificate on request, and grow again") {
 
-    def getCurrentChildCertificate = {
+    def getCurrentChildCertificate() = {
       val caRcWithCertificate = (current certificateAuthority ChildId resourceClasses).get(CertificateAuthority.DefaultResourceClassName).get
       caRcWithCertificate.currentSigner.signingMaterial.currentCertificate
     }
 
-    create trustAnchor ()
-    create certificateAuthority ChildId
-    trustAnchor addChild (current certificateAuthority ChildId) withResources ChildResources
-    certificateAuthority withId ChildId addParent (current trustAnchor)
-    certificateAuthority withId ChildId update()
-    getCurrentChildCertificate.getResources() should equal(ChildResources)
+    def child() = certificateAuthority withId ChildId
 
-    trustAnchor updateChild (current certificateAuthority ChildId) withResources ""
-    certificateAuthority withId ChildId update()
-    (current certificateAuthority ChildId resourceClasses).get(CertificateAuthority.DefaultResourceClassName) should be(None)
+    def validateChildRoas() = {
+      val roas = child listRoas
 
-    trustAnchor updateChild (current certificateAuthority ChildId) withResources ChildResources
-    certificateAuthority withId ChildId update()
-    getCurrentChildCertificate.getResources() should equal(ChildResources)
+      roas should have size(1)
+      val roa = roas.head
+      roa.getAsn should equal ("AS1": Asn)
+      roa.getPrefixes should have size (1)
+      roa.getPrefixes.get(0).getPrefix should equal ("192.168.0.0/24": IpRange)
+      roa.getPrefixes.get(0).getEffectiveMaximumLength should equal (24)
+    }
+
+    def setUpTaAndChildWithResourcesAndRoa() = {
+      create trustAnchor ()
+      create certificateAuthority ChildId
+      trustAnchor addChild (current certificateAuthority ChildId) withResources ChildResources
+      child addParent (current trustAnchor)
+      child update()
+      child addRoaConfig(RoaAuthorisation(asn = "AS1", roaPrefix = "192.168.0.0/24"))
+      child publish
+
+      getCurrentChildCertificate.getResources() should equal(ChildResources)
+
+      validateChildRoas
+    }
+
+    def shrinkChild() = {
+      trustAnchor updateChild (current certificateAuthority ChildId) withResources ""
+      child update()
+      (current certificateAuthority ChildId resourceClasses).get(CertificateAuthority.DefaultResourceClassName) should be(None)
+      val roasAfterShrink = child listRoas
+
+      roasAfterShrink should have size(0)
+    }
+
+    def regrowChild() = {
+      trustAnchor updateChild (current certificateAuthority ChildId) withResources ChildResources
+      child update()
+      getCurrentChildCertificate.getResources() should equal(ChildResources)
+
+      validateChildRoas
+    }
+
+    setUpTaAndChildWithResourcesAndRoa
+    shrinkChild
+    regrowChild
+
+
   }
 
 }
