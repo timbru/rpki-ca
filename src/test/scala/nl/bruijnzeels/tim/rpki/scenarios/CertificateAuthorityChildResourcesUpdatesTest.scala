@@ -40,8 +40,8 @@ class CertificateAuthorityChildResourcesUpdatesTest extends RpkiTest {
   import scala.language.postfixOps
 
   test("Should update Child resources, extend certificate on request, and shrink again") {
-    create trustAnchor ()
-    create certificateAuthority ChildId
+    trustAnchor create()
+    certificateAuthority create  ChildId
     trustAnchor addChild (current certificateAuthority ChildId) withResources ChildResources
     certificateAuthority withId ChildId addParent  (current trustAnchor)
     certificateAuthority withId ChildId update
@@ -92,8 +92,8 @@ class CertificateAuthorityChildResourcesUpdatesTest extends RpkiTest {
     }
 
     def setUpTaAndChildWithResourcesAndRoa() = {
-      create trustAnchor ()
-      create certificateAuthority ChildId
+      trustAnchor create()
+      certificateAuthority create ChildId
       trustAnchor addChild (current certificateAuthority ChildId) withResources ChildResources
       child addParent (current trustAnchor)
       child update()

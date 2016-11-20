@@ -81,27 +81,6 @@ object Dsl {
   val GrandChildXml = GrandChildIdentity.toChildXml
   val GrandChildResources: IpResourceSet = "192.168.0.0/20"
 
-  object create {
-
-    def trustAnchor() = CertificateAuthorityCommandDispatcher.dispatch(
-      CertificateAuthorityCreateAsTrustAnchor(
-        aggregateId = TrustAnchorId,
-        name = TrustAnchorName,
-        resources = TrustAnchorResources,
-        certificateUrl = TrustAnchorCertUri,
-        baseUrl = RsyncBaseUrl,
-        rrdpNotifyUrl = RrdpNotifyUrl))
-
-    def certificateAuthority(id: UUID) = CertificateAuthorityCommandDispatcher.dispatch(
-      CertificateAuthorityCreate(
-        aggregateId = id,
-        name = ChildName,
-        baseUrl = RsyncBaseUrl,
-        rrdpNotifyUrl = RrdpNotifyUrl))
-
-    def publicationServer() = PublicationServerCommandDispatcher.dispatch(PublicationServerCreate(PublicationServerId, RrdpBaseUrl))
-  }
-
   object current {
     def trustAnchor() = CertificateAuthorityCommandDispatcher.load(TrustAnchorId).get
     def taVersion = trustAnchor.versionedId
@@ -116,6 +95,15 @@ object Dsl {
   }
 
   object trustAnchor {
+
+    def create() = CertificateAuthorityCommandDispatcher.dispatch(
+      CertificateAuthorityCreateAsTrustAnchor(
+        aggregateId = TrustAnchorId,
+        name = TrustAnchorName,
+        resources = TrustAnchorResources,
+        certificateUrl = TrustAnchorCertUri,
+        baseUrl = RsyncBaseUrl,
+        rrdpNotifyUrl = RrdpNotifyUrl))
 
     class taAddingChild(child: CertificateAuthority) {
       def withResources(resources: IpResourceSet) = {
@@ -193,10 +181,20 @@ object Dsl {
   }
 
   object certificateAuthority {
+
+    def create(id: UUID) = CertificateAuthorityCommandDispatcher.dispatch(
+      CertificateAuthorityCreate(
+        aggregateId = id,
+        name = ChildName,
+        baseUrl = RsyncBaseUrl,
+        rrdpNotifyUrl = RrdpNotifyUrl))
+
     def withId(id: UUID) = new certificateAuthority(me = (current certificateAuthority id))
   }
 
   object publicationServer {
+    def create() = PublicationServerCommandDispatcher.dispatch(PublicationServerCreate(PublicationServerId, RrdpBaseUrl))
+
     def listen() = EventStore.subscribe(new PublicationServerUpdateListener(PublicationServerId))
 
     def notificationFile() = {

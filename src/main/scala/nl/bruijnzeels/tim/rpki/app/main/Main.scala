@@ -68,15 +68,16 @@ class Main { main =>
 
   def setUpPublicationServer() = {
     logger.info("Setting up publication server")
-    create publicationServer()
+    publicationServer create()
     publicationServer listen()
     diskWriter listen()
   }
 
   def setUpCas() = {
     logger.info("Setting up TA and CA")
-    create trustAnchor ()
-    create certificateAuthority ChildId
+
+    trustAnchor create()
+    certificateAuthority create ChildId
     trustAnchor addChild (current certificateAuthority ChildId) withResources ChildResources
     certificateAuthority withId ChildId addParent (current trustAnchor)
     certificateAuthority withId ChildId update

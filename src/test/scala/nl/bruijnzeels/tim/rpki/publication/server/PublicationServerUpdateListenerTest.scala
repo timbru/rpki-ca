@@ -31,7 +31,7 @@ package nl.bruijnzeels.tim.rpki.publication.server
 import java.math.BigInteger
 
 import nl.bruijnzeels.tim.rpki.RpkiTest
-import nl.bruijnzeels.tim.rpki.app.main.Dsl.{create, publicationServer, trustAnchor}
+import nl.bruijnzeels.tim.rpki.app.main.Dsl.{publicationServer, trustAnchor}
 
 import scala.language.postfixOps
 
@@ -39,12 +39,12 @@ import scala.language.postfixOps
 class PublicationServerUpdateListenerTest extends RpkiTest {
 
     test("Should publish") {
-      create publicationServer()
+      publicationServer create()
       publicationServer listen()
 
       (publicationServer notificationFile() serial) should equal (BigInteger.ZERO)
 
-      create trustAnchor()
+      trustAnchor create()
       trustAnchor publish()
 
       (publicationServer notificationFile() serial) should equal (BigInteger.ONE)

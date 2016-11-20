@@ -40,8 +40,8 @@ class CertificateAuthorityFunctionsTest extends RpkiTest {
   import scala.language.postfixOps
 
   test("Should create Child under TA with certificate") {
-    create trustAnchor ()
-    create certificateAuthority ChildId
+    trustAnchor create()
+    certificateAuthority create ChildId
     trustAnchor addChild (current certificateAuthority ChildId) withResources ChildResources
     certificateAuthority withId ChildId addParent  (current trustAnchor)
     certificateAuthority withId ChildId update
@@ -55,14 +55,14 @@ class CertificateAuthorityFunctionsTest extends RpkiTest {
   }
 
   test("Should create GrandChild under Child under TA") {
-    create trustAnchor ()
+    trustAnchor create()
 
-    create certificateAuthority ChildId
+    certificateAuthority create ChildId
     trustAnchor addChild (current certificateAuthority ChildId) withResources ChildResources
     certificateAuthority withId ChildId addParent(current trustAnchor)
     certificateAuthority withId ChildId update
 
-    create certificateAuthority GrandChildId
+    certificateAuthority create GrandChildId
     certificateAuthority withId ChildId addChild(current certificateAuthority GrandChildId) withResources GrandChildResources
     certificateAuthority withId GrandChildId addParent(current certificateAuthority ChildId)
     certificateAuthority withId GrandChildId update
@@ -75,9 +75,9 @@ class CertificateAuthorityFunctionsTest extends RpkiTest {
   }
 
   test("Create Child with ROA, re-publish, and remove ROA") {
-    create trustAnchor ()
+    trustAnchor create ()
 
-    create certificateAuthority ChildId
+    certificateAuthority create ChildId
     def child = certificateAuthority withId ChildId
 
     trustAnchor addChild (current certificateAuthority ChildId) withResources ChildResources

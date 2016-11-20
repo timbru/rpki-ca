@@ -59,10 +59,10 @@ class PerformanceTest extends RpkiTest {
     * and one for the resource cert
     *
     */
-  ignore("Improve performance of CA generatiom") {
-    create trustAnchor ()
+  ignore("Improve performance of CA generation") {
+    trustAnchor create()
 
-    create certificateAuthority ChildId
+    certificateAuthority create ChildId
     trustAnchor addChild (current certificateAuthority ChildId) withResources "10.0.0.0/8"
     certificateAuthority withId ChildId addParent(current trustAnchor)
     certificateAuthority withId ChildId update
@@ -73,7 +73,7 @@ class PerformanceTest extends RpkiTest {
       val id = UUID.randomUUID()
       val resources: IpResourceSet = "10.0." + child + ".0/24"
 
-      create certificateAuthority id
+      certificateAuthority create id
       certificateAuthority withId ChildId addChild(current certificateAuthority id) withResources resources
       certificateAuthority withId id addParent(current certificateAuthority ChildId)
       certificateAuthority withId id update
@@ -85,7 +85,4 @@ class PerformanceTest extends RpkiTest {
 
     (timePerCaCreate < 2000) should be (true) // Should be less than 2 seconds per CA
   }
-
-
-
 }
