@@ -92,15 +92,15 @@ class Main { main =>
     val server = new Server(rrdpPort)
     val webFilter = new WebFilter {}
 
-    val root = new ServletContextHandler(server, "/rpki-ca", ServletContextHandler.SESSIONS)
-    root.setResourceBase(getClass.getResource("/public").toString)
+    val servletContextHandler = new ServletContextHandler(server, "/rpki-ca", ServletContextHandler.SESSIONS)
+    servletContextHandler.setResourceBase(getClass.getResource("/public").toString)
 
     val defaultServletHolder = new ServletHolder(new DefaultServlet())
     defaultServletHolder.setName("default")
     defaultServletHolder.setInitParameter("dirAllowed", "false")
-    root.addServlet(defaultServletHolder, "/*")
+    servletContextHandler.addServlet(defaultServletHolder, "/*")
 
-    root.addFilter(new FilterHolder(webFilter), "/*", EnumSet.allOf(classOf[DispatcherType]))
+    servletContextHandler.addFilter(new FilterHolder(webFilter), "/*", EnumSet.allOf(classOf[DispatcherType]))
 
     sys.addShutdownHook({
       server.stop()
