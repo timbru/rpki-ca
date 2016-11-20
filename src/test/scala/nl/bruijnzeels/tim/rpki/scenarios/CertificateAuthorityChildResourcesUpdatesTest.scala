@@ -101,31 +101,33 @@ class CertificateAuthorityChildResourcesUpdatesTest extends RpkiTest {
       child publish
 
       getCurrentChildCertificate.getResources() should equal(ChildResources)
-
-      validateChildRoas
     }
 
     def shrinkChild() = {
       trustAnchor updateChild (current certificateAuthority ChildId) withResources ""
       child update()
       (current certificateAuthority ChildId resourceClasses).get(CertificateAuthority.DefaultResourceClassName) should be(None)
-      val roasAfterShrink = child listRoas
+    }
 
-      roasAfterShrink should have size(0)
+    def validateChildHasNoRoas() = {
+      child listRoas() should have size(0)
     }
 
     def regrowChild() = {
       trustAnchor updateChild (current certificateAuthority ChildId) withResources ChildResources
       child update()
       getCurrentChildCertificate.getResources() should equal(ChildResources)
-
-      validateChildRoas
     }
 
-    setUpTaAndChildWithResourcesAndRoa
-    shrinkChild
-    regrowChild
 
+    setUpTaAndChildWithResourcesAndRoa
+    validateChildRoas
+
+    shrinkChild
+    validateChildHasNoRoas
+
+    regrowChild
+    validateChildRoas
 
   }
 
